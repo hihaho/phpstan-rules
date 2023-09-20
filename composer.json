@@ -2,6 +2,7 @@
     "name": "hihaho/phpstan-rules",
     "description": "Hihaho PHPStan rules according to the guidelines (https://guidelines.hihaho.com)",
     "type": "phpstan-extension",
+    "license": "MIT",
     "autoload": {
         "psr-4": {
             "Hihaho\\PhpstanRules\\": "src/"
