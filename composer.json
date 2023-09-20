@@ -1,7 +1,7 @@
 {
     "name": "hihaho/phpstan-rules",
     "description": "Hihaho PHPStan rules according to the guidelines (https://guidelines.hihaho.com)",
-    "type": "library",
+    "type": "phpstan-extension",
     "autoload": {
         "psr-4": {
             "Hihaho\\PhpstanRules\\": "src/"
@@ -20,5 +20,12 @@
     },
     "require-dev": {
         "phpunit/phpunit": "^10.3"
+    },
+    "extra": {
+        "phpstan": {
+            "includes": [
+                "extension.neon"
+            ]
+        }
     }
 }
