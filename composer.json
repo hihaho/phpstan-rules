@@ -7,6 +7,11 @@
             "Hihaho\\PhpstanRules\\": "src/"
         }
     },
+    "autoload-dev": {
+        "classmap": [
+            "tests/"
+        ]
+    },
     "authors": [
         {
             "name": "Robert Boes",
@@ -16,10 +21,13 @@
     "minimum-stability": "stable",
     "require": {
         "php": "^8.2",
-        "phpstan/phpstan": "^1.10"
+        "phpstan/phpstan": "^1.10",
+        "illuminate/support": "^10"
     },
     "require-dev": {
-        "phpunit/phpunit": "^10.3"
+        "phpunit/phpunit": "^10.3",
+        "nikic/php-parser": "^4.17",
+        "spatie/invade": "^2.0"
     },
     "extra": {
         "phpstan": {
