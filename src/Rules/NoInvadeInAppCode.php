@@ -27,7 +27,7 @@ class NoInvadeInAppCode implements Rule
         if ($node->name->toString() === 'Livewire\invade') {
             return [
                 RuleErrorBuilder::message(
-                    'Usage of `\Livewire\invade` is disallowed, please use the global `invade` from spatie/invade'
+                    'Usage of `\Livewire\invade` is disallowed, please use the global `invade` from spatie/invade.'
                 )->build(),
             ];
         }

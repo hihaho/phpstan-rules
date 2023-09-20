@@ -26,5 +26,12 @@ class NoInvadeInAppCodeTest extends RuleTestCase
         ]);
 
         $this->analyse([__DIR__ . '/stubs/InvadeTestFake.php'], []);
+
+        $this->analyse([__DIR__ . '/stubs/UseSpatieInvadeInsteadOfLivewire.php'], [
+            [
+                'Usage of `\Livewire\invade` is disallowed, please use the global `invade` from spatie/invade.',
+                15,
+            ]
+        ]);
     }
 }
