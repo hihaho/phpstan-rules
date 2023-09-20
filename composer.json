@@ -1,0 +1,24 @@
+{
+    "name": "hihaho/phpstan-rules",
+    "description": "Hihaho PHPStan rules according to the guidelines (https://guidelines.hihaho.com)",
+    "type": "library",
+    "autoload": {
+        "psr-4": {
+            "Hihaho\\PhpstanRules\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Robert Boes",
+            "email": "2871897+RobertBoes@users.noreply.github.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {
+        "php": "^8.2",
+        "phpstan/phpstan": "^1.10"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.3"
+    }
+}
