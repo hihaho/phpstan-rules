@@ -35,13 +35,13 @@ class EloquentApiResources implements Rule
             return [];
         }
 
-        if (Str::endsWith($node->name->toString(), 'Resource')) {
+        if (Str::endsWith($node->namespacedName->toString(), 'Resource')) {
             return [];
         }
 
         return [
             RuleErrorBuilder::message(
-                'Eloquent resources must be named with a `Resources` suffix, such as VideoResource.'
+                "Eloquent resource {$node->namespacedName->toString()} must be named with a `Resources` suffix, such as {$node->name->toString()}Resource."
             )->build(),
         ];
     }

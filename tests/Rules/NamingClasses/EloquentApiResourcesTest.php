@@ -18,15 +18,15 @@ class EloquentApiResourcesTest extends RuleTestCase
 
     public function testRule(): void
     {
-        $this->analyse([__DIR__ . '/stubs/Video.php'], [
+        $this->analyse([__DIR__ . '/stubs/resources/Video.php'], [
             [
-                'Eloquent resources must be named with a `Resources` suffix, such as VideoResource.',
-                5,
+                'Eloquent resource App\Resources\Video must be named with a `Resources` suffix, such as VideoResource.',
+                7,
             ],
         ]);
 
-        $this->analyse([__DIR__ . '/stubs/VideoResource.php'], []);
+        $this->analyse([__DIR__ . '/stubs/resources/VideoResource.php'], []);
 
-        $this->analyse([__DIR__ . '/stubs/RandomFile.php'], []);
+        $this->analyse([__DIR__ . '/stubs/resources/RandomFile.php'], []);
     }
 }
