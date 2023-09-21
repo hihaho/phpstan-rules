@@ -20,7 +20,7 @@ class EloquentApiResourcesTest extends RuleTestCase
     {
         $this->analyse([__DIR__ . '/stubs/resources/Video.php'], [
             [
-                'Eloquent resource App\Resources\Video must be named with a `Resources` suffix, such as VideoResource.',
+                'Eloquent resource App\Resources\Video must be named with a `Resource` suffix, such as VideoResource.',
                 7,
             ],
         ]);

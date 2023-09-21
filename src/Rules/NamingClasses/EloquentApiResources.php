@@ -31,6 +31,10 @@ class EloquentApiResources implements Rule
             return [];
         }
 
+        if (! Str::startsWith($node->namespacedName?->toString(), 'App\Http\Resources')) {
+            return [];
+        }
+
         if ($node->extends->toString() !== JsonResource::class) {
             return [];
         }
@@ -41,7 +45,7 @@ class EloquentApiResources implements Rule
 
         return [
             RuleErrorBuilder::message(
-                "Eloquent resource {$node->namespacedName->toString()} must be named with a `Resources` suffix, such as {$node->name->toString()}Resource."
+                "Eloquent resource {$node->namespacedName->toString()} must be named with a `Resource` suffix, such as {$node->name->toString()}Resource."
             )->build(),
         ];
     }
