@@ -30,7 +30,8 @@
         "nikic/php-parser": "^4.17",
         "spatie/invade": "^2.0",
         "illuminate/http": "^10.24",
-        "illuminate/console": "^10.24"
+        "illuminate/console": "^10.24",
+        "illuminate/mail": "^10.24"
     },
     "extra": {
         "phpstan": {

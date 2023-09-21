@@ -2,26 +2,26 @@
 
 namespace Hihaho\PhpstanRules\Rules\NamingClasses;
 
-use Illuminate\Console\Command;
+use Illuminate\Mail\Mailable;
 
 /**
- * @see https://guidelines.hihaho.com/laravel.html#commands
+ * @see https://guidelines.hihaho.com/laravel.html#mailables
  * @implements \PHPStan\Rules\Rule<\PhpParser\Node\Stmt\Class_>
  */
-class Commands extends SuffixableRule
+class Mail extends SuffixableRule
 {
     public function baseClass(): string
     {
-        return Command::class;
+        return Mailable::class;
     }
 
     public function name(): string
     {
-        return 'Command';
+        return 'Mailable';
     }
-    
+
     public function suffix(): string
     {
-        return 'Command';
+        return 'Mail';
     }
 }
