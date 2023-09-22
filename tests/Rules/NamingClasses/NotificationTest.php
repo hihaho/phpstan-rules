@@ -7,7 +7,7 @@ use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 
 /**
- * @extends RuleTestCase<Notification>
+ * @extends RuleTestCase<Notifications>
  */
 class NotificationTest extends RuleTestCase
 {

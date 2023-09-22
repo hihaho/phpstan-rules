@@ -6,7 +6,6 @@ use Illuminate\Mail\Mailable;
 
 /**
  * @see https://guidelines.hihaho.com/laravel.html#mailables
- * @implements \PHPStan\Rules\Rule<\PhpParser\Node\Stmt\Class_>
  */
 class Mail extends SuffixableRule
 {

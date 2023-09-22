@@ -6,7 +6,6 @@ use Illuminate\Console\Command;
 
 /**
  * @see https://guidelines.hihaho.com/laravel.html#commands
- * @implements \PHPStan\Rules\Rule<\PhpParser\Node\Stmt\Class_>
  */
 class Commands extends SuffixableRule
 {

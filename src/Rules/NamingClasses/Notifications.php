@@ -6,7 +6,6 @@ use Illuminate\Notifications\Notification;
 
 /**
  * @see https://guidelines.hihaho.com/laravel.html#notifications
- * @implements \PHPStan\Rules\Rule<\PhpParser\Node\Stmt\Class_>
  */
 class Notifications extends SuffixableRule
 {
