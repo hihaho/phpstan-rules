@@ -22,6 +22,7 @@ class NotificationTest extends RuleTestCase
             [
                 'Notification App\Notifications\ResetPassword must be named with a `Notification` suffix, such as ResetPasswordNotification.',
                 7,
+                'Learn more at https://guidelines.hihaho.com/laravel.html#notifications',
             ],
         ]);
 

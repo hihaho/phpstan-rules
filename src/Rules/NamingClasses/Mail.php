@@ -23,4 +23,9 @@ class Mail extends SuffixableRule
     {
         return 'Mail';
     }
+
+    public function docs(): string
+    {
+        return 'https://guidelines.hihaho.com/laravel.html#mailables';
+    }
 }

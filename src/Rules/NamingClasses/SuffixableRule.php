@@ -2,6 +2,7 @@
 
 namespace Hihaho\PhpstanRules\Rules\NamingClasses;
 
+use Hihaho\PhpstanRules\Traits\HasUrlTip;
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
 use PhpParser\Node;
@@ -17,6 +18,8 @@ use PHPStan\Reflection\ReflectionProvider;
  */
 abstract class SuffixableRule implements Rule
 {
+    use HasUrlTip;
+
     private ReflectionProvider $reflectionProvider;
 
     abstract public function baseClass(): string;
@@ -24,6 +27,8 @@ abstract class SuffixableRule implements Rule
     abstract public function suffix(): string;
     
     abstract public function name(): string;
+
+    abstract public function docs(): string;
 
     public function __construct(
         ReflectionProvider $reflectionProvider,
@@ -63,7 +68,9 @@ abstract class SuffixableRule implements Rule
         return [
             RuleErrorBuilder::message(
                 "{$this->name()} {$node->namespacedName} must be named with a `{$this->suffix()}` suffix, such as {$node->name}{$this->suffix()}."
-            )->build(),
+            )
+                ->tip($this->docsTip($this->docs()))
+                ->build(),
         ];
     }
     

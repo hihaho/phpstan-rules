@@ -23,4 +23,9 @@ class Commands extends SuffixableRule
     {
         return 'Command';
     }
+
+    public function docs(): string
+    {
+        return 'https://guidelines.hihaho.com/laravel.html#commands';
+    }
 }

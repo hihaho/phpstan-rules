@@ -23,4 +23,9 @@ class Notifications extends SuffixableRule
     {
         return 'Notification';
     }
+
+    public function docs(): string
+    {
+        return 'https://guidelines.hihaho.com/laravel.html#notifications';
+    }
 }

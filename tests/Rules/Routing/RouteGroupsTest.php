@@ -22,6 +22,7 @@ class RouteGroupsTest extends RuleTestCase
             [
                 'Route group options should be defined using methods.',
                 9,
+                'Learn more at https://guidelines.hihaho.com/laravel.html#route-groups',
             ],
         ]);
     }

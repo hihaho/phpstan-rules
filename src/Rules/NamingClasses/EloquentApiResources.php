@@ -46,7 +46,9 @@ class EloquentApiResources implements Rule
         return [
             RuleErrorBuilder::message(
                 "Eloquent resource {$node->namespacedName->toString()} must be named with a `Resource` suffix, such as {$node->name->toString()}Resource."
-            )->build(),
+            )
+                ->tip('Learn more at https://guidelines.hihaho.com/laravel.html#resources')
+                ->build(),
         ];
     }
 }

@@ -22,6 +22,7 @@ class MailTest extends RuleTestCase
             [
                 'Mailable App\Mail\AccountActivated must be named with a `Mail` suffix, such as AccountActivatedMail.',
                 7,
+                'Learn more at https://guidelines.hihaho.com/laravel.html#mailables',
             ],
         ]);
 

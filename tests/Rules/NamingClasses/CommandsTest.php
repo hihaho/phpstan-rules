@@ -22,6 +22,7 @@ class CommandsTest extends RuleTestCase
             [
                 'Command App\Console\Commands\NotifyUsers must be named with a `Command` suffix, such as NotifyUsersCommand.',
                 7,
+                'Learn more at https://guidelines.hihaho.com/laravel.html#commands',
             ],
         ]);
         
@@ -29,6 +30,7 @@ class CommandsTest extends RuleTestCase
             [
                 'Command App\Console\Commands\FromBaseWithoutSuffix must be named with a `Command` suffix, such as FromBaseWithoutSuffixCommand.',
                 5,
+                'Learn more at https://guidelines.hihaho.com/laravel.html#commands',
             ],
         ]);
 

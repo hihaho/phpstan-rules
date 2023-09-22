@@ -22,6 +22,7 @@ class EloquentApiResourcesTest extends RuleTestCase
             [
                 'Eloquent resource App\Http\Resources\Video must be named with a `Resource` suffix, such as VideoResource.',
                 7,
+                'Learn more at https://guidelines.hihaho.com/laravel.html#resources',
             ],
         ]);
 
