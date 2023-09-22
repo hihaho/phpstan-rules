@@ -18,6 +18,11 @@ class SlashInUrl implements Rule
 {
     use HasUrlTip;
 
+    public function docs(): string
+    {
+        return 'https://guidelines.hihaho.com/laravel.html#slash-in-url';
+    }
+
     public function getNodeType(): string
     {
         return \PhpParser\Node\Expr\StaticCall::class;
@@ -55,7 +60,7 @@ class SlashInUrl implements Rule
                 RuleErrorBuilder::message(
                     'A route URL should be / instead of an empty string.'
                 )
-                    ->tip($this->docsTip('https://guidelines.hihaho.com/laravel.html#slash-in-url'))
+                    ->tip($this->tip())
                     ->build(),
             ];
         }
@@ -65,7 +70,7 @@ class SlashInUrl implements Rule
                 RuleErrorBuilder::message(
                     'A route URL should not start or end with /.'
                 )
-                    ->tip($this->docsTip('https://guidelines.hihaho.com/laravel.html#slash-in-url'))
+                    ->tip($this->tip())
                     ->build(),
             ];
         }

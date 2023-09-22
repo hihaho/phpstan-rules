@@ -18,6 +18,11 @@ class RouteGroups implements Rule
 {
     use HasUrlTip;
 
+    public function docs(): string
+    {
+        return 'https://guidelines.hihaho.com/laravel.html#route-groups';
+    }
+
     public function getNodeType(): string
     {
         return \PhpParser\Node\Expr\StaticCall::class;
@@ -50,7 +55,7 @@ class RouteGroups implements Rule
             RuleErrorBuilder::message(
                 'Route group options should be defined using methods.'
             )
-                ->tip($this->docsTip('https://guidelines.hihaho.com/laravel.html#route-groups'))
+                ->tip($this->tip())
                 ->build(),
         ];
     }

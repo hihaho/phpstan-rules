@@ -28,8 +28,6 @@ abstract class SuffixableRule implements Rule
     
     abstract public function name(): string;
 
-    abstract public function docs(): string;
-
     public function __construct(
         ReflectionProvider $reflectionProvider,
     ) {
@@ -69,7 +67,7 @@ abstract class SuffixableRule implements Rule
             RuleErrorBuilder::message(
                 "{$this->name()} {$node->namespacedName} must be named with a `{$this->suffix()}` suffix, such as {$node->name}{$this->suffix()}."
             )
-                ->tip($this->docsTip($this->docs()))
+                ->tip($this->tip())
                 ->build(),
         ];
     }

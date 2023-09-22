@@ -4,8 +4,10 @@ namespace Hihaho\PhpstanRules\Traits;
 
 trait HasUrlTip
 {
-    public function docsTip(string $url): string
+    public function tip(): string
     {
-        return "Learn more at {$url}";
+        return "Learn more at {$this->docs()}";
     }
+
+    abstract public function docs(): string;
 }

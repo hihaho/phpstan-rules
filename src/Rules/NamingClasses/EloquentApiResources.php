@@ -19,6 +19,11 @@ class EloquentApiResources implements Rule
 {
     use HasUrlTip;
 
+    public function docs(): string
+    {
+        return 'https://guidelines.hihaho.com/laravel.html#resources';
+    }
+
     public function getNodeType(): string
     {
         return Class_::class;
@@ -50,7 +55,7 @@ class EloquentApiResources implements Rule
             RuleErrorBuilder::message(
                 "Eloquent resource {$node->namespacedName->toString()} must be named with a `Resource` suffix, such as {$node->name->toString()}Resource."
             )
-                ->tip($this->docsTip('https://guidelines.hihaho.com/laravel.html#resources'))
+                ->tip($this->tip())
                 ->build(),
         ];
     }
