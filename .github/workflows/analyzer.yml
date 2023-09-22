@@ -18,7 +18,10 @@ jobs:
         with:
           php-version: 8.2
           coverage: none
-          tools: composer:v2,phpstan
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer install
 
       - name: Run PHPStan
-        run: phpstan analyze --no-ansi
+        run: vendor/bin/phpstan analyze --no-ansi

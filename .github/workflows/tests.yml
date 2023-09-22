@@ -18,7 +18,10 @@
           with:
             php-version: 8.2
             coverage: none
-            tools: composer:v2,phpunit
+            tools: composer:v2
+
+        - name: Install dependencies
+          run: composer install
 
         - name: Run tests
-          run: phpunit
+          run: vendor/bin/phpunit
