@@ -24,4 +24,4 @@
           run: composer update --dry-run roave/security-advisories
 
         - name: Run tests
-          run: composer test
+          run: phpunit

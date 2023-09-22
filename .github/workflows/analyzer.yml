@@ -21,4 +21,4 @@ jobs:
           tools: composer:v2,phpstan
 
       - name: Run PHPStan
-        run: vendor/bin/phpstan analyze --no-ansi
+        run: phpstan analyze --no-ansi
