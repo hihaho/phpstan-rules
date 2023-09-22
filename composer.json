@@ -1,6 +1,7 @@
 {
     "name": "hihaho/phpstan-rules",
-    "description": "Hihaho PHPStan rules according to the guidelines (https://guidelines.hihaho.com)",
+    "description": "Hihaho PHPStan rules according to the guidelines",
+    "homepage": "https://guidelines.hihaho.com",
     "type": "phpstan-extension",
     "license": "MIT",
     "autoload": {
@@ -29,10 +30,13 @@
         "phpunit/phpunit": "^10.3",
         "nikic/php-parser": "^4.17",
         "spatie/invade": "^2.0",
-        "illuminate/http": "^10.24",
-        "illuminate/console": "^10.24",
-        "illuminate/mail": "^10.24",
-        "illuminate/notifications": "^10.24"
+        "illuminate/http": "^10",
+        "illuminate/console": "^10",
+        "illuminate/mail": "^10",
+        "illuminate/notifications": "^10"
+    },
+    "scripts": {
+        "test": "phpunit"
     },
     "extra": {
         "phpstan": {
