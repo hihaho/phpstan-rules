@@ -26,7 +26,7 @@ abstract class SuffixableRule implements Rule
     abstract public function name(): string;
 
     public function __construct(
-        ReflectionProvider $reflectionProvider
+        ReflectionProvider $reflectionProvider,
     ) {
         $this->reflectionProvider = $reflectionProvider;
     }
