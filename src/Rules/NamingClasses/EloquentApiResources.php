@@ -2,6 +2,7 @@
 
 namespace Hihaho\PhpstanRules\Rules\NamingClasses;
 
+use Hihaho\PhpstanRules\Traits\HasUrlTip;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Str;
 use PhpParser\Node;
@@ -16,6 +17,8 @@ use PHPStan\Rules\RuleErrorBuilder;
  */
 class EloquentApiResources implements Rule
 {
+    use HasUrlTip;
+
     public function getNodeType(): string
     {
         return Class_::class;
@@ -47,7 +50,7 @@ class EloquentApiResources implements Rule
             RuleErrorBuilder::message(
                 "Eloquent resource {$node->namespacedName->toString()} must be named with a `Resource` suffix, such as {$node->name->toString()}Resource."
             )
-                ->tip('Learn more at https://guidelines.hihaho.com/laravel.html#resources')
+                ->tip($this->docsTip('https://guidelines.hihaho.com/laravel.html#resources'))
                 ->build(),
         ];
     }
