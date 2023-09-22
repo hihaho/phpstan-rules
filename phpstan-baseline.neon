@@ -1,0 +1,11 @@
+parameters:
+	ignoreErrors:
+		-
+			message: "#^Function Livewire\\\\invade not found\\.$#"
+			count: 1
+			path: tests/Rules/stubs/UseSpatieInvadeInsteadOfLivewire.php
+
+		-
+			message: "#^Used function Livewire\\\\invade not found\\.$#"
+			count: 1
+			path: tests/Rules/stubs/UseSpatieInvadeInsteadOfLivewire.php
