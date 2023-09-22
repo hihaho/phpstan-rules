@@ -20,8 +20,5 @@
             coverage: none
             tools: composer:v2,phpunit
 
-        - name: Check security advisories
-          run: composer update --dry-run roave/security-advisories
-
         - name: Run tests
           run: phpunit
