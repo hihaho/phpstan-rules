@@ -33,7 +33,8 @@
         "illuminate/http": "^10",
         "illuminate/console": "^10",
         "illuminate/mail": "^10",
-        "illuminate/notifications": "^10"
+        "illuminate/notifications": "^10",
+        "illuminate/routing": "^10"
     },
     "scripts": {
         "test": "phpunit"

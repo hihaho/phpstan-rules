@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::group(function (): void {
+Route::name('')->group(function (): void {
     //
 });
 
