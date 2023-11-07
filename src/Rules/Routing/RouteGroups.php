@@ -11,6 +11,7 @@ use PHPStan\Rules\RuleErrorBuilder;
 
 /**
  * @see https://guidelines.hihaho.com/laravel.html#route-groups
+ *
  * @implements \PHPStan\Rules\Rule<\PhpParser\Node\Expr\StaticCall>
  */
 class RouteGroups implements Rule

@@ -23,7 +23,8 @@
     "require": {
         "php": "^8.2",
         "phpstan/phpstan": "^1.10",
-        "illuminate/support": "^10"
+        "illuminate/support": "^10",
+        "laravel/pint": "^1.13"
     },
     "require-dev": {
         "phpunit/phpunit": "^10.3",

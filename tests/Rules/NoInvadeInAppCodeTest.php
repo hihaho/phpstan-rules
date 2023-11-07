@@ -1,4 +1,4 @@
-<?php declare(strict_types = 1);
+<?php declare(strict_types=1);
 
 namespace Rules\Routing\SlashInUrl;
 
@@ -22,7 +22,7 @@ class NoInvadeInAppCodeTest extends RuleTestCase
             [
                 'Usage of method `invade` is not allowed in the App namespace.',
                 12,
-            ]
+            ],
         ]);
 
         $this->analyse([__DIR__ . '/stubs/InvadeTestFake.php'], []);
@@ -31,7 +31,7 @@ class NoInvadeInAppCodeTest extends RuleTestCase
             [
                 'Usage of `\Livewire\invade` is disallowed, please use the global `invade` from spatie/invade.',
                 15,
-            ]
+            ],
         ]);
     }
 }
