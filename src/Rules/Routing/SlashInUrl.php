@@ -12,6 +12,7 @@ use PHPStan\Rules\RuleErrorBuilder;
 
 /**
  * @see https://guidelines.hihaho.com/laravel.html#slash-in-url
+ *
  * @implements \PHPStan\Rules\Rule<\PhpParser\Node\Expr\StaticCall>
  */
 class SlashInUrl implements Rule
@@ -54,7 +55,7 @@ class SlashInUrl implements Rule
         if ($routePath->value === '/') {
             return [];
         }
-        
+
         if ($routePath->value === '') {
             return [
                 RuleErrorBuilder::message(
