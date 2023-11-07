@@ -1,4 +1,4 @@
-<?php declare(strict_types = 1);
+<?php declare(strict_types=1);
 
 namespace Rules\NamingClasses;
 
@@ -25,7 +25,7 @@ class CommandsTest extends RuleTestCase
                 'Learn more at https://guidelines.hihaho.com/laravel.html#commands',
             ],
         ]);
-        
+
         $this->analyse([__DIR__ . '/stubs/commands/FromBaseWithoutSuffix.php'], [
             [
                 'Command App\Console\Commands\FromBaseWithoutSuffix must be named with a `Command` suffix, such as FromBaseWithoutSuffixCommand.',
@@ -35,9 +35,9 @@ class CommandsTest extends RuleTestCase
         ]);
 
         $this->analyse([__DIR__ . '/stubs/commands/SendMailCommand.php'], []);
-        
+
         $this->analyse([__DIR__ . '/stubs/commands/Base.php'], []);
-        
+
         $this->analyse([__DIR__ . '/stubs/commands/FromBaseCommand.php'], []);
     }
 }

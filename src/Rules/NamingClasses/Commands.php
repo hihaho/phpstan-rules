@@ -18,7 +18,7 @@ class Commands extends SuffixableRule
     {
         return 'Command';
     }
-    
+
     public function suffix(): string
     {
         return 'Command';

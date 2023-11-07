@@ -3,15 +3,14 @@
 namespace Hihaho\PhpstanRules\Rules\NamingClasses;
 
 use Hihaho\PhpstanRules\Traits\HasUrlTip;
-use Illuminate\Console\Command;
 use Illuminate\Support\Str;
 use PhpParser\Node;
 use PhpParser\Node\Stmt\Class_;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ClassReflection;
+use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
-use PHPStan\Reflection\ReflectionProvider;
 
 /**
  * @implements \PHPStan\Rules\Rule<\PhpParser\Node\Stmt\Class_>
@@ -23,9 +22,9 @@ abstract class SuffixableRule implements Rule
     private ReflectionProvider $reflectionProvider;
 
     abstract public function baseClass(): string;
-    
+
     abstract public function suffix(): string;
-    
+
     abstract public function name(): string;
 
     public function __construct(
@@ -33,7 +32,7 @@ abstract class SuffixableRule implements Rule
     ) {
         $this->reflectionProvider = $reflectionProvider;
     }
-    
+
     public function getNodeType(): string
     {
         return Class_::class;
@@ -71,7 +70,7 @@ abstract class SuffixableRule implements Rule
                 ->build(),
         ];
     }
-    
+
     private function parentExtendsCommand(ClassReflection $reflection): bool
     {
         foreach ($reflection->getParents() as $parent) {
