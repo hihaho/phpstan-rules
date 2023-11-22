@@ -7,3 +7,19 @@ services:
         class: Hihaho\PhpstanRules\Rules\Routing\SlashInUrl
         tags:
             - phpstan.rules.rule
+    -
+        class: Hihaho\PhpstanRules\Rules\NamingClasses\EloquentApiResources
+        tags:
+            - phpstan.rules.rule
+    -
+        class: Hihaho\PhpstanRules\Rules\NamingClasses\Commands
+        tags:
+            - phpstan.rules.rule
+    -
+        class: Hihaho\PhpstanRules\Rules\NamingClasses\Mail
+        tags:
+            - phpstan.rules.rule
+    -
+        class: Hihaho\PhpstanRules\Rules\NamingClasses\Notifications
+        tags:
+            - phpstan.rules.rule

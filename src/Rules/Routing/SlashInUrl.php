@@ -2,6 +2,7 @@
 
 namespace Hihaho\PhpstanRules\Rules\Routing;
 
+use Hihaho\PhpstanRules\Traits\HasUrlTip;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use PhpParser\Node;
@@ -16,6 +17,13 @@ use PHPStan\Rules\RuleErrorBuilder;
  */
 class SlashInUrl implements Rule
 {
+    use HasUrlTip;
+
+    public function docs(): string
+    {
+        return 'https://guidelines.hihaho.com/laravel.html#slash-in-url';
+    }
+
     public function getNodeType(): string
     {
         return \PhpParser\Node\Expr\StaticCall::class;
@@ -52,7 +60,9 @@ class SlashInUrl implements Rule
             return [
                 RuleErrorBuilder::message(
                     'A route URL should be / instead of an empty string.'
-                )->build(),
+                )
+                    ->tip($this->tip())
+                    ->build(),
             ];
         }
 
@@ -60,7 +70,9 @@ class SlashInUrl implements Rule
             return [
                 RuleErrorBuilder::message(
                     'A route URL should not start or end with /.'
-                )->build(),
+                )
+                    ->tip($this->tip())
+                    ->build(),
             ];
         }
 
