@@ -29,7 +29,7 @@
     },
     "require-dev": {
         "phpunit/phpunit": "^10.3",
-        "nikic/php-parser": "^4.17",
+        "nikic/php-parser": "^5.0",
         "spatie/invade": "^2.0",
         "illuminate/http": "^10",
         "illuminate/console": "^10",
