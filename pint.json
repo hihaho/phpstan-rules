@@ -30,7 +30,7 @@
             "control_structures_opening_brace": "same_line",
             "functions_opening_brace": "next_line_unless_newline_at_signature_end"
         },
-        "Laravel/laravel_phpdoc_alignment": false,
+        "phpdoc_align": false,
         "phpdoc_separation": false,
         "function_typehint_space": false,
         "linebreak_after_opening_tag": false,
