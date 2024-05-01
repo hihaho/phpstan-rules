@@ -2,8 +2,8 @@
 
 namespace App;
 
-use Route;
 use Custom;
+use Route;
 
 class InvadeInAppNamespace
 {

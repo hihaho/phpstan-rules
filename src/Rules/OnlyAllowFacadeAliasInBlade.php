@@ -22,7 +22,7 @@ class OnlyAllowFacadeAliasInBlade implements Rule
 
     public function processNode(Node $node, Scope $scope): array
     {
-        if (!$node->class instanceof Node\Name) {
+        if (! $node->class instanceof Node\Name) {
             return [];
         }
 
