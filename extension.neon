@@ -23,3 +23,7 @@ services:
         class: Hihaho\PhpstanRules\Rules\NamingClasses\Notifications
         tags:
             - phpstan.rules.rule
+    -
+        class: Hihaho\PhpstanRules\Rules\OnlyAllowFacadeAliasInBlade
+        tags:
+            - phpstan.rules.rule
