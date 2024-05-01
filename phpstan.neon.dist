@@ -8,3 +8,6 @@ parameters:
         - tests
 
     level: 3
+
+    excludePaths:
+        - tests/*/stubs/*

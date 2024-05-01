@@ -11,6 +11,6 @@ class InvadeInAppNamespace
     {
         $current = Route::current();
 
-        $trala = Custom::trala();
+        $test = Custom::test();
     }
 }

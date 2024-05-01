@@ -4,6 +4,7 @@ namespace Rules\Routing\SlashInUrl;
 
 use App\Facades\Custom;
 use Hihaho\PhpstanRules\Rules\OnlyAllowFacadeAliasInBlade;
+use Illuminate\Support\Facades\Route;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 
@@ -13,8 +14,8 @@ use PHPStan\Testing\RuleTestCase;
 class OnlyAllowFacadeAliasInBladeTest extends RuleTestCase
 {
     protected $aliases = [
-        \Route::class => \Illuminate\Support\Facades\Route::class,
-        \Custom::class => \App\Facades\Custom::class,
+        \Route::class => Route::class, // @phpstan-ignore-line
+        \Custom::class => Custom::class, // @phpstan-ignore-line
     ];
 
     public function setUp(): void
