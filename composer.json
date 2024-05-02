@@ -31,11 +31,11 @@
         "phpunit/phpunit": "^11.0",
         "nikic/php-parser": "^5.0",
         "spatie/invade": "^2.0",
-        "illuminate/http": "^10",
-        "illuminate/console": "^10",
-        "illuminate/mail": "^10",
-        "illuminate/notifications": "^10",
-        "illuminate/routing": "^10"
+        "illuminate/http": "^10|^11",
+        "illuminate/console": "^10|^11",
+        "illuminate/mail": "^10|^11",
+        "illuminate/notifications": "^10|^11",
+        "illuminate/routing": "^10|^11"
     },
     "scripts": {
         "test": "phpunit"
