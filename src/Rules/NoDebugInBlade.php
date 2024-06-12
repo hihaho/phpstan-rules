@@ -34,7 +34,7 @@ class NoDebugInBlade implements Rule
         $text = array_map(static fn (InlineHTML $node): string => $node->value, $node->getNodes());
         if (self::hasDisallowedStatements(...$text)) {
             return [
-                RuleErrorBuilder::message('No debug statements should be present in blade files.')->build(),
+                RuleErrorBuilder::message('No debug directives should be present in blade files.')->build(),
             ];
         }
 
