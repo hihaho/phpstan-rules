@@ -1,10 +1,10 @@
 <?php declare(strict_types=1);
 
-namespace Test;
+namespace App;
 
 use stdClass;
 
-class DebugInTestNamespace
+class DebugInAppNamespaceStub
 {
     public function test(): void
     {

@@ -1,26 +1,26 @@
 <?php declare(strict_types=1);
 
-namespace Rules;
+namespace Rules\Debug;
 
-use Hihaho\PhpstanRules\Rules\NoDebugInNamespace;
+use Hihaho\PhpstanRules\Rules\Debug\NoDebugInNamespaceRule;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
- * @extends RuleTestCase<NoDebugInNamespace>
+ * @extends RuleTestCase<NoDebugInNamespaceRule>
  */
 class NoDebugInNamespaceTest extends RuleTestCase
 {
     protected function getRule(): Rule
     {
-        return new NoDebugInNamespace();
+        return new NoDebugInNamespaceRule();
     }
 
     #[Test]
     public function no_debug_statements_should_be_present_in_application_code(): void
     {
-        $this->analyse([__DIR__ . '/stubs/DebugInAppNamespace.php'], [
+        $this->analyse([__DIR__ . '/stubs/DebugInAppNamespaceStub.php'], [
             [
                 'No debug statements should be present in the app namespace.',
                 12,
@@ -39,7 +39,7 @@ class NoDebugInNamespaceTest extends RuleTestCase
     #[Test]
     public function no_debug_statements_should_be_present_in_test_code(): void
     {
-        $this->analyse([__DIR__ . '/stubs/DebugInTestNamespace.php'], [
+        $this->analyse([__DIR__ . '/stubs/DebugInTestNamespaceStub.php'], [
             [
                 'No debug statements should be present in the test namespace.',
                 12,
