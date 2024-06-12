@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace Hihaho\PhpstanRules\Rules;
+namespace Hihaho\PhpstanRules\Rules\Debug;
 
 use PhpParser\Node;
 use PhpParser\Node\Expr\FuncCall;
@@ -11,7 +11,7 @@ use PHPStan\Rules\RuleErrorBuilder;
 /**
  * @implements \PHPStan\Rules\Rule<\PhpParser\Node\Expr\FuncCall>
  */
-class NoDebugInNamespace implements Rule
+class NoDebugInNamespaceRule implements Rule
 {
     public function getNodeType(): string
     {

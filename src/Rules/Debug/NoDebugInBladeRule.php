@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace Hihaho\PhpstanRules\Rules;
+namespace Hihaho\PhpstanRules\Rules\Debug;
 
 use Illuminate\Support\Str;
 use PhpParser\Node;
@@ -14,7 +14,7 @@ use PHPStan\ShouldNotHappenException;
 /**
  * @implements \PHPStan\Rules\Rule<\PHPStan\Node\FileNode>
  */
-class NoDebugInBlade implements Rule
+class NoDebugInBladeRule implements Rule
 {
     public function getNodeType(): string
     {
