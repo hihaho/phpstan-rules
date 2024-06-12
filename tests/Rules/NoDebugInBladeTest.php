@@ -22,7 +22,7 @@ class NoDebugInBladeTest extends RuleTestCase
     {
         $this->analyse([__DIR__ . '/stubs/debug-in-view.blade.php'], [
             [
-                'No debug statements should be present in blade files.',
+                'No debug directives should be present in blade files.',
                 1,
             ],
         ]);
