@@ -9,10 +9,23 @@ use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
 
 /**
- * @implements \PHPStan\Rules\Rule<\PhpParser\Node\Expr\FuncCall>
+ * @implements \PHPStan\Rules\Rule<FuncCall>
  */
-class NoDebugInNamespaceRule implements Rule
+class NoDebugInNamespaceRule extends BaseNoDebugRule implements Rule
 {
+    protected string $message = 'No debug statements should be present in the %s namespace.';
+
+    public function __construct()
+    {
+        $this->haystack = [
+            ...$this->haystack,
+            'ddd',
+            'ray',
+            'print_r',
+            'var_dump',
+        ];
+    }
+
     public function getNodeType(): string
     {
         return FuncCall::class;
@@ -24,36 +37,22 @@ class NoDebugInNamespaceRule implements Rule
             return [];
         }
 
-        if ($this->hasDisallowedStatements($node) && str_starts_with($scope->getNamespace(), 'App')) {
+        if (! $this->hasDisallowedStatements($node->name->toString())) {
+            return [];
+        }
+
+        if ($message = $this->message($scope, 'App')) {
             return [
-                RuleErrorBuilder::message(
-                    'No debug statements should be present in the app namespace.'
-                )->build(),
+                RuleErrorBuilder::message($message)->build(),
             ];
         }
 
-        if ($this->hasDisallowedStatements($node) && str_starts_with($scope->getNamespace(), 'Test')) {
+        if ($message = $this->message($scope, 'Test')) {
             return [
-                RuleErrorBuilder::message(
-                    'No debug statements should be present in the test namespace.'
-                )->build(),
+                RuleErrorBuilder::message($message)->build(),
             ];
         }
 
         return [];
-    }
-
-    /** @param FuncCall $node */
-    private function hasDisallowedStatements(Node $node): bool
-    {
-        return match ($node->name->toString()) {
-            'dump',
-            'dd',
-            'ddd',
-            'ray',
-            'print_r',
-            'var_dump' => true,
-            default => false,
-        };
     }
 }
