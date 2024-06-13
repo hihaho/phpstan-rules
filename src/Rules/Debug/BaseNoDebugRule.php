@@ -36,8 +36,15 @@ abstract class BaseNoDebugRule implements Rule
         };
     }
 
-    protected function hasDisallowedStatements(string $statement): bool
+    protected function hasDisallowedStatements(string|array $statement): bool
     {
+        if (is_array($statement)) {
+            return str(...$statement)
+                ->stripTags()
+                ->replace(PHP_EOL, '')
+                ->trim()->containsAll($this->haystack);
+        }
+
         return in_array($statement, $this->haystack, true);
     }
 
