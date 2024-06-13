@@ -1,11 +1,31 @@
 parameters:
 	ignoreErrors:
 		-
-			message: "#^Function Livewire\\\\invade not found\\.$#"
+			message: "#^Access to an undefined property PhpParser\\\\Node\\:\\:\\$name\\.$#"
 			count: 1
-			path: tests/Rules/stubs/UseSpatieInvadeInsteadOfLivewire.php
+			path: src/Rules/Debug/ChainedNoDebugInNamespaceRule.php
 
 		-
-			message: "#^Used function Livewire\\\\invade not found\\.$#"
+			message: "#^Undefined variable\\: \\$name$#"
 			count: 1
-			path: tests/Rules/stubs/UseSpatieInvadeInsteadOfLivewire.php
+			path: src/Rules/Debug/ChainedNoDebugInNamespaceRule.php
+
+		-
+			message: "#^Access to an undefined property PhpParser\\\\Node\\:\\:\\$name\\.$#"
+			count: 1
+			path: src/Rules/Debug/NoDebugInNamespaceRule.php
+
+		-
+			message: "#^Undefined variable\\: \\$name$#"
+			count: 1
+			path: src/Rules/Debug/NoDebugInNamespaceRule.php
+
+		-
+			message: "#^Access to an undefined property PhpParser\\\\Node\\:\\:\\$name\\.$#"
+			count: 1
+			path: src/Rules/Debug/StaticChainedNoDebugInNamespaceRule.php
+
+		-
+			message: "#^Undefined variable\\: \\$name$#"
+			count: 1
+			path: src/Rules/Debug/StaticChainedNoDebugInNamespaceRule.php
