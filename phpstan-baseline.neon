@@ -6,26 +6,11 @@ parameters:
 			path: src/Rules/Debug/ChainedNoDebugInNamespaceRule.php
 
 		-
-			message: "#^Undefined variable\\: \\$name$#"
-			count: 1
-			path: src/Rules/Debug/ChainedNoDebugInNamespaceRule.php
-
-		-
 			message: "#^Access to an undefined property PhpParser\\\\Node\\:\\:\\$name\\.$#"
 			count: 1
 			path: src/Rules/Debug/NoDebugInNamespaceRule.php
 
 		-
-			message: "#^Undefined variable\\: \\$name$#"
-			count: 1
-			path: src/Rules/Debug/NoDebugInNamespaceRule.php
-
-		-
 			message: "#^Access to an undefined property PhpParser\\\\Node\\:\\:\\$name\\.$#"
-			count: 1
-			path: src/Rules/Debug/StaticChainedNoDebugInNamespaceRule.php
-
-		-
-			message: "#^Undefined variable\\: \\$name$#"
 			count: 1
 			path: src/Rules/Debug/StaticChainedNoDebugInNamespaceRule.php
