@@ -14,8 +14,18 @@ use PHPStan\ShouldNotHappenException;
 /**
  * @implements \PHPStan\Rules\Rule<\PHPStan\Node\FileNode>
  */
-class NoDebugInBladeRule implements Rule
+class NoDebugInBladeRule extends BaseNoDebugRule implements Rule
 {
+    protected string $message = 'No debug directives should be present in %s files.';
+
+    public function __construct()
+    {
+        $this->haystack = [
+            ...array_map(static fn (string $name) => "@$name", $this->haystack),
+            '@ray',
+        ];
+    }
+
     public function getNodeType(): string
     {
         return FileNode::class;
@@ -32,22 +42,16 @@ class NoDebugInBladeRule implements Rule
         }
 
         $text = array_map(static fn (InlineHTML $node): string => $node->value, $node->getNodes());
-        if (self::hasDisallowedStatements(...$text)) {
+        if (! $this->hasDisallowedStatements($text)) {
+            return [];
+        }
+
+        if ($message = sprintf($this->message, 'blade')) {
             return [
-                RuleErrorBuilder::message('No debug directives should be present in blade files.')->build(),
+                RuleErrorBuilder::message($message)->build(),
             ];
         }
 
         return [];
-    }
-
-    private static function hasDisallowedStatements(string $text): bool
-    {
-        return match (true) {
-            str_contains($text, '@dump') => true,
-            str_contains($text, '@dd') => true,
-            str_contains($text, '@ray') => true,
-            default => false,
-        };
     }
 }
