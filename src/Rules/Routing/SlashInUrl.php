@@ -62,6 +62,7 @@ class SlashInUrl implements Rule
                     'A route URL should be / instead of an empty string.'
                 )
                     ->tip($this->tip())
+                    ->identifier('hihaho.routing.no-empty-path')
                     ->build(),
             ];
         }
@@ -72,6 +73,7 @@ class SlashInUrl implements Rule
                     'A route URL should not start or end with /.'
                 )
                     ->tip($this->tip())
+                    ->identifier('hihaho.routing.no-leading-or-trailing-slash')
                     ->build(),
             ];
         }

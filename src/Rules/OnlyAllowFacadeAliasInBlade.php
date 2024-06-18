@@ -47,7 +47,9 @@ class OnlyAllowFacadeAliasInBlade implements Rule
             return [
                 RuleErrorBuilder::message(
                     'Disallowed usage of `' . $node->class->toString() . '` facade alias, use `' . $reflected->getName() . '`. A facade alias can only be used in Blade.'
-                )->build(),
+                )
+                    ->identifier('hihaho.generic.only-allow-facade-alias-in-blade')
+                    ->build(),
             ];
         }
 

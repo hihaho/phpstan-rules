@@ -48,7 +48,9 @@ class NoDebugInBladeRule extends BaseNoDebugRule implements Rule
 
         if ($message = sprintf($this->message, 'blade')) {
             return [
-                RuleErrorBuilder::message($message)->build(),
+                RuleErrorBuilder::message($message)
+                    ->identifier('hihaho.debug.no-debug-in-blade')
+                    ->build(),
             ];
         }
 
