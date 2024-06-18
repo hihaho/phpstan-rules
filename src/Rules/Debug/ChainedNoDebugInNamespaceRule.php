@@ -33,7 +33,7 @@ class ChainedNoDebugInNamespaceRule extends BaseNoDebugRule implements Rule
         if ($message = $this->message($scope, 'App')) {
             return [
                 RuleErrorBuilder::message($message)
-                    ->identifier('hihaho.debug.noDebugInApp')
+                    ->identifier('hihaho.debug.noChainedDebugInApp')
                     ->build(),
             ];
         }
@@ -41,7 +41,7 @@ class ChainedNoDebugInNamespaceRule extends BaseNoDebugRule implements Rule
         if ($message = $this->message($scope, 'Test')) {
             return [
                 RuleErrorBuilder::message($message)
-                    ->identifier('hihaho.debug.noDebugInTests')
+                    ->identifier('hihaho.debug.noChainedDebugInTests')
                     ->build(),
             ];
         }

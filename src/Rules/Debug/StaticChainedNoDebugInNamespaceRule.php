@@ -33,7 +33,7 @@ class StaticChainedNoDebugInNamespaceRule extends BaseNoDebugRule implements Rul
         if ($message = $this->message($scope, 'App')) {
             return [
                 RuleErrorBuilder::message($message)
-                    ->identifier('hihaho.debug.noDebugInApp')
+                    ->identifier('hihaho.debug.noStaticChainedDebugInApp')
                     ->build(),
             ];
         }
@@ -41,7 +41,7 @@ class StaticChainedNoDebugInNamespaceRule extends BaseNoDebugRule implements Rul
         if ($message = $this->message($scope, 'Test')) {
             return [
                 RuleErrorBuilder::message($message)
-                    ->identifier('hihaho.debug.noDebugInTests')
+                    ->identifier('hihaho.debug.noStaticChainedDebugInTests')
                     ->build(),
             ];
         }
