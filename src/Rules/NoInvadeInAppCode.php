@@ -29,7 +29,7 @@ class NoInvadeInAppCode implements Rule
                 RuleErrorBuilder::message(
                     'Usage of `\Livewire\invade` is disallowed, please use the global `invade` from spatie/invade.'
                 )
-                    ->identifier('hihaho.debug.disallowed-usage-of-livewire-invade')
+                    ->identifier('hihaho.debug.disallowedUsageOfLivewireInvade')
                     ->build(),
             ];
         }
@@ -46,7 +46,7 @@ class NoInvadeInAppCode implements Rule
             RuleErrorBuilder::message(
                 'Usage of method `invade` is not allowed in the App namespace.'
             )
-                ->identifier('hihaho.debug.no-invade-in-app-code')
+                ->identifier('hihaho.debug.noInvadeInAppCode')
                 ->build(),
         ];
     }
