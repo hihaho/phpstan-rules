@@ -56,6 +56,7 @@ class EloquentApiResources implements Rule
                 "Eloquent resource {$node->namespacedName->toString()} must be named with a `Resource` suffix, such as {$node->name->toString()}Resource."
             )
                 ->tip($this->tip())
+                ->identifier('hihaho.naming.classes.eloquentApiResources')
                 ->build(),
         ];
     }

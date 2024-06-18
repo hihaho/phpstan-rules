@@ -57,6 +57,7 @@ class RouteGroups implements Rule
                 'Route group options should be defined using methods.'
             )
                 ->tip($this->tip())
+                ->identifier('hihaho.routing.routeGroups')
                 ->build(),
         ];
     }

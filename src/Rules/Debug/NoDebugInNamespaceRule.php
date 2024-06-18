@@ -43,13 +43,17 @@ class NoDebugInNamespaceRule extends BaseNoDebugRule implements Rule
 
         if ($message = $this->message($scope, 'App')) {
             return [
-                RuleErrorBuilder::message($message)->build(),
+                RuleErrorBuilder::message($message)
+                    ->identifier('hihaho.debug.noDebugInApp')
+                    ->build(),
             ];
         }
 
         if ($message = $this->message($scope, 'Test')) {
             return [
-                RuleErrorBuilder::message($message)->build(),
+                RuleErrorBuilder::message($message)
+                    ->identifier('hihaho.debug.noDebugInTests')
+                    ->build(),
             ];
         }
 
