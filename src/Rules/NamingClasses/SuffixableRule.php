@@ -67,7 +67,7 @@ abstract class SuffixableRule implements Rule
                 "{$this->name()} {$node->namespacedName} must be named with a `{$this->suffix()}` suffix, such as {$node->name}{$this->suffix()}."
             )
                 ->tip($this->tip())
-                ->identifier('hihaho.naming.classes'. Str::of($this->name())->snake('-'))
+                ->identifier('hihaho.naming.classes' . Str::of($this->name())->snake('-'))
                 ->build(),
         ];
     }
