@@ -35,10 +35,12 @@
         "illuminate/console": "^10|^11",
         "illuminate/mail": "^10|^11",
         "illuminate/notifications": "^10|^11",
-        "illuminate/routing": "^10|^11"
+        "illuminate/routing": "^10|^11",
+        "roave/security-advisories": "dev-latest"
     },
     "scripts": {
-        "test": "phpunit"
+        "test": "phpunit",
+        "fix-cs": "vendor/bin/pint"
     },
     "extra": {
         "phpstan": {

@@ -8,7 +8,7 @@ class DebugInTestNamespaceStub
 {
     public function test(): void
     {
-        $obj = new stdClass;
+        $obj = new stdClass();
         ray('fooda');
         dump($obj);
         dd('fooda');
