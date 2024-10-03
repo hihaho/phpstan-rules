@@ -6,7 +6,8 @@
     "license": "MIT",
     "autoload": {
         "psr-4": {
-            "Hihaho\\PhpstanRules\\": "src/"
+            "Hihaho\\PhpstanRules\\": "src/",
+            "Illuminate\\Foundation\\Http\\": "tests/stubs/Illuminate/Foundation/Http"
         }
     },
     "autoload-dev": {
