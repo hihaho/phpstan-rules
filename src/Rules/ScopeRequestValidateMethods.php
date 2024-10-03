@@ -95,30 +95,21 @@ final class ScopeRequestValidateMethods implements Rule
 
     private function isBlacklisted(string $methodName): bool
     {
-        if ($methodName === 'only') {
-            return true;
-        }
+        $blacklistedMethodNames = [
+            'collect',
+            'all',
+            'only',
+            'except',
+            'input',
+            'get',
+            'keys',
+            'string',
+            'str',
+            'integer',
+            'float',
+            'boolean',
+        ];
 
-        if ($methodName === 'input') {
-            return true;
-        }
-
-        if ($methodName === 'get') {
-            return true;
-        }
-
-        if ($methodName === 'string') {
-            return true;
-        }
-
-        if ($methodName === 'integer') {
-            return true;
-        }
-
-        if ($methodName === 'boolean') {
-            return true;
-        }
-
-        return false;
+        return in_array($methodName, $blacklistedMethodNames, strict: true);
     }
 }
