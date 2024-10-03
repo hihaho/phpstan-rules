@@ -7,7 +7,8 @@
     "autoload": {
         "psr-4": {
             "Hihaho\\PhpstanRules\\": "src/",
-            "Illuminate\\Foundation\\Http\\": "tests/stubs/Illuminate/Foundation/Http"
+            "Illuminate\\Foundation\\Http\\": "tests/stubs/Illuminate/Foundation/Http",
+            "App\\Http\\Requests\\": "tests/stubs/App/Http/Requests"
         }
     },
     "autoload-dev": {
