@@ -32,7 +32,7 @@ final class ScopeRequestValidateMethods implements Rule
     /** @throws ShouldNotHappenException | ReflectionException */
     public function processNode(Node $node, Scope $scope): array
     {
-        if ($scope->getNamespace() === 'App\\Http\\Request') {
+        if (str_starts_with($scope->getNamespace(), 'App\\Http\\Request')) {
             return [];
         }
 
