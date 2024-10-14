@@ -40,7 +40,7 @@ final class ScopeRequestValidateMethods implements Rule
             return [];
         }
 
-        if (! $this->isBlacklisted($node->name->toString())) {
+        if (! $this->isBlacklistedMethod($node->name->toString())) {
             return [];
         }
 
@@ -58,8 +58,8 @@ final class ScopeRequestValidateMethods implements Rule
     /** @throws ReflectionException */
     private function hasIlluminateRequestClass(Scope $scope): bool
     {
-        return collect($this->getMethods($scope))
-            ->map(fn (array $method) => $this->processMethod($method)
+        return collect($this->getClassMethods($scope))
+            ->map(fn (array $method) => $this->getMethodParameterClassnames($method)
                 ->filter(fn (string $fqn) => $fqn === IlluminateRequest::class)
             )
             ->isNotEmpty();
@@ -69,7 +69,7 @@ final class ScopeRequestValidateMethods implements Rule
      * @phpstan-return ReflectionMethod[]
      * @throws ReflectionException
      */
-    private function getMethods(Scope $scope): array
+    private function getClassMethods(Scope $scope): array
     {
         $type = new ObjectType(className: $scope->getClassReflection()?->getName(), classReflection: $scope->getClassReflection());
         /** @var ReflectionMethod[] $methods */
@@ -80,7 +80,7 @@ final class ScopeRequestValidateMethods implements Rule
         return $methods;
     }
 
-    private function processMethod(array $method): Collection
+    private function getMethodParameterClassnames(array $method): Collection
     {
         return collect($method)
             ->map(fn (ReflectionMethod $method) => $method->getParameters())
@@ -93,7 +93,7 @@ final class ScopeRequestValidateMethods implements Rule
             ->flatten();
     }
 
-    private function isBlacklisted(string $methodName): bool
+    private function isBlacklistedMethod(string $methodName): bool
     {
         $blacklistedMethodNames = [
             'collect',
