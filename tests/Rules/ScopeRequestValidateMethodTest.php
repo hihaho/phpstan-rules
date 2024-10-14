@@ -6,6 +6,7 @@ use Hihaho\PhpstanRules\Rules\ScopeRequestValidateMethods;
 use PHPStan\Analyser\Error;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 /**
  * @extends RuleTestCase<ScopeRequestValidateMethods>
@@ -17,7 +18,8 @@ final class ScopeRequestValidateMethodTest extends RuleTestCase
         return new ScopeRequestValidateMethods();
     }
 
-    public function testRule(): void
+    #[Test]
+    public function illuminate_http_request_does_not_use_unvalidated_methods_outside_app_http_requests_namespace(): void
     {
         /** @var Error[] $errors */
         $errors = $this->gatherAnalyserErrors([__DIR__ . '/../stubs/App/Http/Controllers/PeopleControllerStub.php']);
@@ -46,9 +48,22 @@ final class ScopeRequestValidateMethodTest extends RuleTestCase
             ],
         ]);
 
+    }
+
+    #[Test]
+    public function form_request_class_does_not_use_unvalidated_data_outside_its_namespace(): void
+    {
         /** @var Error[] $errors */
         $errors = $this->gatherAnalyserErrors([__DIR__ . '/../stubs/App/Http/Requests/UserRequest.php']);
         self::assertCount(0, $errors);
         $this->analyse([__DIR__ . '/../stubs/App/Http/Requests/UserRequest.php'], []);
+
+        $this->analyse([__DIR__ . '/../stubs/App/Http/Controllers/PetControllerStub.php'], [
+            [
+                'Usage of unvalidated request data is not allowed outside of App\\Http\\Requests',
+                14,
+                'Use $request->safe() to use request data',
+            ],
+        ]);
     }
 }
