@@ -27,37 +27,19 @@ final class ScopeRequestValidateMethodTest extends RuleTestCase
         );
         self::assertCount(6, $validErrors);
 
+        $unsafeRequestDataError = static fn (int $line) => [
+            'Usage of unvalidated request data is not allowed outside of App\\Http\\Requests',
+            $line,
+            'Use $request->safe() to use request data',
+        ];
+
        $this->analyse([__DIR__ . '/../stubs/App/Http/Controllers/PeopleControllerStub.php'], [
-            [
-                'Usage of unvalidated request data is not allowed outside of App\\Http\\Requests',
-                13,
-                'Use $request->safe() to use request data',
-            ],
-            [
-                'Usage of unvalidated request data is not allowed outside of App\\Http\\Requests',
-                14,
-                'Use $request->safe() to use request data',
-            ],
-            [
-                'Usage of unvalidated request data is not allowed outside of App\\Http\\Requests',
-                15,
-                'Use $request->safe() to use request data',
-            ],
-            [
-                'Usage of unvalidated request data is not allowed outside of App\\Http\\Requests',
-                16,
-                'Use $request->safe() to use request data',
-            ],
-            [
-                'Usage of unvalidated request data is not allowed outside of App\\Http\\Requests',
-                18,
-                'Use $request->safe() to use request data',
-            ],
-            [
-                'Usage of unvalidated request data is not allowed outside of App\\Http\\Requests',
-                21,
-                'Use $request->safe() to use request data',
-            ],
+            $unsafeRequestDataError(13),
+            $unsafeRequestDataError(14),
+            $unsafeRequestDataError(15),
+            $unsafeRequestDataError(16),
+            $unsafeRequestDataError(18),
+            $unsafeRequestDataError(21),
             [
                 'No error with identifier method.notFound is reported on line 20.',
                 20,
