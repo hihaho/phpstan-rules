@@ -20,10 +20,12 @@ final class PetControllerStub
     public function update(UserRequest $request): JsonResponse
     {
         $data = $request->validated();
+
         return new JsonResponse([
             'data' => [
                 'name' => $data['name'],
-            ]
+                'breed' => $data['breed'],
+            ],
         ]);
     }
 }
