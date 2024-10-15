@@ -3,11 +3,8 @@
 namespace Hihaho\PhpstanRules\Rules\Validation;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Stringable;
 use PhpParser\Node;
 use PhpParser\Node\Expr\MethodCall;
-use PhpParser\Node\Expr\Variable;
-use PhpParser\Node\Identifier;
 use PHPStan\Analyser\Scope;
 use PHPStan\Rules\RuleErrorBuilder;
 use PHPStan\ShouldNotHappenException;
@@ -36,7 +33,7 @@ final class ScopeFormRequestValidateMethods extends ScopeValidationMethods
             return [];
         }
 
-        if ($this->usesValidMethod(varName: $this->getName($node->var), methodName: $this->getName($node))) {
+        if ($this->usesValidMethod(varName: $this->nameFrom($node->var), methodName: $this->nameFrom($node))) {
             return [];
         }
 
@@ -75,18 +72,5 @@ final class ScopeFormRequestValidateMethods extends ScopeValidationMethods
         }
 
         return $varName === 'safe' && $this->isValidateMethod($methodName);
-    }
-
-    private function getName(MethodCall|Variable $var): string
-    {
-        if ($var->name instanceof Stringable) {
-            return $var->name->toString();
-        }
-
-        if ($var->name instanceof Identifier) {
-            return $var->name->toString();
-        }
-
-        return $var->name;
     }
 }

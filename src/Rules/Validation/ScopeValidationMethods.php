@@ -3,7 +3,11 @@
 namespace Hihaho\PhpstanRules\Rules\Validation;
 
 use Illuminate\Support\Collection;
+use Illuminate\Support\Stringable;
 use PhpParser\Node;
+use PhpParser\Node\Expr\MethodCall;
+use PhpParser\Node\Expr\Variable;
+use PhpParser\Node\Identifier;
 use PHPStan\Analyser\Scope;
 use PHPStan\Rules\Rule;
 use PHPStan\Type\ObjectType;
@@ -50,6 +54,19 @@ abstract class ScopeValidationMethods implements Rule
                 return $type?->getName();
             }, $parameter))
             ->flatten();
+    }
+
+    protected function nameFrom(MethodCall|Variable $var): string
+    {
+        if ($var->name instanceof Stringable) {
+            return $var->name->toString();
+        }
+
+        if ($var->name instanceof Identifier) {
+            return $var->name->toString();
+        }
+
+        return $var->name;
     }
 
     protected function isValidateMethod(string $methodName): bool

@@ -17,7 +17,10 @@ final class ScopeIlluminateRequestValidateMethods extends ScopeValidationMethods
         return MethodCall::class;
     }
 
-    /** @throws ShouldNotHappenException | ReflectionException */
+    /**
+     * @phpstan-param MethodCall $node
+     * @throws ShouldNotHappenException | ReflectionException
+     */
     public function processNode(Node $node, Scope $scope): array
     {
         if (str_starts_with($scope->getNamespace(), 'App\\Http\\Request')) {
@@ -28,7 +31,7 @@ final class ScopeIlluminateRequestValidateMethods extends ScopeValidationMethods
             return [];
         }
 
-        if (! $this->isValidateMethod($node->name->toString())) {
+        if (! $this->isValidateMethod($this->nameFrom($node))) {
             return [];
         }
 
