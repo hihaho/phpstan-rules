@@ -2,6 +2,7 @@
 
 namespace Hihaho\PhpstanRules\Rules;
 
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Request as IlluminateRequest;
 use Illuminate\Support\Collection;
 use PhpParser\Node;
@@ -36,7 +37,7 @@ final class ScopeRequestValidateMethods implements Rule
             return [];
         }
 
-        if (! $this->hasIlluminateRequestClass($scope)) {
+        if (! $this->hasRequestClass($scope)) {
             return [];
         }
 
@@ -56,12 +57,31 @@ final class ScopeRequestValidateMethods implements Rule
     }
 
     /** @throws ReflectionException */
+    private function hasRequestClass(Scope $scope): bool
+    {
+        return $this->hasIlluminateRequestClass($scope) || $this->hasFormRequestClass($scope);
+    }
+
+    /** @throws ReflectionException */
     private function hasIlluminateRequestClass(Scope $scope): bool
     {
         return collect($this->getClassMethods($scope))
             ->map(fn (array $method) => $this->getMethodParameterClassnames($method)
                 ->filter(fn (string $fqn) => $fqn === IlluminateRequest::class)
             )
+            ->isNotEmpty();
+    }
+
+    /** @throws ReflectionException */
+    private function hasFormRequestClass(Scope $scope): bool
+    {
+        $parentClassName = static fn (ReflectionClass $fqn) => $fqn->getParentClass()->getName();
+
+        return collect($this->getClassMethods($scope))
+            ->map(fn (array $method) => $this->getMethodParameterClassnames($method))
+            ->flatten()
+            ->map(fn (string $className) => new ReflectionClass($className))
+            ->filter(fn (ReflectionClass $className) => $parentClassName($className) === FormRequest::class)
             ->isNotEmpty();
     }
 
