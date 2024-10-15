@@ -63,7 +63,7 @@ final class ScopeFormRequestValidateMethods extends ScopeValidationMethods
 
     private function usesValidMethod(string $varName, string $methodName): bool
     {
-        if ($varName === 'request' && $methodName === 'safe') {
+        if ($varName === 'request' && ($methodName === 'safe' || $methodName === 'validated')) {
             return true;
         }
 

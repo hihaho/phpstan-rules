@@ -71,7 +71,7 @@ abstract class ScopeValidationMethods implements Rule
 
     protected function isValidateMethod(string $methodName): bool
     {
-        $blacklistedMethodNames = [
+        $methodNames = [
             'collect',
             'all',
             'only',
@@ -86,6 +86,6 @@ abstract class ScopeValidationMethods implements Rule
             'boolean',
         ];
 
-        return in_array($methodName, $blacklistedMethodNames, strict: true);
+        return in_array($methodName, $methodNames, strict: true);
     }
 }
