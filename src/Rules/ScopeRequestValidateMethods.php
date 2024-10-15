@@ -5,6 +5,7 @@ namespace Hihaho\PhpstanRules\Rules;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Request as IlluminateRequest;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Stringable;
 use PhpParser\Node;
 use PhpParser\Node\Expr\MethodCall;
 use PHPStan\Analyser\Scope;
@@ -38,6 +39,10 @@ final class ScopeRequestValidateMethods implements Rule
         }
 
         if (! $this->hasRequestClass($scope)) {
+            return [];
+        }
+
+        if ($this->usesValidatedMethod($node) && $this->isBlacklistedMethod($node->name->toString())) {
             return [];
         }
 
@@ -83,6 +88,24 @@ final class ScopeRequestValidateMethods implements Rule
             ->map(fn (string $className) => new ReflectionClass($className))
             ->filter(fn (ReflectionClass $className) => $parentClassName($className) === FormRequest::class)
             ->isNotEmpty();
+    }
+
+    /**
+     * @phpstan-param MethodCall $node
+     */
+    private function usesValidatedMethod(Node $node): bool
+    {
+        /** @var Node\Expr\Variable $var */
+        $var = $node->var;
+        if ($var->name instanceof Stringable) {
+            return $var->name->toString() === 'safe';
+        }
+
+        if ($var->name instanceof Node\Identifier) {
+            return $var->name->toString() === 'safe';
+        }
+
+        return $var->name === 'safe';
     }
 
     /**
