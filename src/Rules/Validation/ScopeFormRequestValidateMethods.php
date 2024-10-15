@@ -66,7 +66,7 @@ final class ScopeFormRequestValidateMethods extends ScopeValidationMethods
 
     private function usesValidMethod(string $varName, string $methodName): bool
     {
-        if ($methodName === 'safe' && $this->isBlacklistedMethod($methodName)) {
+        if ($methodName === 'safe' && $this->isValidateMethod($methodName)) {
             return true;
         }
 
@@ -74,7 +74,7 @@ final class ScopeFormRequestValidateMethods extends ScopeValidationMethods
             return true;
         }
 
-        return $varName === 'safe' && $this->isBlacklistedMethod($methodName);
+        return $varName === 'safe' && $this->isValidateMethod($methodName);
     }
 
     private function getName(MethodCall|Variable $var): string

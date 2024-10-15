@@ -52,7 +52,7 @@ abstract class ScopeValidationMethods implements Rule
             ->flatten();
     }
 
-    protected function isBlacklistedMethod(string $methodName): bool
+    protected function isValidateMethod(string $methodName): bool
     {
         $blacklistedMethodNames = [
             'collect',

@@ -28,7 +28,7 @@ final class ScopeIlluminateRequestValidateMethods extends ScopeValidationMethods
             return [];
         }
 
-        if (! $this->isBlacklistedMethod($node->name->toString())) {
+        if (! $this->isValidateMethod($node->name->toString())) {
             return [];
         }
 
