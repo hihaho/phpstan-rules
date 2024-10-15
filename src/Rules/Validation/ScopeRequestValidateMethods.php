@@ -2,15 +2,12 @@
 
 namespace Hihaho\PhpstanRules\Rules\Validation;
 
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Request as IlluminateRequest;
-use Illuminate\Support\Stringable;
 use PhpParser\Node;
 use PhpParser\Node\Expr\MethodCall;
 use PHPStan\Analyser\Scope;
 use PHPStan\Rules\RuleErrorBuilder;
 use PHPStan\ShouldNotHappenException;
-use ReflectionClass;
 use ReflectionException;
 
 final class ScopeRequestValidateMethods extends ScopeValidationMethods
@@ -27,11 +24,7 @@ final class ScopeRequestValidateMethods extends ScopeValidationMethods
             return [];
         }
 
-        if (! $this->hasRequestClass($scope)) {
-            return [];
-        }
-
-        if ($this->usesValidatedMethod($node) && $this->isBlacklistedMethod($node->name->toString())) {
+        if (! $this->hasIlluminateRequestClass($scope)) {
             return [];
         }
 
@@ -51,12 +44,6 @@ final class ScopeRequestValidateMethods extends ScopeValidationMethods
     }
 
     /** @throws ReflectionException */
-    private function hasRequestClass(Scope $scope): bool
-    {
-        return $this->hasIlluminateRequestClass($scope) || $this->hasFormRequestClass($scope);
-    }
-
-    /** @throws ReflectionException */
     private function hasIlluminateRequestClass(Scope $scope): bool
     {
         return collect($this->getClassMethods($scope))
@@ -64,36 +51,5 @@ final class ScopeRequestValidateMethods extends ScopeValidationMethods
                 ->filter(fn (string $fqn) => $fqn === IlluminateRequest::class)
             )
             ->isNotEmpty();
-    }
-
-    /** @throws ReflectionException */
-    private function hasFormRequestClass(Scope $scope): bool
-    {
-        $parentClassName = static fn (ReflectionClass $fqn) => $fqn->getParentClass()->getName();
-
-        return collect($this->getClassMethods($scope))
-            ->map(fn (array $method) => $this->getMethodParameterClassnames($method))
-            ->flatten()
-            ->map(fn (string $className) => new ReflectionClass($className))
-            ->filter(fn (ReflectionClass $className) => $parentClassName($className) === FormRequest::class)
-            ->isNotEmpty();
-    }
-
-    /**
-     * @phpstan-param MethodCall $node
-     */
-    private function usesValidatedMethod(Node $node): bool
-    {
-        /** @var Node\Expr\Variable $var */
-        $var = $node->var;
-        if ($var->name instanceof Stringable) {
-            return $var->name->toString() === 'safe';
-        }
-
-        if ($var->name instanceof Node\Identifier) {
-            return $var->name->toString() === 'safe';
-        }
-
-        return $var->name === 'safe';
     }
 }

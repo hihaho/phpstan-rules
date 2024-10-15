@@ -4,6 +4,10 @@ services:
         tags:
             - phpstan.rules.rule
     -
+        class: Hihaho\PhpstanRules\Rules\Validation\ScopeFormRequestMethods
+        tags:
+            - phpstan.rules.rule
+    -
         class: Hihaho\PhpstanRules\Rules\NoInvadeInAppCode
         tags:
             - phpstan.rules.rule
