@@ -4,27 +4,16 @@ namespace Hihaho\PhpstanRules\Rules\Validation;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Request as IlluminateRequest;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Stringable;
 use PhpParser\Node;
 use PhpParser\Node\Expr\MethodCall;
 use PHPStan\Analyser\Scope;
-use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
 use PHPStan\ShouldNotHappenException;
-use PHPStan\Type\ObjectType;
 use ReflectionClass;
 use ReflectionException;
-use ReflectionIntersectionType;
-use ReflectionMethod;
-use ReflectionNamedType;
-use ReflectionParameter;
-use ReflectionUnionType;
 
-/**
- * @implements \PHPStan\Rules\Rule<\PhpParser\Node\Expr\MethodCall>
- */
-final class ScopeRequestValidateMethods implements Rule
+final class ScopeRequestValidateMethods extends ScopeValidationMethods
 {
     public function getNodeType(): string
     {
@@ -106,53 +95,5 @@ final class ScopeRequestValidateMethods implements Rule
         }
 
         return $var->name === 'safe';
-    }
-
-    /**
-     * @phpstan-return ReflectionMethod[]
-     * @throws ReflectionException
-     */
-    private function getClassMethods(Scope $scope): array
-    {
-        $type = new ObjectType(className: $scope->getClassReflection()?->getName(), classReflection: $scope->getClassReflection());
-        /** @var ReflectionMethod[] $methods */
-        $methods = array_map(static function (string $className): array {
-            return (new ReflectionClass($className))->getMethods();
-        }, $type->getObjectClassNames());
-
-        return $methods;
-    }
-
-    private function getMethodParameterClassnames(array $method): Collection
-    {
-        return collect($method)
-            ->map(fn (ReflectionMethod $method) => $method->getParameters())
-            ->map(fn (array $parameter) => array_map(static function (ReflectionParameter $parameter) {
-                /** @var ReflectionNamedType|ReflectionUnionType|ReflectionIntersectionType|null $type */
-                $type = $parameter->getType();
-
-                return $type?->getName();
-            }, $parameter))
-            ->flatten();
-    }
-
-    private function isBlacklistedMethod(string $methodName): bool
-    {
-        $blacklistedMethodNames = [
-            'collect',
-            'all',
-            'only',
-            'except',
-            'input',
-            'get',
-            'keys',
-            'string',
-            'str',
-            'integer',
-            'float',
-            'boolean',
-        ];
-
-        return in_array($methodName, $blacklistedMethodNames, strict: true);
     }
 }
