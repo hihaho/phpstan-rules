@@ -1,10 +1,10 @@
 services:
     -
-        class: Hihaho\PhpstanRules\Rules\Validation\ScopeRequestValidateMethods
+        class: Hihaho\PhpstanRules\Rules\Validation\ScopeIlluminateRequestValidateMethods
         tags:
             - phpstan.rules.rule
     -
-        class: Hihaho\PhpstanRules\Rules\Validation\ScopeFormRequestMethods
+        class: Hihaho\PhpstanRules\Rules\Validation\ScopeFormRequestValidateMethods
         tags:
             - phpstan.rules.rule
     -

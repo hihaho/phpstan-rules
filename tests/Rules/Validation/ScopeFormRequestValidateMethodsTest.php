@@ -2,17 +2,17 @@
 
 namespace Rules\Validation;
 
-use Hihaho\PhpstanRules\Rules\Validation\ScopeFormRequestMethods;
+use Hihaho\PhpstanRules\Rules\Validation\ScopeFormRequestValidateMethods;
 use PHPStan\Analyser\Error;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
-final class ScopeFormRequestMethodsTest extends RuleTestCase
+final class ScopeFormRequestValidateMethodsTest extends RuleTestCase
 {
     protected function getRule(): Rule
     {
-        return new ScopeFormRequestMethods();
+        return new ScopeFormRequestValidateMethods();
     }
 
     #[Test]

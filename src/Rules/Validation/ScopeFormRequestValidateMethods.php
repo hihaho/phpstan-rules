@@ -14,7 +14,7 @@ use PHPStan\ShouldNotHappenException;
 use ReflectionClass;
 use ReflectionException;
 
-final class ScopeFormRequestMethods extends ScopeValidationMethods
+final class ScopeFormRequestValidateMethods extends ScopeValidationMethods
 {
     public function getNodeType(): string
     {
