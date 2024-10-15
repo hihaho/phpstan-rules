@@ -1,6 +1,6 @@
 services:
     -
-        class: Hihaho\PhpstanRules\Rules\ScopeRequestValidateMethods
+        class: Hihaho\PhpstanRules\Rules\Validation\ScopeRequestValidateMethods
         tags:
             - phpstan.rules.rule
     -

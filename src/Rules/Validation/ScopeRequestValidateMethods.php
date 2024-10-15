@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace Hihaho\PhpstanRules\Rules;
+namespace Hihaho\PhpstanRules\Rules\Validation;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Request as IlluminateRequest;

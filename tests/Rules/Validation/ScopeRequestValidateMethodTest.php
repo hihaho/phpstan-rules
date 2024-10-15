@@ -1,8 +1,8 @@
 <?php declare(strict_types=1);
 
-namespace Rules;
+namespace Rules\Validation;
 
-use Hihaho\PhpstanRules\Rules\ScopeRequestValidateMethods;
+use Hihaho\PhpstanRules\Rules\Validation\ScopeRequestValidateMethods;
 use PHPStan\Analyser\Error;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
@@ -22,7 +22,7 @@ final class ScopeRequestValidateMethodTest extends RuleTestCase
     public function illuminate_http_request_does_not_use_unvalidated_methods_outside_app_http_requests_namespace(): void
     {
         /** @var Error[] $errors */
-        $errors = $this->gatherAnalyserErrors([__DIR__ . '/../stubs/App/Http/Controllers/PeopleControllerStub.php']);
+        $errors = $this->gatherAnalyserErrors([__DIR__ . '/../../stubs/App/Http/Controllers/PeopleControllerStub.php']);
         $validErrors = array_filter(
             $errors,
             static fn (Error $error): bool => $error->getIdentifier() === 'hihaho.request.unsafeRequestData'
@@ -35,7 +35,7 @@ final class ScopeRequestValidateMethodTest extends RuleTestCase
             'Use $request->safe() to use request data',
         ];
 
-       $this->analyse([__DIR__ . '/../stubs/App/Http/Controllers/PeopleControllerStub.php'], [
+       $this->analyse([__DIR__ . '/../../stubs/App/Http/Controllers/PeopleControllerStub.php'], [
             $unsafeRequestDataError(13),
             $unsafeRequestDataError(14),
             $unsafeRequestDataError(15),
@@ -54,11 +54,11 @@ final class ScopeRequestValidateMethodTest extends RuleTestCase
     public function form_request_class_does_not_use_unvalidated_data_outside_its_namespace(): void
     {
         /** @var Error[] $errors */
-        $errors = $this->gatherAnalyserErrors([__DIR__ . '/../stubs/App/Http/Requests/UserRequest.php']);
+        $errors = $this->gatherAnalyserErrors([__DIR__ . '/../../stubs/App/Http/Requests/UserRequest.php']);
         self::assertCount(0, $errors);
-        $this->analyse([__DIR__ . '/../stubs/App/Http/Requests/UserRequest.php'], []);
+        $this->analyse([__DIR__ . '/../../stubs/App/Http/Requests/UserRequest.php'], []);
 
-        $this->analyse([__DIR__ . '/../stubs/App/Http/Controllers/PetControllerStub.php'], [
+        $this->analyse([__DIR__ . '/../../stubs/App/Http/Controllers/PetControllerStub.php'], [
             [
                 'Usage of unvalidated request data is not allowed outside of App\\Http\\Requests',
                 14,
