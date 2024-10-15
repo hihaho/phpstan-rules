@@ -10,7 +10,7 @@ use PHPStan\Rules\RuleErrorBuilder;
 use PHPStan\ShouldNotHappenException;
 use ReflectionException;
 
-final class ScopeRequestValidateMethods extends ScopeValidationMethods
+final class ScopeIlluminateRequestValidateMethods extends ScopeValidationMethods
 {
     public function getNodeType(): string
     {
