@@ -3,7 +3,6 @@
 namespace Rules\Validation;
 
 use Hihaho\PhpstanRules\Rules\Validation\ScopeFormRequestValidateMethods;
-use PHPStan\Analyser\Error;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
@@ -18,9 +17,6 @@ final class ScopeFormRequestValidateMethodsTest extends RuleTestCase
     #[Test]
     public function form_request_class_does_not_use_unvalidated_data_outside_its_namespace(): void
     {
-        /** @var Error[] $errors */
-        $errors = $this->gatherAnalyserErrors([__DIR__ . '/../../stubs/App/Http/Requests/UserRequest.php']);
-        self::assertCount(0, $errors);
         $this->analyse([__DIR__ . '/../../stubs/App/Http/Requests/UserRequest.php'], []);
 
         $this->analyse([__DIR__ . '/../../stubs/App/Http/Controllers/PetControllerStub.php'], [
