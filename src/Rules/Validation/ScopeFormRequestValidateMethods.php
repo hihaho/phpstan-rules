@@ -63,10 +63,6 @@ final class ScopeFormRequestValidateMethods extends ScopeValidationMethods
 
     private function usesValidMethod(string $varName, string $methodName): bool
     {
-        if ($methodName === 'safe' && $this->isValidateMethod($methodName)) {
-            return true;
-        }
-
         if ($varName === 'request' && $methodName === 'safe') {
             return true;
         }
