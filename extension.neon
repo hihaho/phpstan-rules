@@ -1,5 +1,13 @@
 services:
     -
+        class: Hihaho\PhpstanRules\Rules\Validation\ScopeIlluminateRequestValidateMethods
+        tags:
+            - phpstan.rules.rule
+    -
+        class: Hihaho\PhpstanRules\Rules\Validation\ScopeFormRequestValidateMethods
+        tags:
+            - phpstan.rules.rule
+    -
         class: Hihaho\PhpstanRules\Rules\NoInvadeInAppCode
         tags:
             - phpstan.rules.rule
