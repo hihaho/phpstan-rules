@@ -69,6 +69,15 @@ abstract class ScopeValidationMethods implements Rule
         return $var->name;
     }
 
+    protected function hasValidNamespace(?string $namespace): bool
+    {
+        if (! $namespace) {
+            return false;
+        }
+
+        return str_starts_with($namespace, 'App\\Http\\Request');
+    }
+
     protected function isValidateMethod(string $methodName): bool
     {
         $methodNames = [

@@ -25,7 +25,7 @@ final class ScopeFormRequestValidateMethods extends ScopeValidationMethods
      */
     public function processNode(Node $node, Scope $scope): array
     {
-        if (str_starts_with($scope->getNamespace(), 'App\\Http\\Request')) {
+        if ($this->hasValidNamespace($scope->getNamespace())) {
             return [];
         }
 
