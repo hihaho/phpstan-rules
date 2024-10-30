@@ -24,6 +24,8 @@ use ReflectionUnionType;
  */
 abstract class ScopeValidationMethods implements Rule
 {
+    protected array $allowedRequestMethods = [];
+
     abstract public function getNodeType(): string;
 
     abstract public function processNode(Node $node, Scope $scope): array;
@@ -80,21 +82,6 @@ abstract class ScopeValidationMethods implements Rule
 
     protected function isValidateMethod(string $methodName): bool
     {
-        $methodNames = [
-            'collect',
-            'all',
-            'only',
-            'except',
-            'input',
-            'get',
-            'keys',
-            'string',
-            'str',
-            'integer',
-            'float',
-            'boolean',
-        ];
-
-        return in_array($methodName, $methodNames, strict: true);
+        return in_array($methodName, $this->allowedRequestMethods, strict: true);
     }
 }

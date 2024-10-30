@@ -15,7 +15,20 @@ final class ScopeIlluminateRequestValidateMethodTest extends RuleTestCase
 {
     protected function getRule(): Rule
     {
-        return new ScopeIlluminateRequestValidateMethods();
+        return new ScopeIlluminateRequestValidateMethods([
+            'collect',
+            'all',
+            'only',
+            'except',
+            'input',
+            'get',
+            'keys',
+            'string',
+            'str',
+            'integer',
+            'float',
+            'boolean',
+        ]);
     }
 
     #[Test]

@@ -12,6 +12,11 @@ use ReflectionException;
 
 final class ScopeIlluminateRequestValidateMethods extends ScopeValidationMethods
 {
+    public function __construct(array $allowedRequestMethods)
+    {
+        $this->allowedRequestMethods = array_unique($allowedRequestMethods);
+    }
+
     public function getNodeType(): string
     {
         return MethodCall::class;
