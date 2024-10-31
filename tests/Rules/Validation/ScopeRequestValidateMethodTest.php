@@ -40,26 +40,22 @@ final class ScopeRequestValidateMethodTest extends RuleTestCase
             $errors,
             static fn (Error $error): bool => $error->getIdentifier() === 'hihaho.request.unsafeRequestData'
         );
+
         self::assertCount(6, $validErrors);
 
-        $unsafeRequestDataError = static fn (int $line) => [
-            'Usage of unvalidated request data is not allowed outside of App\\Http\\Requests',
-            $line,
-            'Use $request->safe() to use request data',
-        ];
-
-       $this->analyse([__DIR__ . '/../../stubs/App/Http/Controllers/PeopleControllerStub.php'], [
-            $unsafeRequestDataError(13),
-            $unsafeRequestDataError(14),
-            $unsafeRequestDataError(15),
-            $unsafeRequestDataError(16),
-            $unsafeRequestDataError(18),
-            $unsafeRequestDataError(21),
-            [
-                'No error with identifier method.notFound is reported on line 20.',
-                20,
-            ],
-        ]);
-
+        foreach ($validErrors as $key => $error) {
+            self::assertStringContainsString('Usage of unvalidated request data is not allowed outside of App\\Http\\Requests', $error->getMessage());
+            self::assertFalse($error->canBeIgnored());
+            self::assertStringContainsString('Use $request->safe() / $request->validated() to use request data', $error->getTip());
+            self::assertStringContainsString('Current checking: variable request, method', $error->getTip());
+            match($key) {
+                0 => self::assertSame(13, $error->getNodeLine()),
+                1 => self::assertSame(14, $error->getNodeLine()),
+                2 => self::assertSame(15, $error->getNodeLine()),
+                3 => self::assertSame(16, $error->getNodeLine()),
+                4 => self::assertSame(18, $error->getNodeLine()),
+                5 => self::assertSame(21, $error->getNodeLine()),
+            };
+        }
     }
 }

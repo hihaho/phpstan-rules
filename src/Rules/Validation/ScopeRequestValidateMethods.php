@@ -45,7 +45,8 @@ final class ScopeRequestValidateMethods extends ScopeValidationMethods
                 'Usage of unvalidated request data is not allowed outside of App\\Http\\Requests'
             )
                 ->nonIgnorable()
-                ->tip('Use $request->safe() to use request data')
+                ->addTip('Use $request->safe() / $request->validated() to use request data')
+                ->addTip(sprintf('Current checking: variable %s, method %s', $this->nodeName($node->var), $this->nodeName($node)))
                 ->identifier('hihaho.request.unsafeRequestData')
                 ->build(),
         ];
