@@ -10,7 +10,7 @@ use PHPStan\Rules\RuleErrorBuilder;
 use PHPStan\ShouldNotHappenException;
 use ReflectionException;
 
-final class ScopeIlluminateRequestValidateMethods extends ScopeValidationMethods
+final class ScopeRequestValidateMethods extends ScopeValidationMethods
 {
     public function __construct(array $allowedRequestMethods)
     {

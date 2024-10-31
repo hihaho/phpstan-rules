@@ -21,7 +21,7 @@ parameters:
 
 services:
     -
-        class: Hihaho\PhpstanRules\Rules\Validation\ScopeIlluminateRequestValidateMethods
+        class: Hihaho\PhpstanRules\Rules\Validation\ScopeRequestValidateMethods
         arguments:
         	allowedRequestMethods: %scoperequestvalidatemethods.allowedRequestMethods%
         tags:

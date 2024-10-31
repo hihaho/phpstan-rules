@@ -2,20 +2,20 @@
 
 namespace Rules\Validation;
 
-use Hihaho\PhpstanRules\Rules\Validation\ScopeIlluminateRequestValidateMethods;
+use Hihaho\PhpstanRules\Rules\Validation\ScopeRequestValidateMethods;
 use PHPStan\Analyser\Error;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
- * @extends RuleTestCase<ScopeIlluminateRequestValidateMethods>
+ * @extends RuleTestCase<ScopeRequestValidateMethods>
  */
-final class ScopeIlluminateRequestValidateMethodTest extends RuleTestCase
+final class ScopeRequestValidateMethodTest extends RuleTestCase
 {
     protected function getRule(): Rule
     {
-        return new ScopeIlluminateRequestValidateMethods([
+        return new ScopeRequestValidateMethods([
             'collect',
             'all',
             'only',
