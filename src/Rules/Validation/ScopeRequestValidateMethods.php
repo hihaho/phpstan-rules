@@ -36,7 +36,7 @@ final class ScopeRequestValidateMethods extends ScopeValidationMethods
             return [];
         }
 
-        if (! $this->isValidateMethod($this->nameFrom($node))) {
+        if ($this->usesValidMethod(varName: $this->nodeName($node->var), methodName: $this->nodeName($node))) {
             return [];
         }
 

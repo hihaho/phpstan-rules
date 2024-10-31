@@ -5,9 +5,12 @@ namespace Hihaho\PhpstanRules\Rules\Validation;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Stringable;
 use PhpParser\Node;
-use PhpParser\Node\Expr\MethodCall;
+use PhpParser\Node\Expr;
+use PhpParser\Node\Expr\CallLike;
+use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Identifier;
+use PhpParser\NodeAbstract;
 use PHPStan\Analyser\Scope;
 use PHPStan\Rules\Rule;
 use PHPStan\Type\ObjectType;
@@ -58,17 +61,53 @@ abstract class ScopeValidationMethods implements Rule
             ->flatten();
     }
 
-    protected function nameFrom(MethodCall|Variable $var): string
+    protected function nodeName(CallLike|Expr|NodeAbstract $var): string
     {
+        if (! property_exists($var, 'name')) {
+            return '';
+        }
+
         if ($var->name instanceof Stringable) {
             return $var->name->toString();
         }
 
         if ($var->name instanceof Identifier) {
+            if (method_exists($var->name, 'toString')) {
+                return $var->name->toString();
+            }
+
+            return $var->name->name;
+        }
+
+        if ($var->name instanceof Variable) {
+            return $var->name->name;
+        }
+
+        if ($var->name instanceof Node\Expr\BinaryOp\Concat) {
+            if (method_exists($var->name, 'toString')) {
+                return $var->name->toString();
+            }
+
+            return '';
+        }
+
+        if ($var->name instanceof PropertyFetch) {
+            if (method_exists($var->name, 'toString')) {
+                return $var->name->toString();
+            }
+
+            return $var->name->name->toString();
+        }
+
+        if ($var instanceof PropertyFetch) {
             return $var->name->toString();
         }
 
-        return $var->name;
+        if (method_exists($var->name, 'toString')) {
+            return $var->name->toString();
+        }
+
+        return $var->name ?? '';
     }
 
     protected function hasValidNamespace(?string $namespace): bool
