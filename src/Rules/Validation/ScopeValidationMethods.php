@@ -12,6 +12,7 @@ use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Identifier;
 use PhpParser\NodeAbstract;
 use PHPStan\Analyser\Scope;
+use PHPStan\Node\AnonymousClassNode;
 use PHPStan\Rules\Rule;
 use PHPStan\Type\ObjectType;
 use ReflectionClass;
@@ -35,7 +36,6 @@ abstract class ScopeValidationMethods implements Rule
 
     /**
      * @phpstan-return ReflectionMethod[]
-     * @throws ReflectionException
      */
     protected function getClassMethods(Scope $scope): array
     {
@@ -46,7 +46,12 @@ abstract class ScopeValidationMethods implements Rule
         $type = new ObjectType(className: $className, classReflection: $scope->getClassReflection());
         /** @var ReflectionMethod[] $methods */
         $methods = array_map(static function (string $className): array {
-            return (new ReflectionClass($className))->getMethods();
+            try {
+                return (new ReflectionClass($className))->getMethods();
+            } catch (ReflectionException) {
+                // @phpstan-ignore phpstanApi.constructor
+                return (new AnonymousClassNode($className))->getMethods();
+            }
         }, $type->getObjectClassNames());
 
         return $methods;
