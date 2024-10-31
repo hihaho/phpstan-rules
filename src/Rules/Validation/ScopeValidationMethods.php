@@ -39,7 +39,11 @@ abstract class ScopeValidationMethods implements Rule
      */
     protected function getClassMethods(Scope $scope): array
     {
-        $type = new ObjectType(className: $scope->getClassReflection()?->getName(), classReflection: $scope->getClassReflection());
+        if (! $className = $scope->getClassReflection()?->getName()) {
+            return [];
+        }
+
+        $type = new ObjectType(className: $className, classReflection: $scope->getClassReflection());
         /** @var ReflectionMethod[] $methods */
         $methods = array_map(static function (string $className): array {
             return (new ReflectionClass($className))->getMethods();
@@ -52,13 +56,13 @@ abstract class ScopeValidationMethods implements Rule
     {
         return collect($method)
             ->map(fn (ReflectionMethod $method) => $method->getParameters())
-            ->map(fn (array $parameter) => array_map(static function (ReflectionParameter $parameter) {
-                /** @var ReflectionNamedType|ReflectionUnionType|ReflectionIntersectionType|null $type */
-                $type = $parameter->getType();
-
-                return $type?->getName();
-            }, $parameter))
-            ->flatten();
+            ->map(fn (array $parameter) => array_map(
+                static fn (ReflectionParameter $parameter) => $parameter->getType(), $parameter)
+            )
+            ->flatten()
+            ->filter()
+            ->filter(fn ($type) => method_exists($type, 'getName'))
+            ->map(fn (ReflectionNamedType|ReflectionUnionType|ReflectionIntersectionType $type) => $type->getName());
     }
 
     protected function nodeName(CallLike|Expr|NodeAbstract $var): string

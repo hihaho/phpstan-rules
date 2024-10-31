@@ -56,7 +56,8 @@ final class ScopeRequestValidateMethods extends ScopeValidationMethods
     {
         return collect($this->getClassMethods($scope))
             ->map(fn (array $method) => $this->getMethodParameterClassnames($method)
-                ->filter(fn (string $fqn) => $fqn === IlluminateRequest::class)
+                ->filter(static fn (?string $fqn) => $fqn !== null)
+                ->filter(static fn (string $fqn) => $fqn === IlluminateRequest::class)
             )
             ->isNotEmpty();
     }
