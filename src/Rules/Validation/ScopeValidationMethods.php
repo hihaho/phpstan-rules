@@ -80,6 +80,27 @@ abstract class ScopeValidationMethods implements Rule
         return str_starts_with($namespace, 'App\\Http\\Request');
     }
 
+    protected function usesValidMethod(string $varName, string $methodName): bool
+    {
+        if (! in_array($varName, ['request', 'safe', 'validated'], true)) {
+            return true;
+        }
+
+        if ($varName === 'request' && ($methodName === 'validated' || $methodName === 'validate')) {
+            return true;
+        }
+
+        if ($varName === 'request' && $methodName === 'safe') {
+            return true;
+        }
+
+        if ($varName === 'safe') {
+            return $this->isValidateMethod($methodName);
+        }
+
+        return ! $this->isValidateMethod($methodName);
+    }
+
     protected function isValidateMethod(string $methodName): bool
     {
         return in_array($methodName, $this->allowedRequestMethods, strict: true);
