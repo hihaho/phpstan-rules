@@ -1,4 +1,31 @@
+parametersSchema:
+	scoperequestvalidatemethods: structure([
+		allowedRequestMethods: arrayOf(string()),
+	])
+
+parameters:
+	scoperequestvalidatemethods:
+		allowedRequestMethods:
+			- collect
+			- all
+			- only
+			- except
+			- input
+			- get
+			- keys
+			- string
+			- str
+			- integer
+			- float
+			- boolean
+
 services:
+    -
+        class: Hihaho\PhpstanRules\Rules\Validation\ScopeRequestValidateMethods
+        arguments:
+        	allowedRequestMethods: %scoperequestvalidatemethods.allowedRequestMethods%
+        tags:
+            - phpstan.rules.rule
     -
         class: Hihaho\PhpstanRules\Rules\NoInvadeInAppCode
         tags:
