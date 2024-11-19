@@ -2,7 +2,6 @@
 
 namespace Hihaho\PhpstanRules\Rules\NamingClasses;
 
-use App\Http\Resources\ChildVideo;
 use Hihaho\PhpstanRules\Traits\HasUrlTip;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Str;
