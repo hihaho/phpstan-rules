@@ -5,13 +5,12 @@ namespace Hihaho\PhpstanRules\Rules\Debug;
 use PhpParser\Node;
 use PhpParser\Node\Expr\MethodCall;
 use PHPStan\Analyser\Scope;
-use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
 
 /**
- * @implements \PHPStan\Rules\Rule<MethodCall>
+ * @extends BaseNoDebugRule<\PhpParser\Node\Expr\MethodCall>
  */
-class ChainedNoDebugInNamespaceRule extends BaseNoDebugRule implements Rule
+class ChainedNoDebugInNamespaceRule extends BaseNoDebugRule
 {
     protected string $message = 'No chained debug statements should be present in the %s namespace.';
 
@@ -20,30 +19,31 @@ class ChainedNoDebugInNamespaceRule extends BaseNoDebugRule implements Rule
         return MethodCall::class;
     }
 
+    /**
+     * @param MethodCall $node
+     */
     public function processNode(Node $node, Scope $scope): array
     {
         if (! $node->name instanceof Node\Identifier) {
             return [];
         }
 
-        if (! $this->hasDisallowedStatements($node->name->toString())) {
-            return [];
-        }
+        if ($this->isDisallowedStatement($node->name->toString())) {
+            if ($this->namespaceStartsWith($scope, 'App')) {
+                return [
+                    RuleErrorBuilder::message(sprintf($this->message, 'App'))
+                        ->identifier('hihaho.debug.noChainedDebugInApp')
+                        ->build(),
+                ];
+            }
 
-        if ($message = $this->message($scope, 'App')) {
-            return [
-                RuleErrorBuilder::message($message)
-                    ->identifier('hihaho.debug.noChainedDebugInApp')
-                    ->build(),
-            ];
-        }
-
-        if ($message = $this->message($scope, 'Test')) {
-            return [
-                RuleErrorBuilder::message($message)
-                    ->identifier('hihaho.debug.noChainedDebugInTests')
-                    ->build(),
-            ];
+            if ($this->namespaceStartsWith($scope, 'Tests')) {
+                return [
+                    RuleErrorBuilder::message(sprintf($this->message, 'Tests'))
+                        ->identifier('hihaho.debug.noChainedDebugInTests')
+                        ->build(),
+                ];
+            }
         }
 
         return [];

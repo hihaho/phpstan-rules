@@ -36,10 +36,6 @@ services:
         tags:
             - phpstan.rules.rule
     -
-        class: Hihaho\PhpstanRules\Rules\Debug\NoDebugInBladeRule
-        tags:
-            - phpstan.rules.rule
-    -
         class: Hihaho\PhpstanRules\Rules\Debug\NoDebugInNamespaceRule
         tags:
             - phpstan.rules.rule

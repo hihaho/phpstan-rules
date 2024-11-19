@@ -11,7 +11,7 @@
       strategy:
         fail-fast: true
         matrix:
-          php: [8.2, 8.3]
+          php: [8.2, 8.3, 8.4]
           laravel: [^10, ^11]
           stability: [prefer-lowest, prefer-stable]
 
@@ -31,7 +31,7 @@
 
         - name: Install dependencies
           run: |
-            composer require "illuminate/support:${{ matrix.laravel }}" --no-interaction --no-update
+            composer require "laravel/framework:${{ matrix.laravel }}" --no-interaction --no-update
             composer update --${{ matrix.stability }} --prefer-dist --no-interaction
 
         - name: Run tests

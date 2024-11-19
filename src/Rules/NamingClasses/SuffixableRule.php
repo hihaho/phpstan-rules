@@ -5,6 +5,7 @@ namespace Hihaho\PhpstanRules\Rules\NamingClasses;
 use Hihaho\PhpstanRules\Traits\HasUrlTip;
 use Illuminate\Support\Str;
 use PhpParser\Node;
+use PhpParser\Node\Identifier;
 use PhpParser\Node\Stmt\Class_;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ClassReflection;
@@ -19,18 +20,15 @@ abstract class SuffixableRule implements Rule
 {
     use HasUrlTip;
 
-    private ReflectionProvider $reflectionProvider;
-
     abstract public function baseClass(): string;
 
     abstract public function suffix(): string;
 
     abstract public function name(): string;
 
-    public function __construct(
-        ReflectionProvider $reflectionProvider,
-    ) {
-        $this->reflectionProvider = $reflectionProvider;
+    public function __construct(private readonly ReflectionProvider $reflectionProvider)
+    {
+        //
     }
 
     public function getNodeType(): string
@@ -38,12 +36,11 @@ abstract class SuffixableRule implements Rule
         return Class_::class;
     }
 
+    /**
+     * @param Class_ $node
+     */
     public function processNode(Node $node, Scope $scope): array
     {
-        if (! $node instanceof Class_) {
-            return [];
-        }
-
         if (! $node->extends instanceof Node\Name) {
             return [];
         }
@@ -55,6 +52,10 @@ abstract class SuffixableRule implements Rule
         $parent = $this->reflectionProvider->getClass($scope->resolveName($node->extends));
 
         if ($node->extends->toString() !== $this->baseClass() && ! $this->parentExtendsCommand($parent)) {
+            return [];
+        }
+
+        if (! $node->name instanceof Identifier) {
             return [];
         }
 
