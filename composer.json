@@ -27,7 +27,11 @@
         "illuminate/support": "^10.48.23|^11.31"
     },
     "require-dev": {
-        "laravel/framework": "^10.48.23|^11.31",
+        "illuminate/console": "^10.48.23|^11.31",
+        "illuminate/http": "^10.48.23|^11.31",
+        "illuminate/mail": "^10.48.23|^11.31",
+        "illuminate/notifications": "^10.48.23|^11.31",
+        "illuminate/routing": "^10.48.23|^11.31",
         "laravel/pint": "^1.13.9",
         "nikic/php-parser": "^5.0",
         "phpstan/extension-installer": "^1.4",
