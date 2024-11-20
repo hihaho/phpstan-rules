@@ -19,9 +19,6 @@
           php: [8.2, 8.3, 8.4]
           laravel: [^10.48.23, ^11.31]
           stability: [prefer-lowest, prefer-stable]
-          exclude:
-            - laravel: ^10.48.23
-              stability: prefer-lowest
 
       name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }} - ${{ matrix.stability }}
 
@@ -39,7 +36,7 @@
 
         - name: Install dependencies
           run: |
-            composer require "laravel/framework:${{ matrix.laravel }}" --no-interaction --no-update
+            composer require "illuminate/support:${{ matrix.laravel }}" --no-interaction --no-update
             composer update --${{ matrix.stability }} --prefer-dist --no-interaction
 
         - name: Run tests
