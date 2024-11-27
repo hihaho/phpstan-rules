@@ -22,7 +22,7 @@ class OnlyAllowFacadeAliasInBladeTest extends RuleTestCase
         \Custom::class => Custom::class, // @phpstan-ignore-line
     ];
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
 
