@@ -1,9 +1,10 @@
 <?php declare(strict_types=1);
 
-namespace Rules\Routing\SlashInUrl;
+namespace tests\Rules;
 
 use App\Facades\Custom;
 use Hihaho\PhpstanRules\Rules\OnlyAllowFacadeAliasInBlade;
+use Illuminate\Support\Facades\Facade;
 use Illuminate\Support\Facades\Route;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
@@ -13,12 +14,15 @@ use PHPStan\Testing\RuleTestCase;
  */
 class OnlyAllowFacadeAliasInBladeTest extends RuleTestCase
 {
-    protected $aliases = [
+    /**
+     * @var array<string, class-string<Facade>>
+     */
+    protected array $aliases = [
         \Route::class => Route::class, // @phpstan-ignore-line
         \Custom::class => Custom::class, // @phpstan-ignore-line
     ];
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
 
@@ -28,14 +32,10 @@ class OnlyAllowFacadeAliasInBladeTest extends RuleTestCase
         spl_autoload_register([$this, 'autoload'], throw: true, prepend: true);
     }
 
-    public function autoload(string $alias)
+    public function autoload(string $alias): void
     {
-        if ($alias === Custom::class) {
-            include 'stubs/CustomFacade.php';
-        }
-
         if (isset($this->aliases[$alias])) {
-            return class_alias($this->aliases[$alias], $alias);
+            class_alias($this->aliases[$alias], $alias);
         }
     }
 

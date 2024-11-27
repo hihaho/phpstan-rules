@@ -1,16 +1,2 @@
 parameters:
 	ignoreErrors:
-		-
-			message: "#^Access to an undefined property PhpParser\\\\Node\\:\\:\\$name\\.$#"
-			count: 1
-			path: src/Rules/Debug/ChainedNoDebugInNamespaceRule.php
-
-		-
-			message: "#^Access to an undefined property PhpParser\\\\Node\\:\\:\\$name\\.$#"
-			count: 1
-			path: src/Rules/Debug/NoDebugInNamespaceRule.php
-
-		-
-			message: "#^Access to an undefined property PhpParser\\\\Node\\:\\:\\$name\\.$#"
-			count: 1
-			path: src/Rules/Debug/StaticChainedNoDebugInNamespaceRule.php
