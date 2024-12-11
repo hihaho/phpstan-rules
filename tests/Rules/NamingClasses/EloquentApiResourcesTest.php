@@ -39,5 +39,15 @@ class EloquentApiResourcesTest extends RuleTestCase
         $this->analyse([__DIR__ . '/stubs/resources/ChildVideoResource.php'], []);
 
         $this->analyse([__DIR__ . '/stubs/resources/RandomFile.php'], []);
+
+        $this->analyse([__DIR__ . '/stubs/resources/VideoResourceCollection.php'], []);
+
+        $this->analyse([__DIR__ . '/stubs/resources/VideoCollection.php'], [
+            [
+                'Eloquent resource collection App\Http\Resources\VideoCollection must be named with a `ResourceCollection` suffix, such as VideoResourceCollection.',
+                7,
+                'Learn more at https://guidelines.hihaho.com/laravel.html#resources',
+            ],
+        ]);
     }
 }
