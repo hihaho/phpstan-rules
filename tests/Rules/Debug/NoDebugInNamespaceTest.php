@@ -22,15 +22,15 @@ class NoDebugInNamespaceTest extends RuleTestCase
     {
         $this->analyse([__DIR__ . '/stubs/DebugInAppNamespaceStub.php'], [
             [
-                'No debug statements should be present in the app namespace.',
+                'No debug statements should be present in the App namespace.',
                 12,
             ],
             [
-                'No debug statements should be present in the app namespace.',
+                'No debug statements should be present in the App namespace.',
                 13,
             ],
             [
-                'No debug statements should be present in the app namespace.',
+                'No debug statements should be present in the App namespace.',
                 14,
             ],
         ]);
@@ -41,15 +41,15 @@ class NoDebugInNamespaceTest extends RuleTestCase
     {
         $this->analyse([__DIR__ . '/stubs/DebugInTestNamespaceStub.php'], [
             [
-                'No debug statements should be present in the test namespace.',
+                'No debug statements should be present in the Tests namespace.',
                 12,
             ],
             [
-                'No debug statements should be present in the test namespace.',
+                'No debug statements should be present in the Tests namespace.',
                 13,
             ],
             [
-                'No debug statements should be present in the test namespace.',
+                'No debug statements should be present in the Tests namespace.',
                 14,
             ],
         ]);

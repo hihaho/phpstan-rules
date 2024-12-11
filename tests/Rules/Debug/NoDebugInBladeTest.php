@@ -20,11 +20,13 @@ class NoDebugInBladeTest extends RuleTestCase
     #[Test]
     public function no_debug_statements_should_be_present_in_blade(): void
     {
-        $this->analyse([__DIR__ . '/stubs/debug-in-view-stub.blade.php'], [
-            [
-                'No debug directives should be present in blade files.',
-                1,
-            ],
-        ]);
+        self::markTestSkipped('Rule disabled, too performance heavy compared to looseness of check');
+//
+//        $this->analyse([__DIR__ . '/stubs/debug-in-view-stub.blade.php'], [
+//            [
+//                'No debug directives should be present in Blade files.',
+//                1,
+//            ],
+//        ]);
     }
 }
