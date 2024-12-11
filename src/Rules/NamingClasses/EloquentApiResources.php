@@ -55,10 +55,6 @@ class EloquentApiResources implements Rule
             return [];
         }
 
-        if (Str::endsWith($nameSpacedName, ['Resource', 'ResourceCollection'])) {
-            return [];
-        }
-
         if (! $this->reflectionProvider->hasClass($nameSpacedName)) {
             return [];
         }
@@ -82,6 +78,10 @@ class EloquentApiResources implements Rule
                     ->identifier('hihaho.naming.classes.eloquentApiResourceCollections')
                     ->build(),
             ];
+        }
+
+        if (Str::endsWith($nameSpacedName, 'Resource')) {
+            return [];
         }
 
         if (! $classReflection->isSubclassOf(JsonResource::class)) {
