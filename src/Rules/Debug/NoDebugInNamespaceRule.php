@@ -5,56 +5,45 @@ namespace Hihaho\PhpstanRules\Rules\Debug;
 use PhpParser\Node;
 use PhpParser\Node\Expr\FuncCall;
 use PHPStan\Analyser\Scope;
-use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
 
 /**
- * @implements \PHPStan\Rules\Rule<FuncCall>
+ * @extends BaseNoDebugRule<\PhpParser\Node\Expr\FuncCall>
  */
-class NoDebugInNamespaceRule extends BaseNoDebugRule implements Rule
+class NoDebugInNamespaceRule extends BaseNoDebugRule
 {
     protected string $message = 'No debug statements should be present in the %s namespace.';
-
-    public function __construct()
-    {
-        $this->haystack = [
-            ...$this->haystack,
-            'ddd',
-            'ray',
-            'print_r',
-            'var_dump',
-        ];
-    }
 
     public function getNodeType(): string
     {
         return FuncCall::class;
     }
 
+    /**
+     * @param FuncCall $node
+     */
     public function processNode(Node $node, Scope $scope): array
     {
         if (! $node->name instanceof Node\Name) {
             return [];
         }
 
-        if (! $this->hasDisallowedStatements($node->name->toString())) {
-            return [];
-        }
+        if ($this->isDisallowedStatement($node->name->toString())) {
+            if ($this->namespaceStartsWith($scope, 'App')) {
+                return [
+                    RuleErrorBuilder::message(sprintf($this->message, 'App'))
+                        ->identifier('hihaho.debug.noDebugInApp')
+                        ->build(),
+                ];
+            }
 
-        if ($message = $this->message($scope, 'App')) {
-            return [
-                RuleErrorBuilder::message($message)
-                    ->identifier('hihaho.debug.noDebugInApp')
-                    ->build(),
-            ];
-        }
-
-        if ($message = $this->message($scope, 'Test')) {
-            return [
-                RuleErrorBuilder::message($message)
-                    ->identifier('hihaho.debug.noDebugInTests')
-                    ->build(),
-            ];
+            if ($this->namespaceStartsWith($scope, 'Tests')) {
+                return [
+                    RuleErrorBuilder::message(sprintf($this->message, 'Tests'))
+                        ->identifier('hihaho.debug.noDebugInTests')
+                        ->build(),
+                ];
+            }
         }
 
         return [];

@@ -6,6 +6,9 @@ use Hihaho\PhpstanRules\Traits\HasUrlTip;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use PhpParser\Node;
+use PhpParser\Node\Arg;
+use PhpParser\Node\Expr\StaticCall;
+use PhpParser\Node\Identifier;
 use PHPStan\Analyser\Scope;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
@@ -26,9 +29,12 @@ class SlashInUrl implements Rule
 
     public function getNodeType(): string
     {
-        return \PhpParser\Node\Expr\StaticCall::class;
+        return StaticCall::class;
     }
 
+    /**
+     * @param StaticCall $node
+     */
     public function processNode(Node $node, Scope $scope): array
     {
         $isRouteFile = Str::of($scope->getFile())
@@ -38,17 +44,32 @@ class SlashInUrl implements Rule
             return [];
         }
 
+        if (! $node->class instanceof Node\Name) {
+            return [];
+        }
+
         if ($node->class->toString() !== Route::class) {
             return [];
         }
 
-        if (! in_array($node->name->toString(), ['get', 'post', 'put', 'patch', 'delete', 'any', 'head'])) {
+        if (! $node->name instanceof Identifier) {
             return [];
         }
 
-        /** @var \PhpParser\Node\Scalar\String_ */
-        $routePath = $node->args[0]?->value;
-        if ($routePath?->getType() !== 'Scalar_String') {
+        if (! in_array($node->name->toString(), ['get', 'post', 'put', 'patch', 'delete', 'any', 'head'], true)) {
+            return [];
+        }
+
+        $arg = $node->args[0];
+
+        if (! $arg instanceof Arg) {
+            return [];
+        }
+
+        /** @var \PhpParser\Node\Scalar\String_ $routePath */
+        $routePath = $arg->value;
+
+        if ($routePath->getType() !== 'Scalar_String') {
             return [];
         }
 
