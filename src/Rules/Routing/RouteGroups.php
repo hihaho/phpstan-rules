@@ -6,6 +6,9 @@ use Hihaho\PhpstanRules\Traits\HasUrlTip;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use PhpParser\Node;
+use PhpParser\Node\Arg;
+use PhpParser\Node\Expr\StaticCall;
+use PhpParser\Node\Identifier;
 use PHPStan\Analyser\Scope;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
@@ -26,9 +29,12 @@ class RouteGroups implements Rule
 
     public function getNodeType(): string
     {
-        return \PhpParser\Node\Expr\StaticCall::class;
+        return StaticCall::class;
     }
 
+    /**
+     * @param StaticCall $node
+     */
     public function processNode(Node $node, Scope $scope): array
     {
         $isRouteFile = Str::of($scope->getFile())
@@ -38,7 +44,15 @@ class RouteGroups implements Rule
             return [];
         }
 
+        if (! $node->class instanceof Node\Name) {
+            return [];
+        }
+
         if ($node->class->toString() !== Route::class) {
+            return [];
+        }
+
+        if (! $node->name instanceof Identifier) {
             return [];
         }
 
@@ -46,9 +60,16 @@ class RouteGroups implements Rule
             return [];
         }
 
-        /** @var \PhpParser\Node\Expr\Array_ */
-        $routePath = $node->args[0]?->value;
-        if ($routePath?->getType() !== 'Expr_Array') {
+        $arg = $node->args[0];
+
+        if (! $arg instanceof Arg) {
+            return [];
+        }
+
+        /** @var \PhpParser\Node\Expr\Array_ $routePath */
+        $routePath = $arg->value;
+
+        if ($routePath->getType() !== 'Expr_Array') {
             return [];
         }
 

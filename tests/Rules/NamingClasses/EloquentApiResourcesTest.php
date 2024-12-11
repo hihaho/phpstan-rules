@@ -13,7 +13,7 @@ class EloquentApiResourcesTest extends RuleTestCase
 {
     protected function getRule(): Rule
     {
-        return new EloquentApiResources();
+        return new EloquentApiResources(self::createReflectionProvider());
     }
 
     public function testRule(): void
@@ -27,6 +27,16 @@ class EloquentApiResourcesTest extends RuleTestCase
         ]);
 
         $this->analyse([__DIR__ . '/stubs/resources/VideoResource.php'], []);
+
+        $this->analyse([__DIR__ . '/stubs/resources/ChildVideo.php'], [
+            [
+                'Eloquent resource App\Http\Resources\ChildVideo must be named with a `Resource` suffix, such as ChildVideoResource.',
+                5,
+                'Learn more at https://guidelines.hihaho.com/laravel.html#resources',
+            ],
+        ]);
+
+        $this->analyse([__DIR__ . '/stubs/resources/ChildVideoResource.php'], []);
 
         $this->analyse([__DIR__ . '/stubs/resources/RandomFile.php'], []);
     }

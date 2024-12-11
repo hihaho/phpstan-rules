@@ -18,6 +18,9 @@ class NoInvadeInAppCode implements Rule
         return FuncCall::class;
     }
 
+    /**
+     * @param FuncCall $node
+     */
     public function processNode(Node $node, Scope $scope): array
     {
         if (! $node->name instanceof Node\Name) {
@@ -38,7 +41,9 @@ class NoInvadeInAppCode implements Rule
             return [];
         }
 
-        if (! str_starts_with($scope->getNamespace(), 'App')) {
+        $namespace = $scope->getNamespace();
+
+        if ($namespace === null || ! str_starts_with($namespace, 'App')) {
             return [];
         }
 
