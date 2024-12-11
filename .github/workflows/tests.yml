@@ -1,38 +1,43 @@
-  on:
-    push:
-      branches:
-        - main
-    pull_request:
-    workflow_dispatch:
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+  workflow_dispatch:
 
-  jobs:
-    run_tests:
-      runs-on: ubuntu-22.04
-      strategy:
-        fail-fast: true
-        matrix:
-          php: [8.2, 8.3]
-          laravel: [^10, ^11]
-          stability: [prefer-lowest, prefer-stable]
+jobs:
+  run_tests:
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: true
+      matrix:
+        php: [8.2, 8.3]
+        laravel: [^10.48.23, ^11.31]
+        stability: [prefer-lowest, prefer-stable]
 
-      name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }} - ${{ matrix.stability }}
+    name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }} - ${{ matrix.stability }}
 
-      steps:
-        - uses: actions/checkout@v4.2.2
-          with:
-            fetch-depth: 1
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 1
 
-        - name: Setup PHP
-          uses: shivammathur/setup-php@2.31.1
-          with:
-            php-version: ${{ matrix.php }}
-            coverage: none
-            tools: composer:v2
+      - name: Setup PHP
+        uses: shivammathur/setup-php@2.31.1
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          tools: composer:v2
 
-        - name: Install dependencies
-          run: |
-            composer require "illuminate/support:${{ matrix.laravel }}" --no-interaction --no-update
-            composer update --${{ matrix.stability }} --prefer-dist --no-interaction
+      - name: Install dependencies
+        run: |
+          composer require "illuminate/support:${{ matrix.laravel }}" --no-interaction --no-update
+          composer update --${{ matrix.stability }} --prefer-dist --no-interaction
 
-        - name: Run tests
-          run: vendor/bin/phpunit
+      - name: Run tests
+        run: vendor/bin/phpunit

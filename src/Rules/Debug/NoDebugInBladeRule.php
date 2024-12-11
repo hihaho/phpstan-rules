@@ -7,23 +7,18 @@ use PhpParser\Node;
 use PhpParser\Node\Stmt\InlineHTML;
 use PHPStan\Analyser\Scope;
 use PHPStan\Node\FileNode;
-use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
-use PHPStan\ShouldNotHappenException;
 
 /**
- * @implements \PHPStan\Rules\Rule<\PHPStan\Node\FileNode>
+ * @extends BaseNoDebugRule<\PHPStan\Node\FileNode>
  */
-class NoDebugInBladeRule extends BaseNoDebugRule implements Rule
+class NoDebugInBladeRule extends BaseNoDebugRule
 {
     protected string $message = 'No debug directives should be present in %s files.';
 
     public function __construct()
     {
-        $this->haystack = [
-            ...array_map(static fn (string $name) => "@$name", $this->haystack),
-            '@ray',
-        ];
+        $this->debugStatements = array_map(static fn (string $name): string => "@$name", $this->debugStatements);
     }
 
     public function getNodeType(): string
@@ -33,27 +28,36 @@ class NoDebugInBladeRule extends BaseNoDebugRule implements Rule
 
     /**
      * @param FileNode $node
-     * @throws ShouldNotHappenException
      */
     public function processNode(Node $node, Scope $scope): array
     {
-        if (! Str::endsWith($scope->getFileDescription(), '.blade.php')) {
-            return [];
-        }
-
-        $text = array_map(static fn (InlineHTML $node): string => $node->value, $node->getNodes());
-        if (! $this->hasDisallowedStatements($text)) {
-            return [];
-        }
-
-        if ($message = sprintf($this->message, 'blade')) {
-            return [
-                RuleErrorBuilder::message($message)
-                    ->identifier('hihaho.debug.noDebugInBlade')
-                    ->build(),
-            ];
-        }
-
+        // Disabled, too performance heavy compared to looseness of check
         return [];
+//
+//        if (! Str::endsWith($scope->getFileDescription(), '.blade.php')) {
+//            return [];
+//        }
+//
+//        foreach ($node->getNodes() as $childNode) {
+//            if (! $childNode instanceof InlineHTML) {
+//                continue;
+//            }
+//
+//            $containsDisallowedStatement = str($childNode->value)
+//                ->stripTags()
+//                ->replace(PHP_EOL, '')
+//                ->trim()
+//                ->contains($this->debugStatements);
+//
+//            if ($containsDisallowedStatement) {
+//                return [
+//                    RuleErrorBuilder::message(sprintf($this->message, 'Blade'))
+//                        ->identifier('hihaho.debug.noDebugInBlade')
+//                        ->build(),
+//                ];
+//            }
+//        }
+//
+//        return [];
     }
 }
