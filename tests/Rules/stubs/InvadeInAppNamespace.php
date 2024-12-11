@@ -8,7 +8,7 @@ class InvadeInAppNamespace
 {
     public function test()
     {
-        $obj = new stdClass;
+        $obj = new stdClass();
         $invaded = invade($obj);
     }
 }

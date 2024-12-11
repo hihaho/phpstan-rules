@@ -17,6 +17,10 @@
         "concat_space": {
             "spacing": "one"
         },
+        "new_with_parentheses": {
+            "anonymous_class": false,
+            "named_class": true
+        },
         "constant_case": false,
         "declare_strict_types": true,
         "single_space_around_construct": false,

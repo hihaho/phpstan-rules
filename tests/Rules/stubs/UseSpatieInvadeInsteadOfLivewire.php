@@ -11,7 +11,7 @@ class UseSpatieInvadeInsteadOfLivewire extends TestCase
 {
     public function fakeTest()
     {
-        $obj = new stdClass;
+        $obj = new stdClass();
         $invaded = invade($obj);
     }
 }
