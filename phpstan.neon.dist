@@ -1,5 +1,9 @@
 includes:
-    - phpstan-baseline.neon
+    - phar://phpstan.phar/conf/bleedingEdge.neon
+    - ./phpstan-baseline.neon
+    - vendor/spaze/phpstan-disallowed-calls/disallowed-dangerous-calls.neon
+    - vendor/spaze/phpstan-disallowed-calls/disallowed-execution-calls.neon
+    - vendor/spaze/phpstan-disallowed-calls/disallowed-insecure-calls.neon
 
 parameters:
 
@@ -7,7 +11,10 @@ parameters:
         - src
         - tests
 
-    level: 3
+    level: max
+
+    strictRules:
+        allRules: false
 
     excludePaths:
         - tests/*/stubs/*

@@ -20,6 +20,9 @@ class OnlyAllowFacadeAliasInBlade implements Rule
         return StaticCall::class;
     }
 
+    /**
+     * @param StaticCall $node
+     */
     public function processNode(Node $node, Scope $scope): array
     {
         if (! $node->class instanceof Node\Name) {
@@ -41,12 +44,13 @@ class OnlyAllowFacadeAliasInBlade implements Rule
             return [];
         }
 
-        $reflected = new \ReflectionClass($node->class->toCodeString());
+        // @phpstan-ignore phpstanApi.runtimeReflection, argument.type
+        $reflectionClass = new \ReflectionClass($node->class->toCodeString());
 
-        if ($reflected->isSubclassOf(Facade::class)) {
+        if ($reflectionClass->isSubclassOf(Facade::class)) {
             return [
                 RuleErrorBuilder::message(
-                    'Disallowed usage of `' . $node->class->toString() . '` facade alias, use `' . $reflected->getName() . '`. A facade alias can only be used in Blade.'
+                    "Disallowed usage of `{$node->class->toString()}` facade alias, use `{$reflectionClass->getName()}`. A facade alias can only be used in Blade."
                 )
                     ->identifier('hihaho.generic.onlyAllowFacadeAliasInBlade')
                     ->build(),

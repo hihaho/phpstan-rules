@@ -36,6 +36,7 @@
         },
         "phpdoc_align": false,
         "phpdoc_separation": false,
+        "php_unit_method_casing": false,
         "function_typehint_space": false,
         "linebreak_after_opening_tag": false,
         "lowercase_static_reference": false,

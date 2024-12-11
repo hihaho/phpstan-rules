@@ -2,54 +2,44 @@
 
 namespace Hihaho\PhpstanRules\Rules\Debug;
 
-use PhpParser\Node;
 use PHPStan\Analyser\Scope;
 use PHPStan\Rules\Rule;
 
 /**
- * @template T of Node
+ * @template T of \PhpParser\Node
  * @implements \PHPStan\Rules\Rule<T>
  */
 abstract class BaseNoDebugRule implements Rule
 {
-    protected string $message;
-
-    protected array $haystack = [
+    /**
+     * @var list<string>
+     */
+    protected array $debugStatements = [
         'dump',
         'dd',
+        'ddd',
+        'ray',
+        'print_r',
+        'var_dump',
     ];
 
-    abstract public function getNodeType(): string;
-
-    abstract public function processNode(Node $node, Scope $scope): array;
-
-    protected function message(Scope $scope, string $namespace): ?string
+    protected function isDisallowedStatement(string $statement): bool
     {
-        if (! $this->hasCorrectNamespace($scope, $namespace)) {
-            return null;
-        }
-
-        return match (strtolower($namespace)) {
-            'app' => sprintf($this->message, 'app'),
-            'test' => sprintf($this->message, 'test'),
-            default => null,
-        };
+        return in_array($statement, $this->debugStatements, true);
     }
 
-    protected function hasDisallowedStatements(string|array $statement): bool
+    protected function namespaceStartsWith(Scope $scope, string $namespace): bool
     {
-        if (is_array($statement)) {
-            return str(...$statement)
-                ->stripTags()
-                ->replace(PHP_EOL, '')
-                ->trim()->containsAll($this->haystack);
+        $scopeNamespace = $scope->getNamespace();
+
+        if ($scopeNamespace === null) {
+            return false;
         }
 
-        return in_array($statement, $this->haystack, true);
-    }
+        if ($namespace === $scopeNamespace) {
+            return true;
+        }
 
-    protected function hasCorrectNamespace(Scope $scope, string $namespace): bool
-    {
-        return str_starts_with($scope->getNamespace(), ucfirst($namespace));
+        return str_starts_with($scopeNamespace, rtrim($namespace, '\\') . '\\');
     }
 }
