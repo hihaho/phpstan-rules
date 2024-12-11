@@ -61,30 +61,42 @@ class EloquentApiResources implements Rule
 
         $classReflection = $this->reflectionProvider->getClass($nameSpacedName);
 
-        if ($classReflection->isSubclassOf(ResourceCollection::class)) {
-            if (Str::endsWith($nameSpacedName, 'ResourceCollection')) {
-                return [];
-            }
+        return match (true) {
+            $classReflection->isSubclassOf(ResourceCollection::class) => $this->processResourceCollection($node, $nameSpacedName),
+            $classReflection->isSubclassOf(JsonResource::class) => $this->processResource($node, $nameSpacedName),
+            default => [],
+        };
+    }
 
-            $name = str($node->name instanceof Node\Identifier ? $node->name->toString() : $nameSpacedName)
-                ->replace(['Collection', 'Resource'], '')
-                ->append('ResourceCollection');
-
-            return [
-                RuleErrorBuilder::message(
-                    "Eloquent resource collection {$nameSpacedName} must be named with a `ResourceCollection` suffix, such as {$name}."
-                )
-                    ->tip($this->tip())
-                    ->identifier('hihaho.naming.classes.eloquentApiResourceCollections')
-                    ->build(),
-            ];
-        }
-
-        if (Str::endsWith($nameSpacedName, 'Resource')) {
+    /**
+     * @return list<\PHPStan\Rules\IdentifierRuleError>
+     */
+    private function processResourceCollection(Class_ $node, string $nameSpacedName): array
+    {
+        if (Str::endsWith($nameSpacedName, 'ResourceCollection')) {
             return [];
         }
 
-        if (! $classReflection->isSubclassOf(JsonResource::class)) {
+        $name = str($node->name instanceof Node\Identifier ? $node->name->toString() : $nameSpacedName)
+            ->replace(['Collection', 'Resource'], '')
+            ->append('ResourceCollection');
+
+        return [
+            RuleErrorBuilder::message(
+                "Eloquent resource collection {$nameSpacedName} must be named with a `ResourceCollection` suffix, such as {$name}."
+            )
+                ->tip($this->tip())
+                ->identifier('hihaho.naming.classes.eloquentApiResourceCollections')
+                ->build(),
+        ];
+    }
+
+    /**
+     * @return list<\PHPStan\Rules\IdentifierRuleError>
+     */
+    private function processResource(Class_ $node, string $nameSpacedName): array
+    {
+        if (Str::endsWith($nameSpacedName, 'Resource')) {
             return [];
         }
 
