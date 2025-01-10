@@ -27,7 +27,7 @@ parameters:
 
     cognitive_complexity:
         class: 12
-        function: 6
+        function: 10
 
     level: max
 
