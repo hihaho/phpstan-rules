@@ -1,15 +1,33 @@
 includes:
+    - phpstan-baseline.neon
     - phar://phpstan.phar/conf/bleedingEdge.neon
-    - ./phpstan-baseline.neon
     - vendor/spaze/phpstan-disallowed-calls/disallowed-dangerous-calls.neon
     - vendor/spaze/phpstan-disallowed-calls/disallowed-execution-calls.neon
     - vendor/spaze/phpstan-disallowed-calls/disallowed-insecure-calls.neon
 
 parameters:
+    tmpDir: .cache/phpstan
 
     paths:
         - src
         - tests
+
+    type_coverage:
+        return: 100
+        param: 100
+        property: 100
+        # also, how many files has declare strict types
+        declare: 100
+
+    type_perfect:
+        null_over_false: true
+        no_mixed: true
+        narrow_param: false
+        narrow_return: true
+
+    cognitive_complexity:
+        class: 12
+        function: 6
 
     level: max
 
@@ -18,3 +36,5 @@ parameters:
 
     excludePaths:
         - tests/*/stubs/*
+
+    treatPhpDocTypesAsCertain: false

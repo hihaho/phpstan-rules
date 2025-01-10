@@ -1,5 +1,6 @@
 {
     "preset": "laravel",
+    "cache-file": ".cache/pint/pint.json",
     "rules": {
         "array_indentation": false,
         "blank_line_after_opening_tag": false,
@@ -48,10 +49,6 @@
         "whitespace_after_comma_in_array": false
     },
     "exclude": [
-        "bootstrap",
-        "config",
-        "lang",
-        "public",
-        "resources"
+        "tests/*/stubs/*"
     ]
 }

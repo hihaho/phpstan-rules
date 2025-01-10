@@ -32,21 +32,27 @@
         "illuminate/mail": "^10.48.23|^11.31",
         "illuminate/notifications": "^10.48.23|^11.31",
         "illuminate/routing": "^10.48.23|^11.31",
-        "laravel/pint": "^1.13.9",
+        "laravel/pint": "^1.19",
         "nikic/php-parser": "^5.0",
         "phpstan/extension-installer": "^1.4",
         "phpstan/phpstan-deprecation-rules": "^2.0",
         "phpstan/phpstan-phpunit": "^2.0",
         "phpstan/phpstan-strict-rules": "^2.0",
         "phpunit/phpunit": "^11.0",
+        "rector/type-perfect": "^2.0",
         "roave/security-advisories": "dev-latest",
-        "spatie/invade": "^2.0",
-        "spaze/phpstan-disallowed-calls": "^4.0"
+        "spatie/invade": "^2.1",
+        "spaze/phpstan-disallowed-calls": "^4.0",
+        "symplify/phpstan-extensions": "^12.0.1",
+        "tomasvotruba/cognitive-complexity": "^1.0",
+        "tomasvotruba/type-coverage": "^2.0"
     },
     "scripts": {
-        "test": "phpunit",
         "fix-cs": "vendor/bin/pint",
-        "phpstan": "vendor/bin/phpstan analyse -v"
+        "phpstan": "vendor/bin/phpstan analyse",
+        "phpstan-clear-cache": "vendor/bin/phpstan clear-result-cache",
+        "phpstan-simplified": "vendor/bin/phpstan analyse --memory-limit=2G --error-format symplify",
+        "test": "vendor/bin/phpunit"
     },
     "extra": {
         "phpstan": {
