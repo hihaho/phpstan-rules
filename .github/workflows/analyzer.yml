@@ -2,19 +2,21 @@ on:
   push:
     branches:
       - main
+
   pull_request:
+
   workflow_dispatch:
 
 jobs:
   analyze:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@2.32.0
+        uses: shivammathur/setup-php@2
         with:
           php-version: 8.2
           coverage: none

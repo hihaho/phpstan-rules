@@ -1,43 +1,45 @@
-  on:
-    push:
-      branches:
-        - main
-    pull_request:
-      types:
-        - opened
-        - reopened
-        - synchronize
-        - ready_for_review
-    workflow_dispatch:
+on:
+  push:
+    branches:
+      - main
 
-  jobs:
-    run_tests:
-      runs-on: ubuntu-22.04
-      strategy:
-        fail-fast: true
-        matrix:
-          php: [8.2, 8.3, 8.4]
-          laravel: [^10.48.23, ^11.31]
-          stability: [prefer-lowest, prefer-stable]
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
 
-      name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }} - ${{ matrix.stability }}
+  workflow_dispatch:
 
-      steps:
-        - uses: actions/checkout@v4.2.2
-          with:
-            fetch-depth: 1
+jobs:
+  run_tests:
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: true
+      matrix:
+        php: [ 8.2, 8.3, 8.4 ]
+        laravel: [ ^10.48.23, ^11.31 ]
+        stability: [ prefer-lowest, prefer-stable ]
 
-        - name: Setup PHP
-          uses: shivammathur/setup-php@2.32.0
-          with:
-            php-version: ${{ matrix.php }}
-            coverage: none
-            tools: composer:v2
+    name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }} - ${{ matrix.stability }}
 
-        - name: Install dependencies
-          run: |
-            composer require "illuminate/support:${{ matrix.laravel }}" --no-interaction --no-update
-            composer update --${{ matrix.stability }} --prefer-dist --no-interaction
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
-        - name: Run tests
-          run: vendor/bin/phpunit
+      - name: Setup PHP
+        uses: shivammathur/setup-php@2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: |
+          composer require "illuminate/support:${{ matrix.laravel }}" --no-interaction --no-update
+          composer update --${{ matrix.stability }} --prefer-dist --no-interaction
+
+      - name: Run tests
+        run: vendor/bin/phpunit
