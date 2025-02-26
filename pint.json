@@ -7,7 +7,6 @@
         "type_declaration_spaces": false,
         "nullable_type_declaration": false,
         "nullable_type_declaration_for_default_null_value": false,
-        "braces": false,
         "class_attributes_separation": {
             "elements": {
                 "const": "one",
@@ -22,10 +21,8 @@
             "anonymous_class": false,
             "named_class": true
         },
-        "constant_case": false,
         "declare_strict_types": true,
         "single_space_around_construct": false,
-        "statement_indentation": false,
         "curly_braces_position": {
             "allow_single_line_anonymous_functions": false,
             "allow_single_line_empty_anonymous_classes": false,
@@ -41,7 +38,6 @@
         "function_typehint_space": false,
         "linebreak_after_opening_tag": false,
         "lowercase_static_reference": false,
-        "phpdoc_indent": false,
         "single_class_element_per_statement": {
             "elements": {}
         },
