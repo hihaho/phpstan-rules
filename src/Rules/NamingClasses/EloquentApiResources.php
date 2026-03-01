@@ -61,8 +61,8 @@ class EloquentApiResources implements Rule
         $classReflection = $this->reflectionProvider->getClass($nameSpacedName);
 
         return match (true) {
-            $classReflection->isSubclassOf(ResourceCollection::class) => $this->processResourceCollection($node, $nameSpacedName), // @phpstan-ignore method.deprecated
-            $classReflection->isSubclassOf(JsonResource::class) => $this->processResource($node, $nameSpacedName), // @phpstan-ignore method.deprecated
+            $classReflection->isSubclassOfClass($this->reflectionProvider->getClass(ResourceCollection::class)) => $this->processResourceCollection($node, $nameSpacedName),
+            $classReflection->isSubclassOfClass($this->reflectionProvider->getClass(JsonResource::class)) => $this->processResource($node, $nameSpacedName),
             default => [],
         };
     }
