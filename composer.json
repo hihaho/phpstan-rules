@@ -16,8 +16,10 @@
     },
     "authors": [
         {
-            "name": "Robert Boes",
-            "email": "2871897+RobertBoes@users.noreply.github.com"
+            "name": "hihaho",
+            "email": "info@hihaho.com",
+            "homepage": "https://www.hihaho.com/",
+            "role": "Organisation"
         }
     ],
     "minimum-stability": "stable",
