@@ -47,7 +47,6 @@ composer phpstan-clear-cache # Clear PHPStan cache
 ## PHP Conventions
 
 - Always use `declare(strict_types=1);`
-- Mark classes as `final` by default
 - Use `private` visibility by default for methods, properties, and constants
 - Always use curly braces for control structures, even for single-line bodies
 - Use PHP 8 constructor property promotion
