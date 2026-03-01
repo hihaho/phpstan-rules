@@ -3,7 +3,6 @@
 namespace Hihaho\PhpstanRules\Rules\NamingClasses;
 
 use Hihaho\PhpstanRules\Traits\HasUrlTip;
-use Illuminate\Support\Str;
 use PhpParser\Node;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Stmt\Class_;
@@ -51,7 +50,7 @@ abstract class SuffixableRule implements Rule
 
         $parent = $this->reflectionProvider->getClass($scope->resolveName($node->extends));
 
-        if ($node->extends->toString() !== $this->baseClass() && ! $this->parentExtendsCommand($parent)) {
+        if ($parent->getName() !== $this->baseClass() && ! $this->parentExtendsBaseClass($parent)) {
             return [];
         }
 
@@ -59,7 +58,7 @@ abstract class SuffixableRule implements Rule
             return [];
         }
 
-        if (Str::endsWith($node->name->toString(), $this->suffix())) {
+        if (str_ends_with($node->name->toString(), $this->suffix())) {
             return [];
         }
 
@@ -73,7 +72,7 @@ abstract class SuffixableRule implements Rule
         ];
     }
 
-    private function parentExtendsCommand(ClassReflection $reflection): bool
+    private function parentExtendsBaseClass(ClassReflection $reflection): bool
     {
         foreach ($reflection->getParents() as $parent) {
             if ($parent->getName() === $this->baseClass()) {

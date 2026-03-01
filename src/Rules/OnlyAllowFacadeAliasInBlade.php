@@ -3,7 +3,6 @@
 namespace Hihaho\PhpstanRules\Rules;
 
 use Illuminate\Support\Facades\Facade;
-use Illuminate\Support\Str;
 use PhpParser\Node;
 use PhpParser\Node\Expr\StaticCall;
 use PHPStan\Analyser\Scope;
@@ -40,12 +39,16 @@ class OnlyAllowFacadeAliasInBlade implements Rule
         }
 
         // Ignore calls in Blade files.
-        if (Str::endsWith($scope->getFileDescription(), '.blade.php')) {
+        if (str_ends_with($scope->getFileDescription(), '.blade.php')) {
             return [];
         }
 
-        // @phpstan-ignore phpstanApi.runtimeReflection, argument.type
-        $reflectionClass = new \ReflectionClass($node->class->toCodeString());
+        try {
+            // @phpstan-ignore phpstanApi.runtimeReflection, argument.type
+            $reflectionClass = new \ReflectionClass($node->class->toCodeString());
+        } catch (\ReflectionException) {
+            return [];
+        }
 
         if ($reflectionClass->isSubclassOf(Facade::class)) {
             return [

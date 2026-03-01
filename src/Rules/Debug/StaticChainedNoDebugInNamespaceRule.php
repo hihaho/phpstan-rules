@@ -40,7 +40,7 @@ class StaticChainedNoDebugInNamespaceRule extends BaseNoDebugRule
             if ($this->namespaceStartsWith($scope, 'Tests')) {
                 return [
                     RuleErrorBuilder::message(sprintf($this->message, 'Tests'))
-                        ->identifier('hihaho.debug.noStaticChainedDebugInApp')
+                        ->identifier('hihaho.debug.noStaticChainedDebugInTests')
                         ->build(),
                 ];
             }

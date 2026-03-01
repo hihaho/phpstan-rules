@@ -16,22 +16,24 @@
     },
     "authors": [
         {
-            "name": "Robert Boes",
-            "email": "2871897+RobertBoes@users.noreply.github.com"
+            "name": "hihaho",
+            "email": "info@hihaho.com",
+            "homepage": "https://www.hihaho.com/",
+            "role": "Organisation"
         }
     ],
     "minimum-stability": "stable",
     "require": {
         "php": "^8.2",
-        "phpstan/phpstan": "^2.1",
-        "illuminate/support": "^11.31|^12.0"
+        "phpstan/phpstan": "^2.1.8",
+        "illuminate/support": "^11.31|^12.0|^13.0"
     },
     "require-dev": {
-        "illuminate/console": "^11.31|^12.0",
-        "illuminate/http": "^11.31|^12.0",
-        "illuminate/mail": "^11.31|^12.0",
-        "illuminate/notifications": "^11.31|^12.0",
-        "illuminate/routing": "^11.31|^12.0",
+        "illuminate/console": "^11.31|^12.0|^13.0",
+        "illuminate/http": "^11.31|^12.0|^13.0",
+        "illuminate/mail": "^11.31|^12.0|^13.0",
+        "illuminate/notifications": "^11.31|^12.0|^13.0",
+        "illuminate/routing": "^11.31|^12.0|^13.0",
         "laravel/pint": "^1.21",
         "nikic/php-parser": "^5.4",
         "phpstan/extension-installer": "^1.4",

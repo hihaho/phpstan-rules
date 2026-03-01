@@ -51,4 +51,22 @@ class SlashInUrlTest extends RuleTestCase
             ],
         ]);
     }
+
+    public function testShouldNotFlagRoutesOutsideRoutesDirectory(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/not-routes/slash-in-url-outside-routes.php'], []);
+    }
+
+    public function testShouldFlagAllHttpMethods(): void
+    {
+        $tip = 'Learn more at https://guidelines.hihaho.com/laravel.html#slash-in-url';
+
+        $this->analyse([__DIR__ . '/stubs/routes/slash-in-url-all-methods.php'], [
+            ['A route URL should not start or end with /.', 5, $tip],
+            ['A route URL should not start or end with /.', 6, $tip],
+            ['A route URL should not start or end with /.', 7, $tip],
+            ['A route URL should not start or end with /.', 8, $tip],
+            ['A route URL should not start or end with /.', 9, $tip],
+        ]);
+    }
 }

@@ -26,4 +26,9 @@ class RouteGroupsTest extends RuleTestCase
             ],
         ]);
     }
+
+    public function testShouldNotFlagRouteGroupsOutsideRoutesDirectory(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/not-routes/route-groups-outside-routes.php'], []);
+    }
 }

@@ -5,7 +5,6 @@ namespace Hihaho\PhpstanRules\Rules\NamingClasses;
 use Hihaho\PhpstanRules\Traits\HasUrlTip;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Http\Resources\Json\ResourceCollection;
-use Illuminate\Support\Str;
 use PhpParser\Node;
 use PhpParser\Node\Stmt\Class_;
 use PHPStan\Analyser\Scope;
@@ -51,7 +50,7 @@ class EloquentApiResources implements Rule
             return [];
         }
 
-        if (! Str::startsWith($nameSpacedName, 'App\Http\Resources')) {
+        if (! str_starts_with($nameSpacedName, 'App\Http\Resources')) {
             return [];
         }
 
@@ -61,11 +60,15 @@ class EloquentApiResources implements Rule
 
         $classReflection = $this->reflectionProvider->getClass($nameSpacedName);
 
-        return match (true) {
-            $classReflection->isSubclassOf(ResourceCollection::class) => $this->processResourceCollection($node, $nameSpacedName),
-            $classReflection->isSubclassOf(JsonResource::class) => $this->processResource($node, $nameSpacedName),
-            default => [],
-        };
+        if ($this->reflectionProvider->hasClass(ResourceCollection::class) && $classReflection->isSubclassOfClass($this->reflectionProvider->getClass(ResourceCollection::class))) {
+            return $this->processResourceCollection($node, $nameSpacedName);
+        }
+
+        if ($this->reflectionProvider->hasClass(JsonResource::class) && $classReflection->isSubclassOfClass($this->reflectionProvider->getClass(JsonResource::class))) {
+            return $this->processResource($node, $nameSpacedName);
+        }
+
+        return [];
     }
 
     /**
@@ -73,7 +76,7 @@ class EloquentApiResources implements Rule
      */
     private function processResourceCollection(Class_ $node, string $nameSpacedName): array
     {
-        if (Str::endsWith($nameSpacedName, 'ResourceCollection')) {
+        if (str_ends_with($nameSpacedName, 'ResourceCollection')) {
             return [];
         }
 
@@ -96,7 +99,7 @@ class EloquentApiResources implements Rule
      */
     private function processResource(Class_ $node, string $nameSpacedName): array
     {
-        if (Str::endsWith($nameSpacedName, 'Resource')) {
+        if (str_ends_with($nameSpacedName, 'Resource')) {
             return [];
         }
 
