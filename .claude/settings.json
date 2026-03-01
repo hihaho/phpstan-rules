@@ -1,0 +1,8 @@
+{
+  "enabledPlugins": {
+    "context7@claude-plugins-official": true,
+    "security-guidance@claude-plugins-official": true,
+    "php-lsp@claude-plugins-official": true,
+    "laravel-simplifier@laravel": true
+  }
+}
