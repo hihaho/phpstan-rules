@@ -20,7 +20,7 @@ composer phpstan             # Run PHPStan analysis
 ## Conventions
 
 - `declare(strict_types=1)` in all PHP files
-- Classes are `final` by default, `private` visibility by default
+- `private` visibility by default instead of `protected`
 - Curly braces for all control structures
 - Space after unary not: `if (! $foo)`
 - Omit docblocks when fully type-hinted
