@@ -64,4 +64,9 @@ class OnlyAllowFacadeAliasInBladeTest extends RuleTestCase
             ],
         ]);
     }
+
+    public function testShouldNotCrashOnNonExistentClass(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/NonExistentClassStaticCall.php'], []);
+    }
 }

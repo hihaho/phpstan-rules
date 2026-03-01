@@ -30,4 +30,17 @@ final class NoChainedDebugInNamespaceTest extends RuleTestCase
             ['No chained debug statements should be present in the Tests namespace.', 10],
         ]);
     }
+
+    #[Test]
+    public function should_flag_all_six_chained_debug_statements(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/AllChainedDebugInAppNamespaceStub.php'], [
+            ['No chained debug statements should be present in the App namespace.', 9],
+            ['No chained debug statements should be present in the App namespace.', 14],
+            ['No chained debug statements should be present in the App namespace.', 19],
+            ['No chained debug statements should be present in the App namespace.', 24],
+            ['No chained debug statements should be present in the App namespace.', 29],
+            ['No chained debug statements should be present in the App namespace.', 34],
+        ]);
+    }
 }

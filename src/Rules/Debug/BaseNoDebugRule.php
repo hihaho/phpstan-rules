@@ -2,7 +2,7 @@
 
 namespace Hihaho\PhpstanRules\Rules\Debug;
 
-use PHPStan\Analyser\Scope;
+use Hihaho\PhpstanRules\Traits\ChecksNamespace;
 use PHPStan\Rules\Rule;
 
 /**
@@ -11,6 +11,8 @@ use PHPStan\Rules\Rule;
  */
 abstract class BaseNoDebugRule implements Rule
 {
+    use ChecksNamespace;
+
     /**
      * @var list<string>
      */
@@ -26,20 +28,5 @@ abstract class BaseNoDebugRule implements Rule
     protected function isDisallowedStatement(string $statement): bool
     {
         return in_array($statement, $this->debugStatements, true);
-    }
-
-    protected function namespaceStartsWith(Scope $scope, string $namespace): bool
-    {
-        $scopeNamespace = $scope->getNamespace();
-
-        if ($scopeNamespace === null) {
-            return false;
-        }
-
-        if ($namespace === $scopeNamespace) {
-            return true;
-        }
-
-        return str_starts_with($scopeNamespace, rtrim($namespace, '\\') . '\\');
     }
 }

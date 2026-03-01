@@ -30,4 +30,29 @@ final class NoStaticChainedDebugInNamespaceTest extends RuleTestCase
             ['No statically called debug statements should be present in the Tests namespace.', 12],
         ]);
     }
+
+    #[Test]
+    public function should_have_correct_error_identifiers_for_tests_namespace(): void
+    {
+        $errors = $this->gatherAnalyserErrors([__DIR__ . '/stubs/StaticChainedDebugInTestNamespaceStub.php']);
+
+        $this->assertNotEmpty($errors);
+
+        foreach ($errors as $error) {
+            $this->assertSame('hihaho.debug.noStaticChainedDebugInTests', $error->getIdentifier());
+        }
+    }
+
+    #[Test]
+    public function should_flag_all_six_static_chained_debug_statements(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/AllStaticChainedDebugInAppNamespaceStub.php'], [
+            ['No statically called debug statements should be present in the App namespace.', 11],
+            ['No statically called debug statements should be present in the App namespace.', 16],
+            ['No statically called debug statements should be present in the App namespace.', 21],
+            ['No statically called debug statements should be present in the App namespace.', 26],
+            ['No statically called debug statements should be present in the App namespace.', 31],
+            ['No statically called debug statements should be present in the App namespace.', 36],
+        ]);
+    }
 }

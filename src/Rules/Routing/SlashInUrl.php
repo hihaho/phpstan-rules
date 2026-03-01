@@ -4,7 +4,6 @@ namespace Hihaho\PhpstanRules\Rules\Routing;
 
 use Hihaho\PhpstanRules\Traits\HasUrlTip;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Str;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\StaticCall;
@@ -37,10 +36,7 @@ class SlashInUrl implements Rule
      */
     public function processNode(Node $node, Scope $scope): array
     {
-        $isRouteFile = Str::of($scope->getFile())
-            ->contains(DIRECTORY_SEPARATOR . 'routes' . DIRECTORY_SEPARATOR);
-
-        if (! $isRouteFile) {
+        if (! str_contains($scope->getFile(), DIRECTORY_SEPARATOR . 'routes' . DIRECTORY_SEPARATOR)) {
             return [];
         }
 
@@ -66,18 +62,17 @@ class SlashInUrl implements Rule
             return [];
         }
 
-        /** @var \PhpParser\Node\Scalar\String_ $routePath */
-        $routePath = $arg->value;
-
-        if ($routePath->getType() !== 'Scalar_String') {
+        if (! $arg->value instanceof Node\Scalar\String_) {
             return [];
         }
 
-        if ($routePath->value === '/') {
+        $routePath = $arg->value->value;
+
+        if ($routePath === '/') {
             return [];
         }
 
-        if ($routePath->value === '') {
+        if ($routePath === '') {
             return [
                 RuleErrorBuilder::message(
                     'A route URL should be / instead of an empty string.'
@@ -88,7 +83,7 @@ class SlashInUrl implements Rule
             ];
         }
 
-        if (Str::startsWith($routePath->value, '/') || Str::endsWith($routePath->value, '/')) {
+        if (str_starts_with($routePath, '/') || str_ends_with($routePath, '/')) {
             return [
                 RuleErrorBuilder::message(
                     'A route URL should not start or end with /.'

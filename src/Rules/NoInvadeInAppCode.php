@@ -2,6 +2,7 @@
 
 namespace Hihaho\PhpstanRules\Rules;
 
+use Hihaho\PhpstanRules\Traits\ChecksNamespace;
 use PhpParser\Node;
 use PhpParser\Node\Expr\FuncCall;
 use PHPStan\Analyser\Scope;
@@ -13,6 +14,8 @@ use PHPStan\Rules\RuleErrorBuilder;
  */
 class NoInvadeInAppCode implements Rule
 {
+    use ChecksNamespace;
+
     public function getNodeType(): string
     {
         return FuncCall::class;
@@ -41,9 +44,7 @@ class NoInvadeInAppCode implements Rule
             return [];
         }
 
-        $namespace = $scope->getNamespace();
-
-        if ($namespace === null || ! str_starts_with($namespace, 'App')) {
+        if (! $this->namespaceStartsWith($scope, 'App')) {
             return [];
         }
 

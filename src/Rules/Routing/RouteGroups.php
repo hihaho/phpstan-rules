@@ -4,7 +4,6 @@ namespace Hihaho\PhpstanRules\Rules\Routing;
 
 use Hihaho\PhpstanRules\Traits\HasUrlTip;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Str;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\StaticCall;
@@ -37,10 +36,7 @@ class RouteGroups implements Rule
      */
     public function processNode(Node $node, Scope $scope): array
     {
-        $isRouteFile = Str::of($scope->getFile())
-            ->contains(DIRECTORY_SEPARATOR . 'routes' . DIRECTORY_SEPARATOR);
-
-        if (! $isRouteFile) {
+        if (! str_contains($scope->getFile(), DIRECTORY_SEPARATOR . 'routes' . DIRECTORY_SEPARATOR)) {
             return [];
         }
 
@@ -66,10 +62,7 @@ class RouteGroups implements Rule
             return [];
         }
 
-        /** @var \PhpParser\Node\Expr\Array_ $routePath */
-        $routePath = $arg->value;
-
-        if ($routePath->getType() !== 'Expr_Array') {
+        if (! $arg->value instanceof Node\Expr\Array_) {
             return [];
         }
 

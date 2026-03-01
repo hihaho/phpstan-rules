@@ -34,4 +34,24 @@ class NoInvadeInAppCodeTest extends RuleTestCase
             ],
         ]);
     }
+
+    public function testShouldNotMatchNamespacesStartingWithApp(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/InvadeInApplicationNamespace.php'], []);
+    }
+
+    public function testShouldFlagInvadeInAppSubNamespace(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/InvadeInAppSubNamespace.php'], [
+            [
+                'Usage of method `invade` is not allowed in the App namespace.',
+                12,
+            ],
+        ]);
+    }
+
+    public function testShouldNotFlagInvadeInGlobalNamespace(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/InvadeInGlobalNamespace.php'], []);
+    }
 }

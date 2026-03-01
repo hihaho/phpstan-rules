@@ -54,4 +54,29 @@ class NoDebugInNamespaceTest extends RuleTestCase
             ],
         ]);
     }
+
+    #[Test]
+    public function should_not_flag_debug_statements_outside_app_and_tests_namespaces(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/DebugInVendorNamespaceStub.php'], []);
+    }
+
+    #[Test]
+    public function should_not_flag_debug_statements_in_global_namespace(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/DebugInGlobalNamespaceStub.php'], []);
+    }
+
+    #[Test]
+    public function should_flag_all_six_debug_statements(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/AllDebugInAppNamespaceStub.php'], [
+            ['No debug statements should be present in the App namespace.', 9],
+            ['No debug statements should be present in the App namespace.', 14],
+            ['No debug statements should be present in the App namespace.', 19],
+            ['No debug statements should be present in the App namespace.', 24],
+            ['No debug statements should be present in the App namespace.', 29],
+            ['No debug statements should be present in the App namespace.', 34],
+        ]);
+    }
 }
