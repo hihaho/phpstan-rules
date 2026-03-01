@@ -56,7 +56,7 @@ class SlashInUrl implements Rule
             return [];
         }
 
-        $arg = $node->args[0];
+        $arg = $node->args[0] ?? null;
 
         if (! $arg instanceof Arg) {
             return [];
