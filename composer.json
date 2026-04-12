@@ -43,6 +43,7 @@
         "phpstan/phpstan-phpunit": "^2.0",
         "phpstan/phpstan-strict-rules": "^2.0",
         "phpunit/phpunit": "^11.5",
+        "rector/rector": "^2.0",
         "rector/type-perfect": "^2.0",
         "roave/security-advisories": "dev-latest",
         "spatie/invade": "^2.1",
@@ -53,10 +54,13 @@
     },
     "scripts": {
         "fix-cs": "vendor/bin/pint",
-        "phpstan": "vendor/bin/phpstan analyse",
+        "format": "vendor/bin/pint",
+        "phpstan": "vendor/bin/phpstan analyse --memory-limit=2G",
         "phpstan-clear-cache": "vendor/bin/phpstan clear-result-cache",
         "phpstan-simplified": "vendor/bin/phpstan analyse --memory-limit=2G --error-format symplify",
-        "test": "vendor/bin/phpunit"
+        "rector": "vendor/bin/rector process",
+        "test": "vendor/bin/phpunit",
+        "qa": ["@format", "@rector", "@phpstan", "@test"]
     },
     "extra": {
         "phpstan": {
