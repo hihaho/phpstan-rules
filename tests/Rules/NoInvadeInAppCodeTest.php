@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace Rules\Routing\SlashInUrl;
+namespace Hihaho\PhpstanRules\Tests\Rules;
 
 use Hihaho\PhpstanRules\Rules\NoInvadeInAppCode;
 use PHPStan\Rules\Rule;
@@ -9,14 +9,14 @@ use PHPStan\Testing\RuleTestCase;
 /**
  * @extends RuleTestCase<NoInvadeInAppCode>
  */
-class NoInvadeInAppCodeTest extends RuleTestCase
+final class NoInvadeInAppCodeTest extends RuleTestCase
 {
     protected function getRule(): Rule
     {
         return new NoInvadeInAppCode();
     }
 
-    public function testRule(): void
+    public function testFlagsInvadeInAppNamespace(): void
     {
         $this->analyse([__DIR__ . '/stubs/InvadeInAppNamespace.php'], [
             [
@@ -24,9 +24,15 @@ class NoInvadeInAppCodeTest extends RuleTestCase
                 12,
             ],
         ]);
+    }
 
+    public function testIgnoresInvadeInTestFakes(): void
+    {
         $this->analyse([__DIR__ . '/stubs/InvadeTestFake.php'], []);
+    }
 
+    public function testFlagsLivewireInvade(): void
+    {
         $this->analyse([__DIR__ . '/stubs/UseSpatieInvadeInsteadOfLivewire.php'], [
             [
                 'Usage of `\Livewire\invade` is disallowed, please use the global `invade` from spatie/invade.',
@@ -53,5 +59,45 @@ class NoInvadeInAppCodeTest extends RuleTestCase
     public function testShouldNotFlagInvadeInGlobalNamespace(): void
     {
         $this->analyse([__DIR__ . '/stubs/InvadeInGlobalNamespace.php'], []);
+    }
+
+    public function testShouldNotFlagDynamicFunctionCall(): void
+    {
+        // Branch: `$node->name` is not `Node\Name` (dynamic call via variable).
+        $this->analyse([__DIR__ . '/stubs/DynamicInvadeCallInAppNamespace.php'], []);
+    }
+
+    public function testShouldFlagLivewireInvadeRegardlessOfNamespace(): void
+    {
+        // The Livewire branch has no namespace guard — Vendor code calling
+        // \Livewire\invade must still be flagged.
+        $this->analyse([__DIR__ . '/stubs/LivewireInvadeInVendorNamespace.php'], [
+            [
+                'Usage of `\Livewire\invade` is disallowed, please use the global `invade` from spatie/invade.',
+                14,
+            ],
+        ]);
+    }
+
+    public function testIdentifierForInvadeInAppCode(): void
+    {
+        $errors = $this->gatherAnalyserErrors([__DIR__ . '/stubs/InvadeInAppNamespace.php']);
+
+        $this->assertNotEmpty($errors);
+
+        foreach ($errors as $error) {
+            $this->assertSame('hihaho.generic.noInvadeInAppCode', $error->getIdentifier());
+        }
+    }
+
+    public function testIdentifierForLivewireInvade(): void
+    {
+        $errors = $this->gatherAnalyserErrors([__DIR__ . '/stubs/UseSpatieInvadeInsteadOfLivewire.php']);
+
+        $this->assertNotEmpty($errors);
+
+        foreach ($errors as $error) {
+            $this->assertSame('hihaho.generic.disallowedUsageOfLivewireInvade', $error->getIdentifier());
+        }
     }
 }

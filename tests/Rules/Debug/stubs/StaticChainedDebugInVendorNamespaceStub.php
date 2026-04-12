@@ -1,18 +1,14 @@
 <?php declare(strict_types=1);
 
-namespace App;
+namespace Vendor;
 
 use Illuminate\Support\Facades\Http;
 
-class AllStaticChainedDebugInAppNamespaceStub
+class StaticChainedDebugInVendorNamespaceStub
 {
-    public function testDump(): void
+    public function test(): void
     {
         Http::dump()->get('https://example.com');
-    }
-
-    public function testDd(): void
-    {
         Http::dd()->get('https://example.com');
     }
 }

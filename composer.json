@@ -10,8 +10,15 @@
         }
     },
     "autoload-dev": {
+        "psr-4": {
+            "Hihaho\\PhpstanRules\\Tests\\": "tests/"
+        },
         "classmap": [
-            "tests/"
+            "tests/Rules/stubs/",
+            "tests/Rules/Debug/stubs/"
+        ],
+        "exclude-from-classmap": [
+            "tests/Rules/stubs/facade-alias-in-view.blade.php"
         ]
     },
     "authors": [
