@@ -26,14 +26,14 @@ If you cannot upgrade yet, stay on `hihaho/phpstan-rules:^2.2`. There is no plan
 
 Six rules are no longer in this package:
 
-| Removed | Replaced by (in [`hihaho/rector-rules`](https://github.com/hihaho/rector-rules)) |
-| --- | --- |
-| `Rules\NamingClasses\Commands` | `AddCommandSuffixRector` |
-| `Rules\NamingClasses\Mail` | `AddMailSuffixRector` |
-| `Rules\NamingClasses\Notifications` | `AddNotificationSuffixRector` |
-| `Rules\NamingClasses\EloquentApiResources` | `AddResourceSuffixRector` |
-| `Rules\Routing\SlashInUrl` | `NormalizeRoutePathRector` |
-| `Rules\Routing\RouteGroups` | `RouteGroupArrayToMethodsRector` |
+| Removed                                    | Replaced by (in [`hihaho/rector-rules`](https://github.com/hihaho/rector-rules)) |
+|--------------------------------------------|----------------------------------------------------------------------------------|
+| `Rules\NamingClasses\Commands`             | `AddCommandSuffixRector`                                                         |
+| `Rules\NamingClasses\Mail`                 | `AddMailSuffixRector`                                                            |
+| `Rules\NamingClasses\Notifications`        | `AddNotificationSuffixRector`                                                    |
+| `Rules\NamingClasses\EloquentApiResources` | `AddResourceSuffixRector`                                                        |
+| `Rules\Routing\SlashInUrl`                 | `NormalizeRoutePathRector`                                                       |
+| `Rules\Routing\RouteGroups`                | `RouteGroupArrayToMethodsRector`                                                 |
 
 The rector-rules replacements enforce the same conventions and can rewrite offending code in place.
 
@@ -90,9 +90,9 @@ vendor/bin/phpstan analyse --generate-baseline
 
 Both identifiers this rule emits moved from `hihaho.debug.*` to `hihaho.generic.*`:
 
-| Before | After |
-| --- | --- |
-| `hihaho.debug.noInvadeInAppCode` | `hihaho.generic.noInvadeInAppCode` |
+| Before                                         | After                                            |
+|------------------------------------------------|--------------------------------------------------|
+| `hihaho.debug.noInvadeInAppCode`               | `hihaho.generic.noInvadeInAppCode`               |
 | `hihaho.debug.disallowedUsageOfLivewireInvade` | `hihaho.generic.disallowedUsageOfLivewireInvade` |
 
 Update any identifier-based suppressions in `phpstan.neon`:
