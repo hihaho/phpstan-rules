@@ -1,34 +1,3 @@
-# PHPStan Rules Package — Agent Context
-
-This is `hihaho/phpstan-rules`, a PHPStan extension package. **Not** a Laravel application.
-
-## Key Facts
-
-- Rules live in `src/Rules/`, tests in `tests/Rules/`, stubs in `tests/Rules/stubs/`
-- Rules implement PHPStan's `Rule<T>` interface and are registered in `extension.neon`
-- Tests extend `PHPStan\Testing\RuleTestCase`
-- PHP ^8.3, PHPStan ^2.1, PHPUnit ^11.5
-
-## Commands
-
-```bash
-composer test                # Run tests
-composer fix-cs              # Run Pint formatter
-composer phpstan             # Run PHPStan analysis
-composer rector              # Run Rector transformations
-composer qa                  # Run format, rector, phpstan, test
-```
-
-## Conventions
-
-- `declare(strict_types=1)` in all PHP files
-- `private` visibility by default instead of `protected`
-- Curly braces for all control structures
-- Space after unary not: `if (! $foo)`
-- Omit docblocks when fully type-hinted
-- 100% type coverage, PHPStan level max
-
-<package-boost-guidelines>
 ## Verification Before Completion
 
 Before claiming any work is complete or successful, run the verification command fresh and confirm the output. Evidence before claims, always.
@@ -56,7 +25,7 @@ These are slow checks — only run them once at the very end:
 |-------------------|-----------------------------------------------------------------|
 | Rector ran clean  | `vendor/bin/rector process` showing 0 changes                   |
 | PHPStan clean     | `vendor/bin/phpstan analyse --memory-limit=2G` showing 0 errors |
-| Full suite passes | `vendor/bin/phpunit` output showing 0 failures                  |
+| Full suite passes | `vendor/bin/pest` output showing 0 failures                     |
 | Feature complete  | All above checks pass                                           |
 
 ### Always Capture Command Output
@@ -65,11 +34,11 @@ Append `|| true` to all verification commands (tests, linting, type checks) so t
 
 ```bash
 # CORRECT — output always visible
-vendor/bin/phpunit --filter=testName || true
+vendor/bin/pest --filter=testName || true
 vendor/bin/pint --dirty --format agent || true
 
 # WRONG — output lost on failure, wastes time re-running
-vendor/bin/phpunit --filter=testName
+vendor/bin/pest --filter=testName
 ```
 
 ### Never Use Without Evidence
@@ -80,4 +49,3 @@ vendor/bin/phpunit --filter=testName
 - "I'm confident this works"
 
 These phrases indicate missing verification. Run the command first, then report what actually happened.
-</package-boost-guidelines>

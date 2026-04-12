@@ -38,6 +38,7 @@
     "require-dev": {
         "laravel/pint": "^1.21",
         "nikic/php-parser": "^5.4",
+        "orchestra/testbench": "^9.0||^10.0||^11.0",
         "phpstan/extension-installer": "^1.4",
         "phpstan/phpstan-deprecation-rules": "^2.0",
         "phpstan/phpstan-phpunit": "^2.0",
@@ -46,6 +47,7 @@
         "rector/rector": "^2.0",
         "rector/type-perfect": "^2.0",
         "roave/security-advisories": "dev-latest",
+        "sandermuller/package-boost": "^0.2",
         "spatie/invade": "^2.1",
         "spaze/phpstan-disallowed-calls": "^4.4",
         "symplify/phpstan-extensions": "^12.0.1",
