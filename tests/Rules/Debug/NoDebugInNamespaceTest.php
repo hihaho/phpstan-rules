@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace Rules\Debug;
+namespace Hihaho\PhpstanRules\Tests\Rules\Debug;
 
 use Hihaho\PhpstanRules\Rules\Debug\NoDebugInNamespaceRule;
 use PHPStan\Rules\Rule;
@@ -10,7 +10,7 @@ use PHPUnit\Framework\Attributes\Test;
 /**
  * @extends RuleTestCase<NoDebugInNamespaceRule>
  */
-class NoDebugInNamespaceTest extends RuleTestCase
+final class NoDebugInNamespaceTest extends RuleTestCase
 {
     protected function getRule(): Rule
     {
@@ -78,5 +78,36 @@ class NoDebugInNamespaceTest extends RuleTestCase
             ['No debug statements should be present in the App namespace.', 29],
             ['No debug statements should be present in the App namespace.', 34],
         ]);
+    }
+
+    #[Test]
+    public function should_not_flag_dynamic_function_call(): void
+    {
+        // Branch: `$node->name` is not `Node\Name` (dynamic call via variable).
+        $this->analyse([__DIR__ . '/stubs/DynamicFuncCallInAppNamespaceStub.php'], []);
+    }
+
+    #[Test]
+    public function should_have_correct_error_identifier_in_app(): void
+    {
+        $errors = $this->gatherAnalyserErrors([__DIR__ . '/stubs/DebugInAppNamespaceStub.php']);
+
+        $this->assertNotEmpty($errors);
+
+        foreach ($errors as $error) {
+            $this->assertSame('hihaho.debug.noDebugInApp', $error->getIdentifier());
+        }
+    }
+
+    #[Test]
+    public function should_have_correct_error_identifier_in_tests(): void
+    {
+        $errors = $this->gatherAnalyserErrors([__DIR__ . '/stubs/DebugInTestNamespaceStub.php']);
+
+        $this->assertNotEmpty($errors);
+
+        foreach ($errors as $error) {
+            $this->assertSame('hihaho.debug.noDebugInTests', $error->getIdentifier());
+        }
     }
 }

@@ -13,24 +13,4 @@ class AllChainedDebugInAppNamespaceStub
     {
         collect()->dd();
     }
-
-    public function testDdd(): void
-    {
-        collect()->ddd();
-    }
-
-    public function testRay(): void
-    {
-        collect()->ray();
-    }
-
-    public function testPrintR(): void
-    {
-        collect()->print_r();
-    }
-
-    public function testVarDump(): void
-    {
-        collect()->var_dump();
-    }
 }

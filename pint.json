@@ -3,26 +3,25 @@
     "cache-file": ".cache/pint/pint.json",
     "rules": {
         "array_indentation": false,
+        "backtick_to_shell_exec": true,
         "blank_line_after_opening_tag": false,
-        "type_declaration_spaces": false,
-        "nullable_type_declaration": false,
-        "nullable_type_declaration_for_default_null_value": false,
         "class_attributes_separation": {
             "elements": {
                 "const": "one",
                 "method": "one"
             }
         },
-        "class_definition": false,
+        "class_definition": {
+            "inline_constructor_arguments": false,
+            "multi_line_extends_each_single_line": false,
+            "single_item_single_line": false,
+            "single_line": false,
+            "space_before_parenthesis": true
+        },
         "concat_space": {
             "spacing": "one"
         },
-        "new_with_parentheses": {
-            "anonymous_class": false,
-            "named_class": true
-        },
-        "declare_strict_types": true,
-        "single_space_around_construct": false,
+        "constant_case": false,
         "curly_braces_position": {
             "allow_single_line_anonymous_functions": false,
             "allow_single_line_empty_anonymous_classes": false,
@@ -32,19 +31,32 @@
             "control_structures_opening_brace": "same_line",
             "functions_opening_brace": "next_line_unless_newline_at_signature_end"
         },
-        "phpdoc_align": false,
-        "phpdoc_separation": false,
-        "php_unit_method_casing": false,
+        "declare_strict_types": true,
         "function_typehint_space": false,
+        "increment_style": false,
         "linebreak_after_opening_tag": false,
         "lowercase_static_reference": false,
+        "new_with_parentheses": {
+            "anonymous_class": false,
+            "named_class": true
+        },
+        "nullable_type_declaration": false,
+        "nullable_type_declaration_for_default_null_value": false,
+        "php_unit_method_casing": false,
+        "phpdoc_align": false,
+        "phpdoc_separation": false,
         "single_class_element_per_statement": {
             "elements": {}
         },
+        "single_space_around_construct": false,
+        "type_declaration_spaces": false,
         "unary_operator_spaces": false,
         "whitespace_after_comma_in_array": false
     },
     "exclude": [
+        ".cache",
+        ".github",
+        "vendor",
         "tests/*/stubs/*"
     ]
 }

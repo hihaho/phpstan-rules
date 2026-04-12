@@ -7,10 +7,8 @@ This is `hihaho/phpstan-rules`, a PHPStan extension package that enforces hihaho
 ```
 src/
 ├── Rules/             # PHPStan rules (one class per rule)
-│   ├── Debug/         # Debug statement detection rules
-│   ├── NamingClasses/ # Class naming convention rules
-│   └── Routing/       # Route configuration rules
-├── Traits/            # Shared traits (HasUrlTip)
+│   └── Debug/         # Debug statement detection rules
+├── Traits/            # Shared traits (ChecksNamespace)
 tests/
 ├── Rules/             # Tests for each rule (PHPStan RuleTestCase)
 │   └── stubs/         # Test fixture PHP/Blade files
@@ -19,9 +17,13 @@ phpstan.neon.dist      # PHPStan analysis configuration
 pint.json              # Laravel Pint code style config
 ```
 
+Class-naming and routing conventions are enforced by the sister package
+[hihaho/rector-rules](https://github.com/hihaho/rector-rules), which
+auto-fixes them rather than just reporting.
+
 ## Dependencies
 
-- **PHP**: ^8.2
+- **PHP**: ^8.3
 - **PHPStan**: ^2.1
 - **Laravel Support** (illuminate/support): ^11.31|^12.0|^13.0
 - **Testing**: PHPUnit ^11.5
@@ -31,9 +33,11 @@ pint.json              # Laravel Pint code style config
 
 ```bash
 composer test                # Run PHPUnit tests
-composer fix-cs              # Run Laravel Pint formatter
+composer fix-cs              # Run Laravel Pint formatter (alias: composer format)
 composer phpstan             # Run PHPStan analysis
 composer phpstan-clear-cache # Clear PHPStan cache
+composer rector              # Run Rector transformations
+composer qa                  # Run format, rector, phpstan, test
 ```
 
 ## Repository
@@ -72,10 +76,10 @@ composer phpstan-clear-cache # Clear PHPStan cache
 ## Creating a New Rule
 
 1. Create the rule class in `src/Rules/` implementing PHPStan's `Rule<T>` interface
-2. Register it as a service in `extension.neon` with the `phpstan.rules.rule` tag
-3. Create test stub files in `tests/Rules/stubs/`
+2. Register it in `extension.neon` — under `rules:` if the rule has no constructor dependencies, or under `services:` with the `phpstan.rules.rule` tag when it needs DI (e.g. `ReflectionProvider`)
+3. Create test stub files in `tests/Rules/stubs/` (or a sibling `stubs/` directory next to the test)
 4. Create a test extending `PHPStan\Testing\RuleTestCase` in `tests/Rules/`
-5. Use `HasUrlTip` trait if the rule should link to guidelines documentation
+5. Use the `ChecksNamespace` trait if the rule needs to filter by namespace prefix
 6. Run `composer fix-cs` and `composer phpstan` before finalizing
 
 ## Quality Standards
@@ -87,15 +91,59 @@ composer phpstan-clear-cache # Clear PHPStan cache
 
 ---
 
+<package-boost-guidelines>
 ## Verification Before Completion
 
-Before claiming work is complete, run and confirm output:
+Before claiming any work is complete or successful, run the verification command fresh and confirm the output. Evidence before claims, always.
 
-| Claim              | Required verification                               |
-|--------------------|------------------------------------------------------|
-| Tests pass         | `composer test` output showing 0 failures            |
-| Code style clean   | `vendor/bin/pint --dirty` output (no changes needed) |
-| Static analysis    | `composer phpstan` showing 0 errors                  |
+### Required Before Any Completion Claim
+
+1. **Run** the relevant command (in the current message, not from memory)
+2. **Read** the full output
+3. **Confirm** it supports the claim
+4. **Then** state the result with evidence
+
+### During Development (after each change)
+
+| Claim            | Required verification                              |
+|------------------|----------------------------------------------------|
+| Code style clean | `vendor/bin/pint --dirty --format agent` output    |
+| Tests pass       | Related tests pass via `--filter` or specific file |
+| Bug fixed        | Previously failing test now passes                 |
+
+### At Completion Only (feature/phase done, before PR)
+
+These are slow checks — only run them once at the very end:
+
+| Claim             | Required verification                                           |
+|-------------------|-----------------------------------------------------------------|
+| Rector ran clean  | `vendor/bin/rector process` showing 0 changes                   |
+| PHPStan clean     | `vendor/bin/phpstan analyse --memory-limit=2G` showing 0 errors |
+| Full suite passes | `vendor/bin/phpunit` output showing 0 failures                  |
+| Feature complete  | All above checks pass                                           |
+
+### Always Capture Command Output
+
+Append `|| true` to all verification commands (tests, linting, type checks) so the output is always captured, even on failure. Without it, a non-zero exit code can hide the output, forcing an expensive second run just to read the errors.
+
+```bash
+# CORRECT — output always visible
+vendor/bin/phpunit --filter=testName || true
+vendor/bin/pint --dirty --format agent || true
+
+# WRONG — output lost on failure, wastes time re-running
+vendor/bin/phpunit --filter=testName
+```
+
+### Never Use Without Evidence
+
+- "should work now"
+- "that should fix it"
+- "looks correct"
+- "I'm confident this works"
+
+These phrases indicate missing verification. Run the command first, then report what actually happened.
+</package-boost-guidelines>
 
 ---
 

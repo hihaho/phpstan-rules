@@ -2,14 +2,20 @@
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     beStrictAboutChangesToGlobalState="true"
     beStrictAboutOutputDuringTests="true"
+    beStrictAboutTestsThatDoNotTestAnything="true"
     colors="true"
     failOnRisky="true"
     failOnWarning="true"
-    xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
-    cacheDirectory=".cache/phpunit">
+    cacheDirectory=".cache/phpunit"
+    xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd">
   <testsuites>
     <testsuite name="Test Suite">
       <directory>./tests</directory>
     </testsuite>
   </testsuites>
+  <source>
+    <include>
+      <directory>./src</directory>
+    </include>
+  </source>
 </phpunit>

@@ -3,28 +3,36 @@
 namespace Hihaho\PhpstanRules\Rules;
 
 use Illuminate\Support\Facades\Facade;
+use Override;
 use PhpParser\Node;
 use PhpParser\Node\Expr\StaticCall;
+use PhpParser\Node\Name;
 use PHPStan\Analyser\Scope;
+use PHPStan\Rules\IdentifierRuleError;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
+use ReflectionClass;
+use ReflectionException;
 
 /**
- * @implements \PHPStan\Rules\Rule<\PhpParser\Node\Expr\StaticCall>
+ * @implements Rule<StaticCall>
  */
-class OnlyAllowFacadeAliasInBlade implements Rule
+final readonly class OnlyAllowFacadeAliasInBlade implements Rule
 {
+    #[Override]
     public function getNodeType(): string
     {
         return StaticCall::class;
     }
 
     /**
-     * @param StaticCall $node
+     * @param  StaticCall  $node
+     * @return list<IdentifierRuleError>
      */
+    #[Override]
     public function processNode(Node $node, Scope $scope): array
     {
-        if (! $node->class instanceof Node\Name) {
+        if (! $node->class instanceof Name) {
             return [];
         }
 
@@ -44,9 +52,14 @@ class OnlyAllowFacadeAliasInBlade implements Rule
         }
 
         try {
+            // Runtime reflection is required: facade aliases are registered
+            // lazily by Laravel's AliasLoader (an SPL autoloader). PHPStan's
+            // ReflectionProvider does not invoke runtime autoloaders, so a
+            // static-discovery path would silently miss every real-world
+            // facade alias. The try/catch handles non-existent short names.
             // @phpstan-ignore phpstanApi.runtimeReflection, argument.type
-            $reflectionClass = new \ReflectionClass($node->class->toCodeString());
-        } catch (\ReflectionException) {
+            $reflectionClass = new ReflectionClass($node->class->toCodeString());
+        } catch (ReflectionException) {
             return [];
         }
 

@@ -1,4 +1,23 @@
+# Dependencies
 /vendor
 /composer.lock
-.idea
+auth.json
+
+# Caches
+.cache
+/build
+
+# IDE Helper
+_ide_helper.php
+_ide_helper_models.php
+.phpstorm.meta.php
+
+# Editors
+/.idea
+/.fleet
+/.vscode
+
+# Misc
 .DS_Store
+phpunit.xml
+phpstan.neon

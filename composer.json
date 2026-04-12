@@ -10,8 +10,15 @@
         }
     },
     "autoload-dev": {
+        "psr-4": {
+            "Hihaho\\PhpstanRules\\Tests\\": "tests/"
+        },
         "classmap": [
-            "tests/"
+            "tests/Rules/stubs/",
+            "tests/Rules/Debug/stubs/"
+        ],
+        "exclude-from-classmap": [
+            "tests/Rules/stubs/facade-alias-in-view.blade.php"
         ]
     },
     "authors": [
@@ -24,25 +31,23 @@
     ],
     "minimum-stability": "stable",
     "require": {
-        "php": "^8.2",
+        "php": "^8.3",
         "phpstan/phpstan": "^2.1.8",
         "illuminate/support": "^11.31|^12.0|^13.0"
     },
     "require-dev": {
-        "illuminate/console": "^11.31|^12.0|^13.0",
-        "illuminate/http": "^11.31|^12.0|^13.0",
-        "illuminate/mail": "^11.31|^12.0|^13.0",
-        "illuminate/notifications": "^11.31|^12.0|^13.0",
-        "illuminate/routing": "^11.31|^12.0|^13.0",
         "laravel/pint": "^1.21",
         "nikic/php-parser": "^5.4",
+        "orchestra/testbench": "^9.0||^10.0||^11.0",
         "phpstan/extension-installer": "^1.4",
         "phpstan/phpstan-deprecation-rules": "^2.0",
         "phpstan/phpstan-phpunit": "^2.0",
         "phpstan/phpstan-strict-rules": "^2.0",
         "phpunit/phpunit": "^11.5",
+        "rector/rector": "^2.0",
         "rector/type-perfect": "^2.0",
         "roave/security-advisories": "dev-latest",
+        "sandermuller/package-boost": "^0.2",
         "spatie/invade": "^2.1",
         "spaze/phpstan-disallowed-calls": "^4.4",
         "symplify/phpstan-extensions": "^12.0.1",
@@ -51,10 +56,13 @@
     },
     "scripts": {
         "fix-cs": "vendor/bin/pint",
-        "phpstan": "vendor/bin/phpstan analyse",
+        "format": "vendor/bin/pint",
+        "phpstan": "vendor/bin/phpstan analyse --memory-limit=2G",
         "phpstan-clear-cache": "vendor/bin/phpstan clear-result-cache",
         "phpstan-simplified": "vendor/bin/phpstan analyse --memory-limit=2G --error-format symplify",
-        "test": "vendor/bin/phpunit"
+        "rector": "vendor/bin/rector process",
+        "test": "vendor/bin/phpunit",
+        "qa": ["@format", "@rector", "@phpstan", "@test"]
     },
     "extra": {
         "phpstan": {

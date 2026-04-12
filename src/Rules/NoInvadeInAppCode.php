@@ -3,30 +3,36 @@
 namespace Hihaho\PhpstanRules\Rules;
 
 use Hihaho\PhpstanRules\Traits\ChecksNamespace;
+use Override;
 use PhpParser\Node;
 use PhpParser\Node\Expr\FuncCall;
+use PhpParser\Node\Name;
 use PHPStan\Analyser\Scope;
+use PHPStan\Rules\IdentifierRuleError;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
 
 /**
- * @implements \PHPStan\Rules\Rule<\PhpParser\Node\Expr\FuncCall>
+ * @implements Rule<FuncCall>
  */
-class NoInvadeInAppCode implements Rule
+final readonly class NoInvadeInAppCode implements Rule
 {
     use ChecksNamespace;
 
+    #[Override]
     public function getNodeType(): string
     {
         return FuncCall::class;
     }
 
     /**
-     * @param FuncCall $node
+     * @param  FuncCall  $node
+     * @return list<IdentifierRuleError>
      */
+    #[Override]
     public function processNode(Node $node, Scope $scope): array
     {
-        if (! $node->name instanceof Node\Name) {
+        if (! $node->name instanceof Name) {
             return [];
         }
 
@@ -35,7 +41,7 @@ class NoInvadeInAppCode implements Rule
                 RuleErrorBuilder::message(
                     'Usage of `\Livewire\invade` is disallowed, please use the global `invade` from spatie/invade.'
                 )
-                    ->identifier('hihaho.debug.disallowedUsageOfLivewireInvade')
+                    ->identifier('hihaho.generic.disallowedUsageOfLivewireInvade')
                     ->build(),
             ];
         }
@@ -52,7 +58,7 @@ class NoInvadeInAppCode implements Rule
             RuleErrorBuilder::message(
                 'Usage of method `invade` is not allowed in the App namespace.'
             )
-                ->identifier('hihaho.debug.noInvadeInAppCode')
+                ->identifier('hihaho.generic.noInvadeInAppCode')
                 ->build(),
         ];
     }

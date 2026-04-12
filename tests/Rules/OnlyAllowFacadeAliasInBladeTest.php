@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace tests\Rules;
+namespace Hihaho\PhpstanRules\Tests\Rules;
 
 use App\Facades\Custom;
 use Hihaho\PhpstanRules\Rules\OnlyAllowFacadeAliasInBlade;
@@ -12,12 +12,12 @@ use PHPStan\Testing\RuleTestCase;
 /**
  * @extends RuleTestCase<OnlyAllowFacadeAliasInBlade>
  */
-class OnlyAllowFacadeAliasInBladeTest extends RuleTestCase
+final class OnlyAllowFacadeAliasInBladeTest extends RuleTestCase
 {
     /**
      * @var array<string, class-string<Facade>>
      */
-    protected array $aliases = [
+    private array $aliases = [
         \Route::class => Route::class, // @phpstan-ignore-line
         \Custom::class => Custom::class, // @phpstan-ignore-line
     ];
@@ -27,9 +27,18 @@ class OnlyAllowFacadeAliasInBladeTest extends RuleTestCase
         parent::setUp();
 
         /**
+         * Register Laravel's alias loader pattern — a lazy SPL autoloader
+         * that resolves the short facade name only on first access.
+         *
+         * This deliberately mirrors Laravel's real-world behaviour rather
+         * than eagerly calling `class_alias()` up front: the rule must work
+         * under lazy loading, because that's what consumers actually have.
+         * An eager setUp would make the test pass even if the rule used a
+         * static reflection path that never triggers runtime autoloaders.
+         *
          * @see https://github.com/laravel/framework/blob/11.x/src/Illuminate/Foundation/AliasLoader.php
          */
-        spl_autoload_register([$this, 'autoload'], throw: true, prepend: true);
+        spl_autoload_register($this->autoload(...), throw: true, prepend: true);
     }
 
     public function autoload(string $alias): void
@@ -44,15 +53,21 @@ class OnlyAllowFacadeAliasInBladeTest extends RuleTestCase
         return new OnlyAllowFacadeAliasInBlade();
     }
 
-    public function testRule(): void
+    public function testBladeFilesAreIgnored(): void
     {
-        // Blade files are basically ignored, since it doesn't really analyse them.
+        // Blade files are basically ignored, since PHPStan doesn't really analyse them.
         // Statements like @php and {{ ... }} can't be parsed by PHPStan.
         // PHPStan does properly analyse the <?php tag, so it will be parsed.
         $this->analyse([__DIR__ . '/stubs/facade-alias-in-view.blade.php'], []);
+    }
 
+    public function testFullyQualifiedFacadeUsageIsAllowed(): void
+    {
         $this->analyse([__DIR__ . '/stubs/FullFacadeNamespaceInClass.php'], []);
+    }
 
+    public function testFacadeAliasInClassIsFlagged(): void
+    {
         $this->analyse([__DIR__ . '/stubs/FacadeAliasInClass.php'], [
             [
                 'Disallowed usage of `Route` facade alias, use `Illuminate\Support\Facades\Route`. A facade alias can only be used in Blade.',
@@ -68,5 +83,27 @@ class OnlyAllowFacadeAliasInBladeTest extends RuleTestCase
     public function testShouldNotCrashOnNonExistentClass(): void
     {
         $this->analyse([__DIR__ . '/stubs/NonExistentClassStaticCall.php'], []);
+    }
+
+    public function testShouldNotFlagNonFacadeAlias(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/NonFacadeAliasStaticCall.php'], []);
+    }
+
+    public function testShouldNotFlagDynamicStaticCall(): void
+    {
+        // Branch: `$node->class` is not `Node\Name` (dynamic: `$class::method()`).
+        $this->analyse([__DIR__ . '/stubs/DynamicStaticCallInAppNamespace.php'], []);
+    }
+
+    public function testShouldHaveCorrectErrorIdentifier(): void
+    {
+        $errors = $this->gatherAnalyserErrors([__DIR__ . '/stubs/FacadeAliasInClass.php']);
+
+        $this->assertNotEmpty($errors);
+
+        foreach ($errors as $error) {
+            $this->assertSame('hihaho.generic.onlyAllowFacadeAliasInBlade', $error->getIdentifier());
+        }
     }
 }
