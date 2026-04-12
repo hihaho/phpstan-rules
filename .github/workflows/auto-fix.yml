@@ -17,6 +17,11 @@ concurrency:
 
 jobs:
   auto-fix:
+    # Skip fork PRs: their GITHUB_TOKEN cannot push back anyway (the
+    # final git-auto-commit-action would fail permission-denied), and
+    # running their rector.php / pint.json in a write-enabled context
+    # trips CodeQL's "untrusted code in trusted context" rule.
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
