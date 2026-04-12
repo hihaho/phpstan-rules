@@ -7,7 +7,7 @@ This is `hihaho/phpstan-rules`, a PHPStan extension package. **Not** a Laravel a
 - Rules live in `src/Rules/`, tests in `tests/Rules/`, stubs in `tests/Rules/stubs/`
 - Rules implement PHPStan's `Rule<T>` interface and are registered in `extension.neon`
 - Tests extend `PHPStan\Testing\RuleTestCase`
-- PHP ^8.2, PHPStan ^2.1, PHPUnit ^11.5
+- PHP ^8.3, PHPStan ^2.1, PHPUnit ^11.5
 
 ## Commands
 

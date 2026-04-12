@@ -23,7 +23,7 @@ auto-fixes them rather than just reporting.
 
 ## Dependencies
 
-- **PHP**: ^8.2
+- **PHP**: ^8.3
 - **PHPStan**: ^2.1
 - **Laravel Support** (illuminate/support): ^11.31|^12.0|^13.0
 - **Testing**: PHPUnit ^11.5
