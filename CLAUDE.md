@@ -7,10 +7,8 @@ This is `hihaho/phpstan-rules`, a PHPStan extension package that enforces hihaho
 ```
 src/
 ├── Rules/             # PHPStan rules (one class per rule)
-│   ├── Debug/         # Debug statement detection rules
-│   ├── NamingClasses/ # Class naming convention rules
-│   └── Routing/       # Route configuration rules
-├── Traits/            # Shared traits (HasUrlTip)
+│   └── Debug/         # Debug statement detection rules
+├── Traits/            # Shared traits (ChecksNamespace)
 tests/
 ├── Rules/             # Tests for each rule (PHPStan RuleTestCase)
 │   └── stubs/         # Test fixture PHP/Blade files
@@ -18,6 +16,10 @@ extension.neon         # PHPStan extension registration
 phpstan.neon.dist      # PHPStan analysis configuration
 pint.json              # Laravel Pint code style config
 ```
+
+Class-naming and routing conventions are enforced by the sister package
+[hihaho/rector-rules](https://github.com/hihaho/rector-rules), which
+auto-fixes them rather than just reporting.
 
 ## Dependencies
 
@@ -75,7 +77,7 @@ composer phpstan-clear-cache # Clear PHPStan cache
 2. Register it as a service in `extension.neon` with the `phpstan.rules.rule` tag
 3. Create test stub files in `tests/Rules/stubs/`
 4. Create a test extending `PHPStan\Testing\RuleTestCase` in `tests/Rules/`
-5. Use `HasUrlTip` trait if the rule should link to guidelines documentation
+5. Use the `ChecksNamespace` trait if the rule needs to filter by namespace prefix
 6. Run `composer fix-cs` and `composer phpstan` before finalizing
 
 ## Quality Standards
