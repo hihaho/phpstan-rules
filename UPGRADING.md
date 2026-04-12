@@ -106,6 +106,14 @@ Update any identifier-based suppressions in `phpstan.neon`:
              - app/SomeSpecificException.php
 ```
 
+Inline `@phpstan-ignore` and `@phpstan-ignore-next-line` directives need the same rename:
+
+```diff
+-// @phpstan-ignore hihaho.debug.noInvadeInAppCode
++// @phpstan-ignore hihaho.generic.noInvadeInAppCode
+ invade($model)->privateMethod();
+```
+
 The error message text is unchanged, so path-based and message-based suppressions still work without changes.
 
 ### Debug rule detection narrowed
