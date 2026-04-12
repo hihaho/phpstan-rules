@@ -12,10 +12,13 @@ parameters:
         - src
         - tests
 
+    level: max
+
     type_coverage:
         return: 100
         param: 100
         property: 100
+        constant: 100
         # also, how many files has declare strict types
         declare: 100
 
@@ -29,12 +32,20 @@ parameters:
         class: 12
         function: 10
 
-    level: max
-
     strictRules:
-        allRules: false
+        allRules: true
+
+    editorUrl: 'phpstorm://open?file=%%file%%&line=%%line%%'
+
+    treatPhpDocTypesAsCertain: false
 
     excludePaths:
         - tests/*/stubs/*
 
-    treatPhpDocTypesAsCertain: false
+    ignoreErrors:
+        -
+            identifier: trait.unused
+            reportUnmatched: false
+        -
+            identifier: ternary.condNotBoolean
+            reportUnmatched: false
