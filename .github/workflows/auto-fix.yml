@@ -25,6 +25,11 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: ${{ github.head_ref || github.ref_name }}
+          # Defuse "untrusted code in trusted context": don't leave the
+          # workflow token in the git config so malicious PR code run
+          # during Rector/Pint can't piggy-back on it. The auto-commit
+          # action below picks up GITHUB_TOKEN from env, not from git.
+          persist-credentials: false
 
       - name: Setup PHP
         uses: shivammathur/setup-php@accd6127cb78bee3e8082180cb391013d204ef9f # v2
@@ -33,7 +38,7 @@ jobs:
           coverage: none
 
       - name: Install composer dependencies
-        uses: ramsey/composer-install@v4
+        uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # v4.0.0
 
       - name: Cache Rector results
         uses: actions/cache@v5
@@ -53,12 +58,12 @@ jobs:
         run: vendor/bin/rector process --no-diffs
 
       - name: Run Pint
-        uses: aglipanci/laravel-pint-action@2.6
+        uses: aglipanci/laravel-pint-action@36de00d5f5a8a4e12d443e01671daa12a18f4c79 # 2.6
         with:
           configPath: pint.json
           verboseMode: true
 
       - name: Commit changes
-        uses: stefanzweifel/git-auto-commit-action@v7
+        uses: stefanzweifel/git-auto-commit-action@04702edda442b2e678b25b537cec683a1493fcb9 # v7
         with:
           commit_message: 'chore: auto-fix'
