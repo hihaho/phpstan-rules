@@ -1,18 +1,40 @@
-on:
-  push:
-    branches:
-      - main
-
-  pull_request:
-
-  workflow_dispatch:
+name: PHPStan
 
 permissions:
   contents: read
 
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**.php'
+      - 'phpstan.neon.dist'
+      - 'phpstan-baseline.neon'
+      - 'extension.neon'
+      - 'composer.json'
+      - 'composer.lock'
+      - '.github/workflows/analyzer.yml'
+  pull_request:
+    paths:
+      - '**.php'
+      - 'phpstan.neon.dist'
+      - 'phpstan-baseline.neon'
+      - 'extension.neon'
+      - 'composer.json'
+      - 'composer.lock'
+      - '.github/workflows/analyzer.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  analyze:
-    runs-on: ubuntu-22.04
+  phpstan:
+    name: phpstan
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v6
         with:
@@ -21,12 +43,19 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@accd6127cb78bee3e8082180cb391013d204ef9f # v2
         with:
-          php-version: 8.2
+          php-version: '8.4'
           coverage: none
           tools: composer:v2
 
-      - name: Install dependencies
-        run: composer install
+      - name: Install composer dependencies
+        uses: ramsey/composer-install@v4
+
+      - name: Cache PHPStan results
+        uses: actions/cache@v5
+        with:
+          path: .cache/phpstan/
+          key: phpstan-result-cache-${{ hashFiles('composer.lock', 'phpstan.neon.dist') }}
+          restore-keys: phpstan-result-cache-
 
       - name: Run PHPStan
-        run: vendor/bin/phpstan analyze --no-ansi
+        run: vendor/bin/phpstan analyse --error-format=github --no-interaction --no-ansi

@@ -1,31 +1,51 @@
+name: run-tests
+
+permissions:
+  contents: read
+
 on:
   push:
     branches:
       - main
-
+    paths:
+      - '**.php'
+      - 'phpunit.xml.dist'
+      - 'composer.json'
+      - 'composer.lock'
+      - 'extension.neon'
+      - '.github/workflows/tests.yml'
   pull_request:
     types:
       - opened
       - reopened
       - synchronize
       - ready_for_review
-
+    paths:
+      - '**.php'
+      - 'phpunit.xml.dist'
+      - 'composer.json'
+      - 'composer.lock'
+      - 'extension.neon'
+      - '.github/workflows/tests.yml'
   workflow_dispatch:
 
-permissions:
-  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   run_tests:
-    runs-on: ubuntu-22.04
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
     strategy:
       fail-fast: true
       matrix:
-        php: [ 8.3, 8.4 ]
-        laravel: [ ^11.31, ^12.0, ^13.0 ]
-        stability: [ prefer-lowest, prefer-stable ]
+        os: [ubuntu-latest]
+        php: [8.3, 8.4]
+        laravel: ['^11.31', '^12.0', '^13.0']
+        stability: [prefer-lowest, prefer-stable]
 
-    name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }} - ${{ matrix.stability }}
+    name: P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.stability }} - ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v6
@@ -36,13 +56,34 @@ jobs:
         uses: shivammathur/setup-php@accd6127cb78bee3e8082180cb391013d204ef9f # v2
         with:
           php-version: ${{ matrix.php }}
+          extensions: dom, curl, libxml, mbstring, zip
           coverage: none
           tools: composer:v2
 
-      - name: Install dependencies
+      - name: Setup problem matchers
+        env:
+          TOOL_CACHE: ${{ runner.tool_cache }}
         run: |
-          composer require "illuminate/support:${{ matrix.laravel }}" --no-interaction --no-update
-          composer update --${{ matrix.stability }} --prefer-dist --no-interaction
+          echo "::add-matcher::${TOOL_CACHE}/php.json"
+          echo "::add-matcher::${TOOL_CACHE}/phpunit.json"
+
+      - name: Install dependencies
+        env:
+          LARAVEL_CONSTRAINT: ${{ matrix.laravel }}
+          STABILITY: ${{ matrix.stability }}
+        run: |
+          composer require "illuminate/support:${LARAVEL_CONSTRAINT}" --no-interaction --no-update
+          composer update --"${STABILITY}" --prefer-dist --no-interaction
+
+      - name: List Installed Dependencies
+        run: composer show -D
+
+      - name: Cache PHPUnit results
+        uses: actions/cache@v5
+        with:
+          path: .cache/phpunit/
+          key: phpunit-${{ matrix.php }}-${{ matrix.laravel }}-${{ matrix.stability }}-${{ matrix.os }}-${{ hashFiles('tests/**') }}
+          restore-keys: phpunit-${{ matrix.php }}-${{ matrix.laravel }}-${{ matrix.stability }}-${{ matrix.os }}-
 
       - name: Run tests
         run: vendor/bin/phpunit

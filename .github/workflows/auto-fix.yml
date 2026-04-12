@@ -1,0 +1,64 @@
+name: Auto-fix
+
+on:
+  pull_request:
+    paths:
+      - '**.php'
+      - 'rector.php'
+      - 'pint.json'
+      - '.github/workflows/auto-fix.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: auto-fix-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  auto-fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@accd6127cb78bee3e8082180cb391013d204ef9f # v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - name: Install composer dependencies
+        uses: ramsey/composer-install@v4
+
+      - name: Cache Rector results
+        uses: actions/cache@v5
+        with:
+          path: .cache/rector/
+          key: rector-cache-${{ hashFiles('rector.php') }}
+          restore-keys: rector-cache-
+
+      - name: Cache Pint results
+        uses: actions/cache@v5
+        with:
+          path: .cache/pint/
+          key: pint-cache-${{ hashFiles('pint.json') }}
+          restore-keys: pint-cache-
+
+      - name: Run Rector
+        run: vendor/bin/rector process --no-diffs
+
+      - name: Run Pint
+        uses: aglipanci/laravel-pint-action@2.6
+        with:
+          configPath: pint.json
+          verboseMode: true
+
+      - name: Commit changes
+        uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          commit_message: 'chore: auto-fix'
