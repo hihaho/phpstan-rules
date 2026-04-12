@@ -69,11 +69,11 @@ Identifier: `hihaho.generic.onlyAllowFacadeAliasInBlade`
 
 Three rules that together keep debug calls out of `App\` and `Tests\`:
 
-| Rule | Targets | Examples |
-| --- | --- | --- |
-| `NoDebugInNamespaceRule` | Global debug functions | `dump()`, `dd()`, `ddd()`, `ray()`, `print_r()`, `var_dump()` |
-| `ChainedNoDebugInNamespaceRule` | Method chains on Laravel types | `collect()->dump()`, `$builder->dd()` |
-| `StaticChainedNoDebugInNamespaceRule` | Static calls on Laravel facades | `Http::dump()`, `Cache::dd()` |
+| Rule                                  | Targets                         | Examples                                                      |
+|---------------------------------------|---------------------------------|---------------------------------------------------------------|
+| `NoDebugInNamespaceRule`              | Global debug functions          | `dump()`, `dd()`, `ddd()`, `ray()`, `print_r()`, `var_dump()` |
+| `ChainedNoDebugInNamespaceRule`       | Method chains on Laravel types  | `collect()->dump()`, `$builder->dd()`                         |
+| `StaticChainedNoDebugInNamespaceRule` | Static calls on Laravel facades | `Http::dump()`, `Cache::dd()`                                 |
 
 The chained and static rules use PHPStan reflection to narrow matches:
 they only flag methods declared by (or proxied through) the `Illuminate\`
