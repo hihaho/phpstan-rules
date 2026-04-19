@@ -4,6 +4,7 @@
 [![Tests](https://img.shields.io/github/actions/workflow/status/hihaho/phpstan-rules/tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/hihaho/phpstan-rules/actions/workflows/tests.yml)
 [![PHPStan](https://img.shields.io/github/actions/workflow/status/hihaho/phpstan-rules/analyzer.yml?branch=main&label=phpstan&style=flat-square)](https://github.com/hihaho/phpstan-rules/actions/workflows/analyzer.yml)
 [![Total Downloads](https://img.shields.io/packagist/dt/hihaho/phpstan-rules.svg?style=flat-square)](https://packagist.org/packages/hihaho/phpstan-rules)
+[![Laravel Compatibility](https://badge.laravel.cloud/badge/hihaho/phpstan-rules?style=flat)](https://packagist.org/packages/hihaho/phpstan-rules)
 
 A set of PHPStan rules that enforce [Hihaho's Laravel guidelines](https://guidelines.hihaho.com/laravel.html)
 at analyse time. They flag `invade()` calls in app code, facade aliases
