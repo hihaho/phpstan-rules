@@ -2,94 +2,9 @@
 
 Migration notes for each major-version bump of `hihaho/phpstan-rules`.
 
-## Upgrading from 3.x to 4.0
-
-### New rules: `NoUnsafeRequestDataRule`, `NoUnsafeRequestHelperRule`, and `NoUnsafeRequestFacadeRule`
-
-**Likelihood of impact: high**
-
-Three new rules flag unvalidated reads from `Illuminate\Http\Request`:
-
-- `NoUnsafeRequestDataRule` reports `MethodCall`s on a `Request` or
-  `FormRequest` receiver whose method is in `noUnsafeRequestData.unsafeMethods`
-  (defaults include `input`, `all`, `get`, `query`, `only`, `string`,
-  `integer`, `boolean`, `collect`, `fluent`, `enum`, `file`, `allFiles`,
-  and others — see `extension.neon` for the full list).
-- `NoUnsafeRequestHelperRule` reports `request('key')` (direct-argument
-  form) — the chained form `request()->input('key')` is caught by the
-  first rule.
-- `NoUnsafeRequestFacadeRule` reports static calls on
-  `Illuminate\Support\Facades\Request` (e.g. `Request::input('x')`,
-  `Request::boolean('debug')`).
-
-Both rules run only inside namespaces configured by
-`noUnsafeRequestData.namespaces` (default: `App`). Raw reads inside a
-class that is-a `Illuminate\Http\Request` (e.g. your `FormRequest`
-subclasses' `rules()`/`prepareForValidation()` methods) are allowed.
-
-Note: a `FormRequest` typehint triggers auto-validation, but raw readers
-inherited from `Request` still return the full payload — including keys
-outside `rules()`. Use `$request->validated()` / `$request->safe()` or
-the return value of `$request->validate([...])` instead.
-
-**Migrating existing code**
-
-Replace raw reads with validated accessors:
-
-```diff
- public function __invoke(StoreUserRequest $request): JsonResponse
- {
--    $name = $request->input('name');
--    $age = $request->integer('age');
-+    $data = $request->validated();
-+    $name = $data['name'];
-+    $age = $data['age'];
- }
-```
-
-**Adjusting the policy**
-
-Override the defaults in `phpstan.neon` if needed:
-
-```neon
-parameters:
-    noUnsafeRequestData:
-        namespaces:
-            - App
-            - Domain
-        excludeNamespaces:
-            - App\Providers         # default
-            - App\Http\Responses    # default
-            - App\Http\Resources    # opt-in
-        unsafeMethods:
-            - input
-            - all
-            - get
-```
-
-`excludeNamespaces` defaults to `['App\Providers', 'App\Http\Responses']`
-— both receive raw `Request` via framework-dictated signatures
-(`RateLimiter::for(...)` closures; Fortify response contracts). Add
-`App\Http\Resources` if your project accepts `JsonResource::toArray(Request)`
-reading raw request data.
-
-**Suppressing per call site**
-
-Identifiers: `hihaho.validation.noUnsafeRequestData`,
-`hihaho.validation.noUnsafeRequestHelper`,
-`hihaho.validation.noUnsafeRequestFacade`. All are ignorable:
-
-```php
-// @phpstan-ignore hihaho.validation.noUnsafeRequestData
-$legacyPayload = $request->all();
-```
-
-**Known limitations (not flagged)**
-
-- ArrayAccess: `$request['key']`.
-- Magic property access: `$request->key`.
-- Dynamic method calls: `$request->{$method}()`.
-- Receivers with no known object type (e.g. `mixed`, `object`).
+For minor-version additions (new rules, new configuration keys), see
+[CHANGELOG.md](CHANGELOG.md) and the rule-specific sections in
+[README.md](README.md).
 
 ## Upgrading from 2.x to 3.0
 
