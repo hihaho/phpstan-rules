@@ -46,7 +46,7 @@
         "phpunit/phpunit": "^12.5.22",
         "rector/rector": "^2.0",
         "rector/type-perfect": "^2.0",
-        "sandermuller/package-boost": "^0.2",
+        "sandermuller/package-boost": "^0.9",
         "spatie/invade": "^2.1",
         "spaze/phpstan-disallowed-calls": "^4.4",
         "symplify/phpstan-extensions": "^12.0.1",
