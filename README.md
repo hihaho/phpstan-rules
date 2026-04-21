@@ -112,6 +112,7 @@ final class StoreUserController
         RequestFacade::boolean('debug');      // reported (facade)
 
         $request->safe()->string('name');     // fine
+
         return $request->validate(['name' => 'required']);
     }
 }
