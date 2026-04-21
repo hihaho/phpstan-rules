@@ -25,10 +25,10 @@ final class NoUnsafeRequestFacadeRuleTest extends RuleTestCase
             unsafeMethods: [
                 'input', 'all', 'get', 'query', 'post', 'only', 'except', 'collect',
                 'string', 'str', 'integer', 'boolean', 'float', 'json', 'keys',
-                'fluent', 'array', 'date', 'enum', 'enums',
+                'fluent', 'array', 'date', 'enum', 'enums', 'file', 'allFiles',
             ],
             namespaces: ['App'],
-            excludeNamespaces: ['App\\Providers'],
+            excludeNamespaces: ['App\\Providers', 'App\\Http\\Responses'],
         );
     }
 
@@ -72,6 +72,15 @@ final class NoUnsafeRequestFacadeRuleTest extends RuleTestCase
     public function does_not_flag_illuminate_http_request_static_calls(): void
     {
         $this->analyse([__DIR__ . '/stubs/HttpRequestStaticCallStub.php'], []);
+    }
+
+    #[Test]
+    public function flags_file_upload_facade_methods(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/FileUploadFacadeStub.php'], [
+            [sprintf(self::MESSAGE_PATTERN, 'file'), 15, self::TIP],
+            [sprintf(self::MESSAGE_PATTERN, 'allFiles'), 16, self::TIP],
+        ]);
     }
 
     #[Test]

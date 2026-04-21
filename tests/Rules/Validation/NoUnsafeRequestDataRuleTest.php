@@ -24,7 +24,7 @@ final class NoUnsafeRequestDataRuleTest extends RuleTestCase
             unsafeMethods: [
                 'input', 'all', 'get', 'query', 'post', 'only', 'except', 'collect',
                 'string', 'str', 'integer', 'boolean', 'float', 'json', 'keys',
-                'fluent', 'array', 'date', 'enum', 'enums',
+                'fluent', 'array', 'date', 'enum', 'enums', 'file', 'allFiles',
             ],
             namespaces: ['App'],
             excludeNamespaces: ['App\\Providers', 'App\\Http\\Responses'],
@@ -120,6 +120,23 @@ final class NoUnsafeRequestDataRuleTest extends RuleTestCase
                 [sprintf(self::MESSAGE_PATTERN, 'input'), 16, self::TIP],
             ]
         );
+    }
+
+    #[Test]
+    public function flags_file_upload_readers(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/FileUploadReadersStub.php'], [
+            [sprintf(self::MESSAGE_PATTERN, 'file'), 15, self::TIP],
+            [sprintf(self::MESSAGE_PATTERN, 'allFiles'), 16, self::TIP],
+        ]);
+    }
+
+    #[Test]
+    public function flags_receiver_typed_via_docblock(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/DocblockTypedReceiverStub.php'], [
+            [sprintf(self::MESSAGE_PATTERN, 'input'), 16, self::TIP],
+        ]);
     }
 
     #[Test]

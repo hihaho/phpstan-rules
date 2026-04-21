@@ -13,8 +13,8 @@ Three new rules flag unvalidated reads from `Illuminate\Http\Request`:
 - `NoUnsafeRequestDataRule` reports `MethodCall`s on a `Request` or
   `FormRequest` receiver whose method is in `noUnsafeRequestData.unsafeMethods`
   (defaults include `input`, `all`, `get`, `query`, `only`, `string`,
-  `integer`, `boolean`, `collect`, `fluent`, `enum`, and others — see
-  `extension.neon` for the full list).
+  `integer`, `boolean`, `collect`, `fluent`, `enum`, `file`, `allFiles`,
+  and others — see `extension.neon` for the full list).
 - `NoUnsafeRequestHelperRule` reports `request('key')` (direct-argument
   form) — the chained form `request()->input('key')` is caught by the
   first rule.

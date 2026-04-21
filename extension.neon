@@ -28,6 +28,8 @@ parameters:
             - date
             - enum
             - enums
+            - file
+            - allFiles
         namespaces:
             - App
         excludeNamespaces:
