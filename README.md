@@ -229,6 +229,20 @@ raw access is unavoidable. Expect these to stay in your baseline:
 These are expected baseline territory, not rule bugs. Baseline them on
 adoption and drive the remainder to zero as a separate cleanup.
 
+For the dynamic-key CRUD case where no FormRequest equivalent is
+ergonomic, suppress inline instead of adding to the baseline:
+
+```php
+foreach ($schema->fields() as $field) {
+    // @phpstan-ignore hihaho.validation.noUnsafeRequestData
+    $value = $request->input($field->key);
+    // ...
+}
+```
+
+Inline `@phpstan-ignore` keeps the suppression next to the rationale and
+surfaces it if the surrounding code changes.
+
 ## Testing
 
 ```bash

@@ -7,6 +7,7 @@ use Override;
 use PhpParser\Node;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Name;
+use PhpParser\Node\Scalar\String_;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Rules\IdentifierRuleError;
@@ -64,13 +65,25 @@ final readonly class NoUnsafeRequestHelperRule implements Rule
         }
 
         return [
-            RuleErrorBuilder::message(
-                'Reading unvalidated request data via request(...) is not allowed. Use a FormRequest, $request->validated(), or $request->safe().'
-            )
+            RuleErrorBuilder::message(sprintf(
+                'Reading unvalidated request data via %s is not allowed. Use a FormRequest, $request->validated(), or $request->safe().',
+                $this->callLabel($node),
+            ))
                 ->identifier('hihaho.validation.noUnsafeRequestHelper')
                 ->tip('Inject a FormRequest subclass, or call $request->validated() / $request->safe() before reading input.')
                 ->build(),
         ];
+    }
+
+    private function callLabel(FuncCall $node): string
+    {
+        $firstArg = $node->getArgs()[0]->value;
+
+        if ($firstArg instanceof String_) {
+            return "request('{$firstArg->value}')";
+        }
+
+        return 'request(...)';
     }
 
     private function isInConfiguredNamespace(Scope $scope): bool
