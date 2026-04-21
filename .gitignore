@@ -21,3 +21,4 @@ _ide_helper_models.php
 .DS_Store
 phpunit.xml
 phpstan.neon
+.claude/scheduled_tasks.lock
