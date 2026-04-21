@@ -27,6 +27,7 @@ final class NoUnsafeRequestFacadeRuleTest extends RuleTestCase
                 'fluent', 'array', 'date', 'enum', 'enums',
             ],
             namespaces: ['App'],
+            excludeNamespaces: ['App\\Providers'],
         );
     }
 
@@ -58,6 +59,12 @@ final class NoUnsafeRequestFacadeRuleTest extends RuleTestCase
     public function does_not_flag_facade_calls_outside_configured_namespace(): void
     {
         $this->analyse([__DIR__ . '/stubs/RequestFacadeOutsideNamespaceStub.php'], []);
+    }
+
+    #[Test]
+    public function does_not_flag_facade_calls_inside_excluded_namespace(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/ProvidersNamespaceStub.php'], []);
     }
 
     #[Test]

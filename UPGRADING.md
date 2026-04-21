@@ -57,11 +57,18 @@ parameters:
         namespaces:
             - App
             - Domain
+        excludeNamespaces:
+            - App\Providers     # default
+            - App\Http\Resources
         unsafeMethods:
             - input
             - all
             - get
 ```
+
+`excludeNamespaces` defaults to `['App\Providers']` — Laravel bootstrap
+closures like `RateLimiter::for(...)` receive raw `Request` by design.
+Extend the list for project-specific framework-adapter layers.
 
 **Suppressing per call site**
 

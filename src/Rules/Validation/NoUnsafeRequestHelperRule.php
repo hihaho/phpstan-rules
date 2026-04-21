@@ -22,9 +22,11 @@ final readonly class NoUnsafeRequestHelperRule implements Rule
 
     /**
      * @param  list<string>  $namespaces
+     * @param  list<string>  $excludeNamespaces
      */
     public function __construct(
         private array $namespaces,
+        private array $excludeNamespaces,
         private ReflectionProvider $reflectionProvider,
     ) {}
 
@@ -73,12 +75,7 @@ final readonly class NoUnsafeRequestHelperRule implements Rule
 
     private function isInConfiguredNamespace(Scope $scope): bool
     {
-        foreach ($this->namespaces as $namespace) {
-            if ($this->namespaceStartsWith($scope, $namespace)) {
-                return true;
-            }
-        }
-
-        return false;
+        return $this->namespaceStartsWithAny($scope, $this->namespaces)
+            && ! $this->namespaceStartsWithAny($scope, $this->excludeNamespaces);
     }
 }

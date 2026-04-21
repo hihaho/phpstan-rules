@@ -2,6 +2,7 @@ parametersSchema:
     noUnsafeRequestData: structure([
         unsafeMethods: listOf(string())
         namespaces: listOf(string())
+        excludeNamespaces: listOf(string())
     ])
 
 parameters:
@@ -29,6 +30,8 @@ parameters:
             - enums
         namespaces:
             - App
+        excludeNamespaces:
+            - App\Providers
 
 rules:
     - Hihaho\PhpstanRules\Rules\NoInvadeInAppCode
@@ -46,12 +49,14 @@ services:
         arguments:
             unsafeMethods: %noUnsafeRequestData.unsafeMethods%
             namespaces: %noUnsafeRequestData.namespaces%
+            excludeNamespaces: %noUnsafeRequestData.excludeNamespaces%
         tags:
             - phpstan.rules.rule
     -
         class: Hihaho\PhpstanRules\Rules\Validation\NoUnsafeRequestHelperRule
         arguments:
             namespaces: %noUnsafeRequestData.namespaces%
+            excludeNamespaces: %noUnsafeRequestData.excludeNamespaces%
             reflectionProvider: @reflectionProvider
         tags:
             - phpstan.rules.rule
@@ -60,5 +65,6 @@ services:
         arguments:
             unsafeMethods: %noUnsafeRequestData.unsafeMethods%
             namespaces: %noUnsafeRequestData.namespaces%
+            excludeNamespaces: %noUnsafeRequestData.excludeNamespaces%
         tags:
             - phpstan.rules.rule

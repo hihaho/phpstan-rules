@@ -28,10 +28,12 @@ final readonly class NoUnsafeRequestDataRule implements Rule
     /**
      * @param  list<string>  $unsafeMethods
      * @param  list<string>  $namespaces
+     * @param  list<string>  $excludeNamespaces
      */
     public function __construct(
         array $unsafeMethods,
         private array $namespaces,
+        private array $excludeNamespaces,
     ) {
         $this->unsafeMethodsLower = array_values(array_map(strtolower(...), $unsafeMethods));
     }
@@ -82,13 +84,8 @@ final readonly class NoUnsafeRequestDataRule implements Rule
 
     private function isInConfiguredNamespace(Scope $scope): bool
     {
-        foreach ($this->namespaces as $namespace) {
-            if ($this->namespaceStartsWith($scope, $namespace)) {
-                return true;
-            }
-        }
-
-        return false;
+        return $this->namespaceStartsWithAny($scope, $this->namespaces)
+            && ! $this->namespaceStartsWithAny($scope, $this->excludeNamespaces);
     }
 
     private function scopeClassIsRequest(Scope $scope): bool

@@ -22,6 +22,7 @@ final class NoUnsafeRequestHelperRuleTest extends RuleTestCase
     {
         return new NoUnsafeRequestHelperRule(
             namespaces: ['App'],
+            excludeNamespaces: ['App\\Providers'],
             reflectionProvider: self::createReflectionProvider(),
         );
     }
@@ -45,6 +46,12 @@ final class NoUnsafeRequestHelperRuleTest extends RuleTestCase
     public function does_not_flag_request_helper_outside_configured_namespace(): void
     {
         $this->analyse([__DIR__ . '/stubs/RequestHelperOutsideNamespaceStub.php'], []);
+    }
+
+    #[Test]
+    public function does_not_flag_request_helper_inside_excluded_namespace(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/ProvidersNamespaceStub.php'], []);
     }
 
     #[Test]

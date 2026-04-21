@@ -27,6 +27,7 @@ final class NoUnsafeRequestDataRuleTest extends RuleTestCase
                 'fluent', 'array', 'date', 'enum', 'enums',
             ],
             namespaces: ['App'],
+            excludeNamespaces: ['App\\Providers'],
         );
     }
 
@@ -66,6 +67,12 @@ final class NoUnsafeRequestDataRuleTest extends RuleTestCase
     public function does_not_flag_code_outside_configured_namespace(): void
     {
         $this->analyse([__DIR__ . '/stubs/VendorNamespaceStub.php'], []);
+    }
+
+    #[Test]
+    public function does_not_flag_code_inside_excluded_namespace(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/ProvidersNamespaceStub.php'], []);
     }
 
     #[Test]

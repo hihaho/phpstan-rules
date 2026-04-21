@@ -20,4 +20,18 @@ trait ChecksNamespace
 
         return str_starts_with($scopeNamespace, rtrim($namespace, '\\') . '\\');
     }
+
+    /**
+     * @param  list<string>  $namespaces
+     */
+    protected function namespaceStartsWithAny(Scope $scope, array $namespaces): bool
+    {
+        foreach ($namespaces as $namespace) {
+            if ($this->namespaceStartsWith($scope, $namespace)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

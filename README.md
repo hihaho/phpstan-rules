@@ -134,12 +134,21 @@ parameters:
     noUnsafeRequestData:
         namespaces:
             - App          # which root namespaces to enforce in
+        excludeNamespaces:
+            - App\Providers    # skip Laravel bootstrap area (default)
+            - App\Http\Resources  # add your own exclusions
         unsafeMethods:
             - input        # full default list is in extension.neon
             - all
             - get
             # ...
 ```
+
+`excludeNamespaces` defaults to `['App\Providers']` because Laravel
+bootstrap code (`RateLimiter::for(...)` throttle closures, service
+bindings, Fortify response registrations) receives the raw `Request` by
+framework design and has no FormRequest entry point. Add more exclusions
+if your project has similar framework-adapter layers.
 
 ### `NoUnsafeRequestHelperRule`
 
