@@ -17,7 +17,7 @@ final class NoUnsafeRequestHelperRuleTest extends RuleTestCase
 
     private const string TIP = 'Inject a FormRequest subclass, or call $request->validated() / $request->safe() before reading input.';
 
-    private static function message(string $callLabel): string
+    private function message(string $callLabel): string
     {
         return sprintf(self::MESSAGE_PATTERN, $callLabel);
     }
@@ -36,8 +36,8 @@ final class NoUnsafeRequestHelperRuleTest extends RuleTestCase
     public function flags_request_helper_with_argument(): void
     {
         $this->analyse([__DIR__ . '/stubs/RequestHelperWithArgStub.php'], [
-            [self::message("request('a')"), 13, self::TIP],
-            [self::message("request('b')"), 14, self::TIP],
+            [$this->message("request('a')"), 13, self::TIP],
+            [$this->message("request('b')"), 14, self::TIP],
         ]);
     }
 
@@ -45,7 +45,7 @@ final class NoUnsafeRequestHelperRuleTest extends RuleTestCase
     public function falls_back_to_generic_label_for_dynamic_argument(): void
     {
         $this->analyse([__DIR__ . '/stubs/RequestHelperDynamicKeyStub.php'], [
-            [self::message('request(...)'), 9, self::TIP],
+            [$this->message('request(...)'), 9, self::TIP],
         ]);
     }
 
@@ -71,8 +71,8 @@ final class NoUnsafeRequestHelperRuleTest extends RuleTestCase
     public function flags_fully_qualified_and_mixed_case_request_helper(): void
     {
         $this->analyse([__DIR__ . '/stubs/FullyQualifiedRequestHelperStub.php'], [
-            [self::message("request('a')"), 13, self::TIP],
-            [self::message("request('b')"), 14, self::TIP],
+            [$this->message("request('a')"), 13, self::TIP],
+            [$this->message("request('b')"), 14, self::TIP],
         ]);
     }
 

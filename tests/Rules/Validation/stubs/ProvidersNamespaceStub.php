@@ -11,7 +11,7 @@ final class ProvidersNamespaceStub
     public function boot(): void
     {
         $callback = static fn (Request $request): Limit => Limit::perMinute(5)
-            ->by((string) $request->input('email') . $request->ip());
+            ->by($request->input('email') . $request->ip());
 
         $raw = request('direct');
         $facadeBool = RequestFacade::boolean('debug');

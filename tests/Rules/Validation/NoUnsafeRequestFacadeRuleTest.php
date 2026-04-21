@@ -3,6 +3,7 @@
 namespace Hihaho\PhpstanRules\Tests\Rules\Validation;
 
 use Hihaho\PhpstanRules\Rules\Validation\NoUnsafeRequestFacadeRule;
+use Illuminate\Support\Facades\Request;
 use Override;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
@@ -13,7 +14,7 @@ use PHPUnit\Framework\Attributes\Test;
  */
 final class NoUnsafeRequestFacadeRuleTest extends RuleTestCase
 {
-    private const string MESSAGE_PATTERN = 'Reading unvalidated request data via Illuminate\Support\Facades\Request::%s() is not allowed. Use a FormRequest, $request->validated(), or $request->safe().';
+    private const string MESSAGE_PATTERN = 'Reading unvalidated request data via ' . Request::class . '::%s() is not allowed. Use a FormRequest, $request->validated(), or $request->safe().';
 
     private const string TIP = 'Inject a FormRequest subclass, or call $request->validated() / $request->safe() before reading input.';
 

@@ -8,6 +8,6 @@ final class DynamicMethodCallStub
 {
     public function __invoke(Request $request, string $method): mixed
     {
-        return $request->{$method}('foo');
+        return $request->{$method}();
     }
 }

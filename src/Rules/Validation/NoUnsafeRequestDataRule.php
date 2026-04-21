@@ -9,6 +9,7 @@ use PhpParser\Node;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Identifier;
 use PHPStan\Analyser\Scope;
+use PHPStan\Reflection\ClassReflection;
 use PHPStan\Rules\IdentifierRuleError;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
@@ -92,7 +93,7 @@ final readonly class NoUnsafeRequestDataRule implements Rule
     {
         $classReflection = $scope->getClassReflection();
 
-        return $classReflection !== null && $this->classIsRequest($classReflection->getName());
+        return $classReflection instanceof ClassReflection && $this->classIsRequest($classReflection->getName());
     }
 
     private function typeIsRequest(Type $type): bool

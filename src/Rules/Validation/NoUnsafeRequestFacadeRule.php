@@ -74,7 +74,7 @@ final readonly class NoUnsafeRequestFacadeRule implements Rule
 
         return [
             RuleErrorBuilder::message(sprintf(
-                'Reading unvalidated request data via Illuminate\Support\Facades\Request::%s() is not allowed. Use a FormRequest, $request->validated(), or $request->safe().',
+                'Reading unvalidated request data via ' . RequestFacade::class . '::%s() is not allowed. Use a FormRequest, $request->validated(), or $request->safe().',
                 $methodName,
             ))
                 ->identifier('hihaho.validation.noUnsafeRequestFacade')

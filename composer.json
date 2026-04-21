@@ -62,7 +62,12 @@
         "phpstan-simplified": "vendor/bin/phpstan analyse --memory-limit=2G --error-format symplify",
         "rector": "vendor/bin/rector process",
         "test": "vendor/bin/phpunit",
-        "qa": ["@format", "@rector", "@phpstan", "@test"]
+        "qa": [
+            "@rector",
+            "@format",
+            "@phpstan-simplified",
+            "@test"
+        ]
     },
     "extra": {
         "phpstan": {
