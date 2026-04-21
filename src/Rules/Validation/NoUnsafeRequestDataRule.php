@@ -78,7 +78,7 @@ final readonly class NoUnsafeRequestDataRule implements Rule
                 $node->name->toString(),
             ))
                 ->identifier('hihaho.validation.noUnsafeRequestData')
-                ->tip('Inject a FormRequest subclass, or call $request->validated() / $request->safe() before reading input.')
+                ->tip('Use $request->validated() or $request->safe() to consume validated data. For Stringable/int/bool accessors, $request->safe()->string(\'key\') mirrors $request->string(\'key\') against validated input.')
                 ->build(),
         ];
     }

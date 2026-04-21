@@ -16,7 +16,7 @@ final class NoUnsafeRequestFacadeRuleTest extends RuleTestCase
 {
     private const string MESSAGE_PATTERN = 'Reading unvalidated request data via ' . Request::class . '::%s() is not allowed. Use a FormRequest, $request->validated(), or $request->safe().';
 
-    private const string TIP = 'Inject a FormRequest subclass, or call $request->validated() / $request->safe() before reading input.';
+    private const string TIP = 'Inject a FormRequest (or Request typehint) and consume via $request->validated() / $request->safe() instead of the Request facade.';
 
     #[Override]
     protected function getRule(): Rule

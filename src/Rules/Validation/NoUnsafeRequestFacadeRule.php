@@ -78,7 +78,7 @@ final readonly class NoUnsafeRequestFacadeRule implements Rule
                 $methodName,
             ))
                 ->identifier('hihaho.validation.noUnsafeRequestFacade')
-                ->tip('Inject a FormRequest subclass, or call $request->validated() / $request->safe() before reading input.')
+                ->tip('Inject a FormRequest (or Request typehint) and consume via $request->validated() / $request->safe() instead of the Request facade.')
                 ->build(),
         ];
     }

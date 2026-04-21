@@ -243,6 +243,15 @@ raw access is unavoidable. Expect these to stay in your baseline:
 These are expected baseline territory, not rule bugs. Baseline them on
 adoption and drive the remainder to zero as a separate cleanup.
 
+**Livewire / Filament projects:** the rules target `Request` / `FormRequest`
+method calls, the `request()` helper, and the Request facade. Projects that
+lean on Livewire/Filament do most of their input handling through component
+properties and Filament form schemas — outside the rule's node targets. A
+low hit count in such a codebase is a structural consequence of the
+architecture, not a proof of input-handling cleanliness. Review component
+`mount()` hydration and Filament form-submit handlers separately if that
+matters for your threat model.
+
 For the dynamic-key CRUD case where no FormRequest equivalent is
 ergonomic, suppress inline instead of adding to the baseline:
 

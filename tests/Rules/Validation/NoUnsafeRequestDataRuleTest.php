@@ -15,7 +15,7 @@ final class NoUnsafeRequestDataRuleTest extends RuleTestCase
 {
     private const string MESSAGE_PATTERN = 'Reading unvalidated request data via %s() is not allowed. Use a FormRequest, $request->validated(), or $request->safe().';
 
-    private const string TIP = 'Inject a FormRequest subclass, or call $request->validated() / $request->safe() before reading input.';
+    private const string TIP = "Use \$request->validated() or \$request->safe() to consume validated data. For Stringable/int/bool accessors, \$request->safe()->string('key') mirrors \$request->string('key') against validated input.";
 
     #[Override]
     protected function getRule(): Rule

@@ -70,7 +70,7 @@ final readonly class NoUnsafeRequestHelperRule implements Rule
                 $this->callLabel($node),
             ))
                 ->identifier('hihaho.validation.noUnsafeRequestHelper')
-                ->tip('Inject a FormRequest subclass, or call $request->validated() / $request->safe() before reading input.')
+                ->tip('Inject a FormRequest (or Request typehint) and consume via $request->validated() / $request->safe() instead of the global helper.')
                 ->build(),
         ];
     }
