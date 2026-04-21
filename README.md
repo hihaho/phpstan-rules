@@ -115,10 +115,15 @@ final class StoreUserController
 
 Reads from `$this` inside a request class (`Illuminate\Http\Request` or
 subclass, including `FormRequest`) are intentionally allowed — that is
-where validation pulls its source data.
+where validation pulls its source data. The scope-class exemption uses
+PHPStan's inheritance resolution, so custom base classes work
+transparently — e.g. `App\Http\Requests\FormRequest extends BaseFormRequest
+extends Illuminate\Foundation\Http\FormRequest` is exempted without
+additional configuration.
 
-Out of scope: ArrayAccess (`$request['x']`), magic property access
-(`$request->x`), and static facade calls (`Request::input()`).
+Out of scope: ArrayAccess (`$request['x']`) and magic property access
+(`$request->x`). Static facade calls are covered by `NoUnsafeRequestFacadeRule`
+(below).
 
 Identifier: `hihaho.validation.noUnsafeRequestData`
 
@@ -190,6 +195,30 @@ flagged because they do not return raw input.
 Shares `namespaces` and `unsafeMethods` with `NoUnsafeRequestDataRule`.
 
 Identifier: `hihaho.validation.noUnsafeRequestFacade`
+
+### Expected baseline categories
+
+On first adoption in a non-trivial Laravel codebase these rules will flag
+a nonzero baseline. Some patterns are legitimately caught architecture
+smells (models reading `$request->input()`, domain calculations gating on
+`Request::boolean('debug')`, etc.); others are framework conventions where
+raw access is unavoidable. Expect these to stay in your baseline:
+
+- **Dynamic-key admin CRUD.** Bulk-edit controllers that loop over
+  data-driven field registries: `$request->collect('fields')->each(...)`,
+  `$request->input($dynamicKey)`. Keys aren't known at design time, so
+  there is no ergonomic FormRequest equivalent.
+- **Pre-validation framework callbacks.** `RateLimiter::for('login',
+  fn (Request $request) => $request->input(...))` runs before any
+  FormRequest dispatch by design.
+- **Fortify response contracts.** Classes implementing
+  `Laravel\Fortify\Contracts\*Response` receive the raw `Request`.
+- **`JsonResource::toArray(Request $request)`.** Resources receive the
+  current request by Laravel convention; validation happened upstream
+  but is not statically provable.
+
+These are expected baseline territory, not rule bugs. Baseline them on
+adoption and drive the remainder to zero as a separate cleanup.
 
 ## Testing
 
