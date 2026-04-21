@@ -17,17 +17,58 @@ All notable changes to `hihaho/phpstan-rules` will be documented in this file.
 
 - Raw readers on a `FormRequest` typehint in a controller are now flagged. `FormRequest` auto-validation runs on dispatch, but inherited readers still return the full unvalidated payload including keys outside `rules()`. Use `$request->validated()`, `$request->safe()`, or the array returned by `$request->validate([...])` instead. For Stringable / int / bool chaining, `$request->safe()->string('key')` mirrors `$request->string('key')` against validated input.
 
-### Notes
-
-Dogfooded against three production Laravel codebases before release: **311 true positives across 130 files, zero false positives.** Test matrix covered controller-heavy, Livewire/Filament-heavy, and mixed-adoption-maturity projects. Inheritance walks validated through multi-level custom `FormRequest` bases (e.g. `SaveQuestionRequest → AjaxFormRequest → FormRequest`). Docblock-driven receiver types (`toArray(mixed $request)` with `@param Request`) resolve correctly.
-
-**Adopting on an existing codebase:** expect a nonzero first-run baseline. Some hits are legitimate architecture smells (models reading `$request->input()`, debug-flag bypasses via `Request::boolean(...)`); others are framework conventions where raw access is unavoidable (see README "Expected baseline categories"). Recommended path: `vendor/bin/phpstan analyse --generate-baseline` on first install, then drive the baseline to zero as a separate cleanup. Per-call-site suppression via `@phpstan-ignore hihaho.validation.noUnsafeRequestData` is available for cases like dynamic-key admin CRUD where no `FormRequest` equivalent is ergonomic.
-
-**Livewire / Filament caveat:** the rules target `Request` / `FormRequest` method calls, the `request()` helper, and the Request facade. Projects built heavily on Livewire or Filament route most input through component properties and form schemas — outside the rule's node targets. A low hit count in such a codebase is a structural consequence of the architecture, not a proof of input-handling cleanliness.
-
 See [README.md](README.md#nounsaferequestdatarule) for full rule descriptions, configuration keys, and baseline categories.
 
 **Full Changelog**: https://github.com/hihaho/phpstan-rules/compare/v3.0.0...v3.1.0
+
+## v3.0.0 - 2026-04-12
+
+Major version. Class-naming and routing conventions move to the sibling package [`hihaho/rector-rules`](https://github.com/hihaho/rector-rules) as auto-fixers. This package keeps the rules that have no auto-fix counterpart. See [UPGRADING.md](UPGRADING.md) for migration steps.
+
+### Removed
+
+- `Rules\NamingClasses\Commands`, `Mail`, `Notifications`, `EloquentApiResources` (and `SuffixableRule` base). Replaced by `AddCommandSuffixRector`, `AddMailSuffixRector`, `AddNotificationSuffixRector`, and `AddResourceSuffixRector` in [`hihaho/rector-rules`](https://github.com/hihaho/rector-rules).
+- `Rules\Routing\SlashInUrl` and `Rules\Routing\RouteGroups`. Replaced by `NormalizeRoutePathRector` and `RouteGroupArrayToMethodsRector` in [`hihaho/rector-rules`](https://github.com/hihaho/rector-rules).
+- PHP 8.2 support. Minimum is now `^8.3`.
+- `illuminate/{console,http,mail,notifications,routing}` dev deps. Only `illuminate/support` remains in `require`.
+
+### Changed
+
+- `ChainedNoDebugInNamespaceRule` now narrows matches to methods declared by a class in the `Illuminate\` namespace. A domain class with its own `->dump()` method is no longer a false positive.
+- `StaticChainedNoDebugInNamespaceRule` narrows the same way, with a `Facade` subclass fallback so `Cache::dump()` and other facades without `@method static ... dump()` annotations still flag via the `Facade::__callStatic` proxy.
+- `NoInvadeInAppCode` identifier category corrected from `hihaho.debug.*` to `hihaho.generic.*` (not a debug rule).
+- All rules now use `final readonly class`, `#[\Override]` on interface implementations, and explicit `@return list<IdentifierRuleError>` annotations.
+- `OnlyAllowFacadeAliasInBlade` keeps `\ReflectionClass` runtime reflection deliberately. PHPStan's `ReflectionProvider` does not invoke SPL autoloaders, so static discovery would silently miss every lazy Laravel facade alias. Documented in-source.
+- `extension.neon`: rules shorthand for dependency-free rules, `services:` block only for the rule that needs `ReflectionProvider` injected.
+
+### Added
+
+- Laravel 13 coverage in the CI test matrix. `illuminate/support: ^11.31 | ^12.0 | ^13.0` was already declared; the matrix now exercises all three.
+- Rule test coverage: 44 tests across 5 rule classes. Every rule has identifier assertions, dynamic-call-edge coverage, outside-`App`/`Tests` negative cases, and regression guards for the narrowing (unknown receiver, union types, user-defined facade, unannotated Laravel facade, non-Facade aliased class).
+- Rector setup: `rector/rector ^2.0` dev dep, `rector.php` with `php83` set, import-name cleanup, and composer `rector`, `format`, `qa` scripts.
+- `package-boost` + `orchestra/testbench` dev deps for managing `.ai/skills/` and injecting the verification-before-completion guideline block into `CLAUDE.md` / `AGENTS.md`.
+- `CHANGELOG.md` backfilled to v0.1.0 in Keep-a-Changelog format, plus `update-changelog.yml` workflow that keeps it current on future releases.
+- Laravel-package README: badges, per-rule docs, and cross-link to `hihaho/rector-rules`.
+
+### CI
+
+- Merged `rector.yml` + `fix-php-code-style-issues.yml` into a single `auto-fix.yml` mutator (`pull_request`-only, same-repo PRs only).
+- New `update-changelog.yml` (runs on release publish).
+- `analyzer.yml` and `tests.yml`: path filters, concurrency with cancel-in-progress, per-tool result caching, 5-minute timeouts, matrix-injection hardening via env vars.
+- All third-party actions pinned to commit SHAs.
+
+### Quality configs
+
+- PHPStan: `strictRules.allRules`, 100% constant type coverage, PhpStorm `editorUrl`.
+- Pint aligned with `hihaho/rector-rules` sibling.
+- PHPUnit: `beStrictAboutTestsThatDoNotTestAnything` and a scoped `<source>` block.
+
+## What's Changed
+
+- Bump shivammathur/setup-php from 2.36.0 to 2.37.0 by @dependabot[bot] in https://github.com/hihaho/phpstan-rules/pull/43
+- Package modernization by @SanderMuller in https://github.com/hihaho/phpstan-rules/pull/44
+
+**Full Changelog**: https://github.com/hihaho/phpstan-rules/compare/v2.2.0...v3.0.0
 
 ## v2.2.0 - 2026-03-01
 
