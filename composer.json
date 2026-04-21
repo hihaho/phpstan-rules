@@ -15,7 +15,8 @@
         },
         "classmap": [
             "tests/Rules/stubs/",
-            "tests/Rules/Debug/stubs/"
+            "tests/Rules/Debug/stubs/",
+            "tests/Rules/Validation/stubs/"
         ],
         "exclude-from-classmap": [
             "tests/Rules/stubs/facade-alias-in-view.blade.php"

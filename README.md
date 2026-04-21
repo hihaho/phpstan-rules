@@ -8,8 +8,9 @@
 
 A set of PHPStan rules that enforce [Hihaho's Laravel guidelines](https://guidelines.hihaho.com/laravel.html)
 at analyse time. They flag `invade()` calls in app code, facade aliases
-outside Blade, and stray debug helpers (`dump`, `dd`, `ray`, and friends)
-left behind in production or test paths.
+outside Blade, stray debug helpers (`dump`, `dd`, `ray`, and friends)
+left behind in production or test paths, and unvalidated reads from
+`Illuminate\Http\Request`.
 
 If you want the auto-fix counterparts for class-naming and route-group
 conventions, see [`hihaho/rector-rules`](https://github.com/hihaho/rector-rules).
@@ -83,6 +84,112 @@ namespace, so your own domain classes with a `->dump()` method stay clean.
 Identifiers: `hihaho.debug.noDebugIn{App,Tests}`,
 `hihaho.debug.noChainedDebugIn{App,Tests}`,
 `hihaho.debug.noStaticChainedDebugIn{App,Tests}`
+
+### `NoUnsafeRequestDataRule`
+
+Forbids reading unvalidated input from `Illuminate\Http\Request` (including
+`FormRequest` subclasses) in application code. Use the return value of
+`validated()`, `safe()`, or `validate([...])` — never raw readers like
+`input()`, `all()`, `get()` on the request object.
+
+`FormRequest` auto-validation runs on dispatch, but raw readers inherited
+from `Request` still return the full payload, including keys outside
+`rules()`. This rule closes that gap.
+
+```php
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+
+final class StoreUserController
+{
+    public function __invoke(Request $request): mixed
+    {
+        $request->input('name');              // reported
+        $request->all();                      // reported
+        $request->safe()->input('name');      // fine
+        return $request->validate(['name' => 'required']);
+    }
+}
+```
+
+Reads from `$this` inside a request class (`Illuminate\Http\Request` or
+subclass, including `FormRequest`) are intentionally allowed — that is
+where validation pulls its source data.
+
+Out of scope: ArrayAccess (`$request['x']`), magic property access
+(`$request->x`), and static facade calls (`Request::input()`).
+
+Identifier: `hihaho.validation.noUnsafeRequestData`
+
+Configuration (override in your `phpstan.neon`):
+
+```neon
+parameters:
+    noUnsafeRequestData:
+        namespaces:
+            - App          # which root namespaces to enforce in
+        unsafeMethods:
+            - input        # full default list is in extension.neon
+            - all
+            - get
+            # ...
+```
+
+### `NoUnsafeRequestHelperRule`
+
+Companion to `NoUnsafeRequestDataRule` covering the direct-argument form of
+Laravel's `request()` helper. `request('key')` returns raw input and
+bypasses validation entirely. Chained forms like `request()->input('key')`
+are already caught by `NoUnsafeRequestDataRule`.
+
+```php
+namespace App\Http\Controllers;
+
+final class FetchController
+{
+    public function __invoke(): mixed
+    {
+        return request('id');  // reported
+    }
+}
+```
+
+Zero-argument `request()` is not flagged — any method call on its return
+value is caught by `NoUnsafeRequestDataRule`.
+
+Shares the `namespaces` configuration with `NoUnsafeRequestDataRule`.
+
+Identifier: `hihaho.validation.noUnsafeRequestHelper`
+
+### `NoUnsafeRequestFacadeRule`
+
+Companion rule covering static calls on the `Illuminate\Support\Facades\Request`
+facade. `Request::input('x')`, `Request::boolean('debug')`, etc. bypass both
+the instance-method and helper-function rules because they are `StaticCall`
+nodes against a different receiver.
+
+```php
+namespace App\Http\Controllers;
+
+use Illuminate\Support\Facades\Request;
+
+final class DebugController
+{
+    public function __invoke(): bool
+    {
+        return Request::boolean('debug');  // reported
+    }
+}
+```
+
+Only matches the Laravel request facade — static calls on
+`Illuminate\Http\Request` itself (e.g. `Request::capture()`) are not
+flagged because they do not return raw input.
+
+Shares `namespaces` and `unsafeMethods` with `NoUnsafeRequestDataRule`.
+
+Identifier: `hihaho.validation.noUnsafeRequestFacade`
 
 ## Testing
 

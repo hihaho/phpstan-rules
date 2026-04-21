@@ -1,3 +1,35 @@
+parametersSchema:
+    noUnsafeRequestData: structure([
+        unsafeMethods: listOf(string())
+        namespaces: listOf(string())
+    ])
+
+parameters:
+    noUnsafeRequestData:
+        unsafeMethods:
+            - input
+            - all
+            - get
+            - query
+            - post
+            - only
+            - except
+            - collect
+            - string
+            - str
+            - integer
+            - boolean
+            - float
+            - json
+            - keys
+            - fluent
+            - array
+            - date
+            - enum
+            - enums
+        namespaces:
+            - App
+
 rules:
     - Hihaho\PhpstanRules\Rules\NoInvadeInAppCode
     - Hihaho\PhpstanRules\Rules\OnlyAllowFacadeAliasInBlade
@@ -7,5 +39,26 @@ rules:
 services:
     -
         class: Hihaho\PhpstanRules\Rules\Debug\StaticChainedNoDebugInNamespaceRule
+        tags:
+            - phpstan.rules.rule
+    -
+        class: Hihaho\PhpstanRules\Rules\Validation\NoUnsafeRequestDataRule
+        arguments:
+            unsafeMethods: %noUnsafeRequestData.unsafeMethods%
+            namespaces: %noUnsafeRequestData.namespaces%
+        tags:
+            - phpstan.rules.rule
+    -
+        class: Hihaho\PhpstanRules\Rules\Validation\NoUnsafeRequestHelperRule
+        arguments:
+            namespaces: %noUnsafeRequestData.namespaces%
+            reflectionProvider: @reflectionProvider
+        tags:
+            - phpstan.rules.rule
+    -
+        class: Hihaho\PhpstanRules\Rules\Validation\NoUnsafeRequestFacadeRule
+        arguments:
+            unsafeMethods: %noUnsafeRequestData.unsafeMethods%
+            namespaces: %noUnsafeRequestData.namespaces%
         tags:
             - phpstan.rules.rule
