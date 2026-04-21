@@ -2,6 +2,33 @@
 
 All notable changes to `hihaho/phpstan-rules` will be documented in this file.
 
+## v3.1.0 - 2026-04-21
+
+### Added
+
+- Three rules preventing unvalidated reads from `Illuminate\Http\Request` in application code:
+  - **`NoUnsafeRequestDataRule`** — flags `MethodCall` on a `Request` or `FormRequest` receiver whose method is in `noUnsafeRequestData.unsafeMethods`. Defaults: `input`, `all`, `get`, `query`, `post`, `only`, `except`, `collect`, `string`, `str`, `integer`, `boolean`, `float`, `json`, `keys`, `fluent`, `array`, `date`, `enum`, `enums`, `file`, `allFiles`. Union-typed receivers (`Request|Other`) are flagged when any member is-a `Request`. Scope-class exemption walks the inheritance chain — custom base `FormRequest` classes are transparent. Identifier: `hihaho.validation.noUnsafeRequestData`.
+  - **`NoUnsafeRequestHelperRule`** — flags the `request('key')` direct-argument helper form. Uses PHPStan's `ReflectionProvider` to resolve imports and aliases (`use function request as foo`). Error message interpolates the literal key for grep-friendly triage. Zero-argument `request()` is not flagged — chained method calls on its return are caught by `NoUnsafeRequestDataRule`. Identifier: `hihaho.validation.noUnsafeRequestHelper`.
+  - **`NoUnsafeRequestFacadeRule`** — flags static calls on `Illuminate\Support\Facades\Request` (e.g. `Request::boolean('debug')`, `Request::file('attachment')`). Identifier: `hihaho.validation.noUnsafeRequestFacade`.
+- `noUnsafeRequestData` configuration block with `unsafeMethods`, `namespaces`, and `excludeNamespaces`. `excludeNamespaces` defaults to `App\Providers` and `App\Http\Responses` — both areas receive raw `Request` via framework-dictated signatures (`RateLimiter::for(...)` closures, Fortify response contracts) with no FormRequest entry point. `App\Http\Resources` is intentionally **not** defaulted; add it in your own config if `JsonResource::toArray(Request)` reading raw request data is acceptable for your project.
+- `ChecksNamespace::namespaceStartsWithAny()` helper for list-based namespace matching.
+
+### Changed
+
+- Raw readers on a `FormRequest` typehint in a controller are now flagged. `FormRequest` auto-validation runs on dispatch, but inherited readers still return the full unvalidated payload including keys outside `rules()`. Use `$request->validated()`, `$request->safe()`, or the array returned by `$request->validate([...])` instead. For Stringable / int / bool chaining, `$request->safe()->string('key')` mirrors `$request->string('key')` against validated input.
+
+### Notes
+
+Dogfooded against three production Laravel codebases before release: **311 true positives across 130 files, zero false positives.** Test matrix covered controller-heavy, Livewire/Filament-heavy, and mixed-adoption-maturity projects. Inheritance walks validated through multi-level custom `FormRequest` bases (e.g. `SaveQuestionRequest → AjaxFormRequest → FormRequest`). Docblock-driven receiver types (`toArray(mixed $request)` with `@param Request`) resolve correctly.
+
+**Adopting on an existing codebase:** expect a nonzero first-run baseline. Some hits are legitimate architecture smells (models reading `$request->input()`, debug-flag bypasses via `Request::boolean(...)`); others are framework conventions where raw access is unavoidable (see README "Expected baseline categories"). Recommended path: `vendor/bin/phpstan analyse --generate-baseline` on first install, then drive the baseline to zero as a separate cleanup. Per-call-site suppression via `@phpstan-ignore hihaho.validation.noUnsafeRequestData` is available for cases like dynamic-key admin CRUD where no `FormRequest` equivalent is ergonomic.
+
+**Livewire / Filament caveat:** the rules target `Request` / `FormRequest` method calls, the `request()` helper, and the Request facade. Projects built heavily on Livewire or Filament route most input through component properties and form schemas — outside the rule's node targets. A low hit count in such a codebase is a structural consequence of the architecture, not a proof of input-handling cleanliness.
+
+See [README.md](README.md#nounsaferequestdatarule) for full rule descriptions, configuration keys, and baseline categories.
+
+**Full Changelog**: https://github.com/hihaho/phpstan-rules/compare/v3.0.0...v3.1.0
+
 ## v2.2.0 - 2026-03-01
 
 ### Changed
