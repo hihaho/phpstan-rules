@@ -85,186 +85,91 @@ Identifiers: `hihaho.debug.noDebugIn{App,Tests}`,
 `hihaho.debug.noChainedDebugIn{App,Tests}`,
 `hihaho.debug.noStaticChainedDebugIn{App,Tests}`
 
-### `NoUnsafeRequestDataRule`
+### Request-validation rules
 
-Forbids reading unvalidated input from `Illuminate\Http\Request` (including
-`FormRequest` subclasses) in application code. Use the return value of
-`validated()`, `safe()`, or `validate([...])` — never raw readers like
-`input()`, `all()`, `get()` on the request object.
+Three rules flag unvalidated reads from `Illuminate\Http\Request`. Use validated data instead: `$request->validated()`, `$request->safe()->string('key')`, or the array returned by `$request->validate([...])`.
 
-`FormRequest` auto-validation runs on dispatch, but raw readers inherited
-from `Request` still return the full payload, including keys outside
-`rules()`. This rule closes that gap.
+| Rule                        | Targets                                              | Identifier                                |
+|-----------------------------|------------------------------------------------------|-------------------------------------------|
+| `NoUnsafeRequestDataRule`   | Method calls on `Request` / `FormRequest`            | `hihaho.validation.noUnsafeRequestData`   |
+| `NoUnsafeRequestHelperRule` | `request('key')` helper with a literal arg           | `hihaho.validation.noUnsafeRequestHelper` |
+| `NoUnsafeRequestFacadeRule` | Static calls on `Illuminate\Support\Facades\Request` | `hihaho.validation.noUnsafeRequestFacade` |
+
+`FormRequest` auto-validation runs on dispatch, but inherited readers still return the full payload including keys outside `rules()`, so they're flagged on `FormRequest` too. Chained `request()->input('x')` is caught by the Data rule because the receiver resolves to `Request`. Zero-argument `request()` is not flagged.
 
 ```php
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Request as RequestFacade;
 
 final class StoreUserController
 {
     public function __invoke(Request $request): mixed
     {
-        $request->input('name');              // reported
-        $request->all();                      // reported
-        $request->safe()->input('name');      // fine
+        $request->input('name');              // reported (data)
+        request('id');                        // reported (helper)
+        RequestFacade::boolean('debug');      // reported (facade)
+
+        $request->safe()->string('name');     // fine
         return $request->validate(['name' => 'required']);
     }
 }
 ```
 
-Reads from `$this` inside a request class (`Illuminate\Http\Request` or
-subclass, including `FormRequest`) are intentionally allowed — that is
-where validation pulls its source data. The scope-class exemption uses
-PHPStan's inheritance resolution, so custom base classes work
-transparently — e.g. `App\Http\Requests\FormRequest extends BaseFormRequest
-extends Illuminate\Foundation\Http\FormRequest` is exempted without
-additional configuration.
+Reads from `$this` inside a `Request` subclass, including your own `FormRequest` bases, are exempted. The scope-class check walks the inheritance chain, so a custom `App\Http\Requests\FormRequest extends BaseFormRequest extends Illuminate\Foundation\Http\FormRequest` works without extra config. Static calls on `Illuminate\Http\Request` itself (e.g. `Request::capture()`) aren't flagged; they don't return raw input.
 
-Out of scope: ArrayAccess (`$request['x']`) and magic property access
-(`$request->x`). Static facade calls are covered by `NoUnsafeRequestFacadeRule`
-(below).
+Out of scope: ArrayAccess (`$request['x']`), magic property access (`$request->x`), and Symfony `InputBag` property access (`$request->query->get('x')`, `->headers->get()`, `->cookies->get()`). The InputBag path is legitimate for raw header or cookie reads, but flag it in code review so it doesn't turn into a de-facto suppression channel.
 
-Identifier: `hihaho.validation.noUnsafeRequestData`
-
-Configuration (override in your `phpstan.neon`):
+#### Configuration
 
 ```neon
 parameters:
     noUnsafeRequestData:
         namespaces:
-            - App          # which root namespaces to enforce in
+            - App
         excludeNamespaces:
-            - App\Providers         # Laravel bootstrap area (default)
-            - App\Http\Responses    # Fortify / response contracts (default)
-            - App\Http\Resources    # add your own exclusions
+            - App\Providers         # Laravel bootstrap (default)
+            - App\Http\Responses    # Fortify response contracts (default)
+            # - App\Http\Resources  # opt-in: accept toArray(Request) reads
         unsafeMethods:
-            - input        # full default list is in extension.neon
+            # full default list in extension.neon
+            - input
             - all
             - get
-            # ...
 ```
 
-`excludeNamespaces` defaults to `['App\Providers', 'App\Http\Responses']`
-because:
+`App\Providers` and `App\Http\Responses` are default-excluded because the signatures there come from the framework (`RateLimiter::for(...)` closures, `LoginResponse::toResponse(Request)`) and there's no FormRequest to route the data through. `App\Http\Resources` is opt-in. Whether a resource should read raw request is a team call.
 
-- **`App\Providers`** — Laravel bootstrap code (`RateLimiter::for(...)`
-  throttle closures, service bindings, Fortify response registrations)
-  receives the raw `Request` by framework design and has no FormRequest
-  entry point.
-- **`App\Http\Responses`** — Fortify / auth response classes implement
-  contract-dictated signatures like
-  `LoginResponse::toResponse(Request $request)`. Signature is fixed by
-  the interface; no validation boundary inside the class.
+#### Adopting on an existing codebase
 
-Common add-on depending on your project:
+First-run baselines are nonzero. Generate one and work it down over multiple PRs:
 
-- **`App\Http\Resources`** — `JsonResource::toArray(Request $request)` is
-  framework-dictated, but whether a resource should read the raw request
-  at all is a legitimate architectural debate. Not defaulted; add it if
-  your team accepts the pattern.
-
-### `NoUnsafeRequestHelperRule`
-
-Companion to `NoUnsafeRequestDataRule` covering the direct-argument form of
-Laravel's `request()` helper. `request('key')` returns raw input and
-bypasses validation entirely. Chained forms like `request()->input('key')`
-are already caught by `NoUnsafeRequestDataRule`.
-
-```php
-namespace App\Http\Controllers;
-
-final class FetchController
-{
-    public function __invoke(): mixed
-    {
-        return request('id');  // reported
-    }
-}
+```bash
+vendor/bin/phpstan analyse --generate-baseline
 ```
 
-Zero-argument `request()` is not flagged — any method call on its return
-value is caught by `NoUnsafeRequestDataRule`.
+Patterns that will stay baselined (the rule can't help with them):
 
-Shares the `namespaces` configuration with `NoUnsafeRequestDataRule`.
+- Dynamic-key admin CRUD. Bulk-edit controllers looping over `$request->collect('fields')->each(...)` with schema-driven keys. Suppress inline:
+  ```php
+  // @phpstan-ignore hihaho.validation.noUnsafeRequestData
+  $value = $request->input($field->key);
+  ```
+- Pre-validation framework callbacks. Already covered by the `App\Providers` default exclusion.
+- Fortify response contracts. Already covered by the `App\Http\Responses` default exclusion.
+- `JsonResource::toArray(Request)`. Add `App\Http\Resources` to `excludeNamespaces` if you accept the pattern.
 
-Identifier: `hihaho.validation.noUnsafeRequestHelper`
+Safe-swap yield on the first triage runs 2-10% from field data: calls already validated inline where the flagged key is in the rules, plus FormRequest cases where the flagged key is in `rules()` and migrates to `$request->safe()->string(...)` or `$request->validated()`. The rest needs judgment. Your options are to introduce a FormRequest, extend existing rules to cover the flagged key, push validation upstream, or refactor the surrounding code. Plan on several PRs over weeks, not a one-time sweep.
 
-### `NoUnsafeRequestFacadeRule`
+Common traps:
 
-Companion rule covering static calls on the `Illuminate\Support\Facades\Request`
-facade. `Request::input('x')`, `Request::boolean('debug')`, etc. bypass both
-the instance-method and helper-function rules because they are `StaticCall`
-nodes against a different receiver.
+- "Injected a FormRequest, so I'm safe." The rule fires when the FormRequest has no `rules()` (auth-only wrappers) or has rules that don't cover the flagged key. Check `rules()` before assuming it's a false positive.
+- `validated()` drops keys not in `rules()`, nested props included. Reading `$request->input('interactions.$.foo')` won't migrate if only `interactions` is in `rules()`. You'll need nested rules first.
+- LLM agents are unreliable for bulk triage on this rule. Reliable categorization needs AST inspection that intersects `validate()` rule keys with flagged keys; one adopter's agent caught 1 of 5 candidates. Use human review or a Rector pass.
+- Livewire and Filament projects handle input through component props and form schemas, outside these rules' node targets. A low hit count is a structural fact, not proof of cleanliness. Review `mount()` and form-submit paths separately.
 
-```php
-namespace App\Http\Controllers;
-
-use Illuminate\Support\Facades\Request;
-
-final class DebugController
-{
-    public function __invoke(): bool
-    {
-        return Request::boolean('debug');  // reported
-    }
-}
-```
-
-Only matches the Laravel request facade — static calls on
-`Illuminate\Http\Request` itself (e.g. `Request::capture()`) are not
-flagged because they do not return raw input.
-
-Shares `namespaces` and `unsafeMethods` with `NoUnsafeRequestDataRule`.
-
-Identifier: `hihaho.validation.noUnsafeRequestFacade`
-
-### Expected baseline categories
-
-On first adoption in a non-trivial Laravel codebase these rules will flag
-a nonzero baseline. Some patterns are legitimately caught architecture
-smells (models reading `$request->input()`, domain calculations gating on
-`Request::boolean('debug')`, etc.); others are framework conventions where
-raw access is unavoidable. Expect these to stay in your baseline:
-
-- **Dynamic-key admin CRUD.** Bulk-edit controllers that loop over
-  data-driven field registries: `$request->collect('fields')->each(...)`,
-  `$request->input($dynamicKey)`. Keys aren't known at design time, so
-  there is no ergonomic FormRequest equivalent.
-- **Pre-validation framework callbacks.** `RateLimiter::for('login',
-  fn (Request $request) => $request->input(...))` runs before any
-  FormRequest dispatch by design.
-- **Fortify response contracts.** Classes implementing
-  `Laravel\Fortify\Contracts\*Response` receive the raw `Request`.
-- **`JsonResource::toArray(Request $request)`.** Resources receive the
-  current request by Laravel convention; validation happened upstream
-  but is not statically provable.
-
-These are expected baseline territory, not rule bugs. Baseline them on
-adoption and drive the remainder to zero as a separate cleanup.
-
-**Livewire / Filament projects:** the rules target `Request` / `FormRequest`
-method calls, the `request()` helper, and the Request facade. Projects that
-lean on Livewire/Filament do most of their input handling through component
-properties and Filament form schemas — outside the rule's node targets. A
-low hit count in such a codebase is a structural consequence of the
-architecture, not a proof of input-handling cleanliness. Review component
-`mount()` hydration and Filament form-submit handlers separately if that
-matters for your threat model.
-
-For the dynamic-key CRUD case where no FormRequest equivalent is
-ergonomic, suppress inline instead of adding to the baseline:
-
-```php
-foreach ($schema->fields() as $field) {
-    // @phpstan-ignore hihaho.validation.noUnsafeRequestData
-    $value = $request->input($field->key);
-    // ...
-}
-```
-
-Inline `@phpstan-ignore` keeps the suppression next to the rationale and
-surfaces it if the surrounding code changes.
+Rule hits in `Support` or utility namespaces often point at dead code. Grep the call graph before adding to the baseline; the fix may be a delete.
 
 ## Testing
 
