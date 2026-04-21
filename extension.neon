@@ -32,6 +32,7 @@ parameters:
             - App
         excludeNamespaces:
             - App\Providers
+            - App\Http\Responses
 
 rules:
     - Hihaho\PhpstanRules\Rules\NoInvadeInAppCode

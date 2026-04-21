@@ -58,17 +58,20 @@ parameters:
             - App
             - Domain
         excludeNamespaces:
-            - App\Providers     # default
-            - App\Http\Resources
+            - App\Providers         # default
+            - App\Http\Responses    # default
+            - App\Http\Resources    # opt-in
         unsafeMethods:
             - input
             - all
             - get
 ```
 
-`excludeNamespaces` defaults to `['App\Providers']` — Laravel bootstrap
-closures like `RateLimiter::for(...)` receive raw `Request` by design.
-Extend the list for project-specific framework-adapter layers.
+`excludeNamespaces` defaults to `['App\Providers', 'App\Http\Responses']`
+— both receive raw `Request` via framework-dictated signatures
+(`RateLimiter::for(...)` closures; Fortify response contracts). Add
+`App\Http\Resources` if your project accepts `JsonResource::toArray(Request)`
+reading raw request data.
 
 **Suppressing per call site**
 

@@ -135,8 +135,9 @@ parameters:
         namespaces:
             - App          # which root namespaces to enforce in
         excludeNamespaces:
-            - App\Providers    # skip Laravel bootstrap area (default)
-            - App\Http\Resources  # add your own exclusions
+            - App\Providers         # Laravel bootstrap area (default)
+            - App\Http\Responses    # Fortify / response contracts (default)
+            - App\Http\Resources    # add your own exclusions
         unsafeMethods:
             - input        # full default list is in extension.neon
             - all
@@ -144,11 +145,24 @@ parameters:
             # ...
 ```
 
-`excludeNamespaces` defaults to `['App\Providers']` because Laravel
-bootstrap code (`RateLimiter::for(...)` throttle closures, service
-bindings, Fortify response registrations) receives the raw `Request` by
-framework design and has no FormRequest entry point. Add more exclusions
-if your project has similar framework-adapter layers.
+`excludeNamespaces` defaults to `['App\Providers', 'App\Http\Responses']`
+because:
+
+- **`App\Providers`** — Laravel bootstrap code (`RateLimiter::for(...)`
+  throttle closures, service bindings, Fortify response registrations)
+  receives the raw `Request` by framework design and has no FormRequest
+  entry point.
+- **`App\Http\Responses`** — Fortify / auth response classes implement
+  contract-dictated signatures like
+  `LoginResponse::toResponse(Request $request)`. Signature is fixed by
+  the interface; no validation boundary inside the class.
+
+Common add-on depending on your project:
+
+- **`App\Http\Resources`** — `JsonResource::toArray(Request $request)` is
+  framework-dictated, but whether a resource should read the raw request
+  at all is a legitimate architectural debate. Not defaulted; add it if
+  your team accepts the pattern.
 
 ### `NoUnsafeRequestHelperRule`
 
