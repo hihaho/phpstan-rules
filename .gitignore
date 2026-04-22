@@ -23,3 +23,4 @@ phpunit.xml
 phpstan.neon
 .claude/scheduled_tasks.lock
 /internal/
+/autoresearch/

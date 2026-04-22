@@ -77,6 +77,15 @@ final class NoUnsafeRequestHelperRuleTest extends RuleTestCase
     }
 
     #[Test]
+    public function flags_aliased_request_helper_import(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/AliasedRequestHelperStub.php'], [
+            [$this->message("request('a')"), 15, self::TIP],
+            [$this->message("request('b')"), 16, self::TIP],
+        ]);
+    }
+
+    #[Test]
     public function error_uses_correct_identifier(): void
     {
         $errors = $this->gatherAnalyserErrors([__DIR__ . '/stubs/RequestHelperWithArgStub.php']);

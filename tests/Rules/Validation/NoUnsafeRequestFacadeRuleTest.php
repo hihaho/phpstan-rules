@@ -51,6 +51,15 @@ final class NoUnsafeRequestFacadeRuleTest extends RuleTestCase
     }
 
     #[Test]
+    public function flags_facade_calls_via_aliased_import(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/RequestFacadeAliasedImportStub.php'], [
+            [sprintf(self::MESSAGE_PATTERN, 'boolean'), 15, self::TIP],
+            [sprintf(self::MESSAGE_PATTERN, 'all'), 16, self::TIP],
+        ]);
+    }
+
+    #[Test]
     public function does_not_flag_non_unsafe_facade_methods(): void
     {
         $this->analyse([__DIR__ . '/stubs/RequestFacadeSafeMethodStub.php'], []);

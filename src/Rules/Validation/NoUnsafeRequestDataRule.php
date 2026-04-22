@@ -23,8 +23,10 @@ final readonly class NoUnsafeRequestDataRule implements Rule
 {
     use ChecksNamespace;
 
-    /** @var list<string> */
-    private array $unsafeMethodsLower;
+    /** @var array<string, true> */
+    private array $unsafeMethodsLookup;
+
+    private ObjectType $requestType;
 
     /**
      * @param  list<string>  $unsafeMethods
@@ -36,7 +38,8 @@ final readonly class NoUnsafeRequestDataRule implements Rule
         private array $namespaces,
         private array $excludeNamespaces,
     ) {
-        $this->unsafeMethodsLower = array_values(array_map(strtolower(...), $unsafeMethods));
+        $this->unsafeMethodsLookup = array_fill_keys(array_map(strtolower(...), $unsafeMethods), true);
+        $this->requestType = new ObjectType(Request::class);
     }
 
     #[Override]
@@ -56,7 +59,7 @@ final readonly class NoUnsafeRequestDataRule implements Rule
             return [];
         }
 
-        if (! in_array(strtolower($node->name->toString()), $this->unsafeMethodsLower, true)) {
+        if (! isset($this->unsafeMethodsLookup[strtolower($node->name->toString())])) {
             return [];
         }
 
@@ -109,6 +112,6 @@ final readonly class NoUnsafeRequestDataRule implements Rule
 
     private function classIsRequest(string $className): bool
     {
-        return (new ObjectType(Request::class))->isSuperTypeOf(new ObjectType($className))->yes();
+        return $this->requestType->isSuperTypeOf(new ObjectType($className))->yes();
     }
 }

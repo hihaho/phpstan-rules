@@ -21,8 +21,10 @@ final readonly class NoUnsafeRequestFacadeRule implements Rule
 {
     use ChecksNamespace;
 
-    /** @var list<string> */
-    private array $unsafeMethodsLower;
+    /** @var array<string, true> */
+    private array $unsafeMethodsLookup;
+
+    private string $requestFacadeClassLower;
 
     /**
      * @param  list<string>  $unsafeMethods
@@ -34,7 +36,8 @@ final readonly class NoUnsafeRequestFacadeRule implements Rule
         private array $namespaces,
         private array $excludeNamespaces,
     ) {
-        $this->unsafeMethodsLower = array_values(array_map(strtolower(...), $unsafeMethods));
+        $this->unsafeMethodsLookup = array_fill_keys(array_map(strtolower(...), $unsafeMethods), true);
+        $this->requestFacadeClassLower = strtolower(RequestFacade::class);
     }
 
     #[Override]
@@ -58,13 +61,15 @@ final readonly class NoUnsafeRequestFacadeRule implements Rule
             return [];
         }
 
-        $methodName = $node->name->toString();
-
-        if (! in_array(strtolower($methodName), $this->unsafeMethodsLower, true)) {
+        // Class check is a single string compare; do it before the
+        // method-name lookup to bail fastest for unrelated static calls.
+        if (strtolower($node->class->toString()) !== $this->requestFacadeClassLower) {
             return [];
         }
 
-        if (strtolower($node->class->toString()) !== strtolower(RequestFacade::class)) {
+        $methodName = $node->name->toString();
+
+        if (! isset($this->unsafeMethodsLookup[strtolower($methodName)])) {
             return [];
         }
 

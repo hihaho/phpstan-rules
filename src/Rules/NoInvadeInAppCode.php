@@ -36,7 +36,9 @@ final readonly class NoInvadeInAppCode implements Rule
             return [];
         }
 
-        if ($node->name->toString() === 'Livewire\invade') {
+        $functionName = $node->name->toString();
+
+        if ($functionName === 'Livewire\invade') {
             return [
                 RuleErrorBuilder::message(
                     'Usage of `\Livewire\invade` is disallowed, please use the global `invade` from spatie/invade.'
@@ -46,7 +48,7 @@ final readonly class NoInvadeInAppCode implements Rule
             ];
         }
 
-        if ($node->name->toString() !== 'invade') {
+        if ($functionName !== 'invade') {
             return [];
         }
 

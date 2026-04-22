@@ -52,6 +52,12 @@ final readonly class NoUnsafeRequestHelperRule implements Rule
             return [];
         }
 
+        // Cheap pre-filter: skip reflection unless the short name could
+        // possibly resolve to the global `request()` helper.
+        if (strtolower($node->name->getLast()) !== 'request') {
+            return [];
+        }
+
         if (! $this->reflectionProvider->hasFunction($node->name, $scope)) {
             return [];
         }
