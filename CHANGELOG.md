@@ -2,6 +2,24 @@
 
 All notable changes to `hihaho/phpstan-rules` will be documented in this file.
 
+## v3.1.2 - 2026-04-22
+
+Internal performance work on rule hot paths — every optimisation is strictly a filter-order or data-structure change. No behaviour change, no public API change, no new or removed errors, no new configuration keys. All five rules remain `final readonly class`.
+
+- **`NoUnsafeRequestHelperRule`** — short-circuit the `ReflectionProvider::hasFunction` / `getFunction` pair with a `strtolower($node->name->getLast()) !== 'request'` pre-check. Reflection used to fire on every `FuncCall` in the configured namespaces; it now fires only on calls whose last name-segment could actually resolve to the global `request()` helper. Alias-aware: PHPStan's `NameResolver` already rewrites `use function request as X` imports to `FullyQualified('request')` before the rule runs, so `X('key')` still flags. Locked with a new `use function request as req` regression stub.
+- **`NoUnsafeRequestDataRule`** — `in_array(strtolower($method), $listOf22, true)` replaced by `isset($lookup[strtolower($method)])` against a flipped `array<string, true>` built once in the constructor. `classIsRequest` no longer reconstructs `new ObjectType(Request::class)` on every call; it reuses a single instance hoisted to a private readonly property.
+- **`NoUnsafeRequestFacadeRule`** — same `isset`-map treatment for unsafe methods; `strtolower(Illuminate\Support\Facades\Request::class)` hoisted to a private readonly property instead of recomputed per call; and the class-equality check (one string compare) now bails before the method-name lookup. Locked with a new `use Illuminate\Support\Facades\Request as RequestFacade` regression stub.
+- **`NoInvadeInAppCode`** — `$node->name->toString()` is computed once into a local and reused across the two equality checks instead of being rebuilt twice.
+
+**Full Changelog**: https://github.com/hihaho/phpstan-rules/compare/v3.1.1...v3.1.2
+
+## v3.1.1 - 2026-04-22
+
+## What's Changed
+* Fix update-changelog workflow + backfill v3.1.0 entry by @SanderMuller in https://github.com/hihaho/phpstan-rules/pull/45
+
+**Full Changelog**: https://github.com/hihaho/phpstan-rules/compare/v3.1.0...v3.1.1
+
 ## v3.1.0 - 2026-04-21
 
 ### Added
