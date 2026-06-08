@@ -72,7 +72,7 @@ final readonly class OnlyAllowFacadeAliasInBlade implements Rule
 
         $reflectionClass = $cache[$className];
 
-        if ($reflectionClass === null) {
+        if (! $reflectionClass instanceof ReflectionClass) {
             return [];
         }
 

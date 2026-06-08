@@ -30,12 +30,12 @@ final readonly class CombinedStaticCallRule extends BaseNoDebugRule
 {
     private const string DEBUG_MESSAGE = 'No statically called debug statements should be present in the %s namespace.';
 
-    private readonly ?ClassReflection $facadeReflection;
+    private ?ClassReflection $facadeReflection;
 
-    private readonly string $requestFacadeClassLower;
+    private string $requestFacadeClassLower;
 
     /** @var array<string, true> */
-    private readonly array $unsafeMethodsLookup;
+    private array $unsafeMethodsLookup;
 
     /**
      * @param  list<string>  $unsafeMethods
@@ -76,7 +76,7 @@ final readonly class CombinedStaticCallRule extends BaseNoDebugRule
         $errors = [];
 
         $facadeError = $this->checkFacadeAlias($node->class, $scope);
-        if ($facadeError !== null) {
+        if ($facadeError instanceof IdentifierRuleError) {
             $errors[] = $facadeError;
         }
 
@@ -87,12 +87,12 @@ final readonly class CombinedStaticCallRule extends BaseNoDebugRule
         $methodName = $node->name->name;
 
         $debugError = $this->checkStaticDebugCall($node, $methodName, $scope);
-        if ($debugError !== null) {
+        if ($debugError instanceof IdentifierRuleError) {
             $errors[] = $debugError;
         }
 
         $requestError = $this->checkUnsafeRequestFacade($node->class, $methodName, $scope);
-        if ($requestError !== null) {
+        if ($requestError instanceof IdentifierRuleError) {
             $errors[] = $requestError;
         }
 
@@ -134,7 +134,7 @@ final readonly class CombinedStaticCallRule extends BaseNoDebugRule
 
         $reflectionClass = $cache[$className];
 
-        if ($reflectionClass === null) {
+        if (! $reflectionClass instanceof ReflectionClass) {
             return null;
         }
 
@@ -225,7 +225,7 @@ final readonly class CombinedStaticCallRule extends BaseNoDebugRule
 
     private function isFacadeSubclass(ClassReflection $classReflection): bool
     {
-        if ($this->facadeReflection === null) {
+        if (! $this->facadeReflection instanceof ClassReflection) {
             return false;
         }
 

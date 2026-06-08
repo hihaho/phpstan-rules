@@ -81,17 +81,17 @@ final readonly class CombinedFuncCallRule extends BaseNoDebugRule
         $errors = [];
 
         $debugError = $this->checkDebugStatement($funcName, $scope);
-        if ($debugError !== null) {
+        if ($debugError instanceof IdentifierRuleError) {
             $errors[] = $debugError;
         }
 
         $invadeError = $this->checkInvadeUsage($funcName, $scope);
-        if ($invadeError !== null) {
+        if ($invadeError instanceof IdentifierRuleError) {
             $errors[] = $invadeError;
         }
 
         $requestError = $this->checkRequestHelper($node, $node->name, $scope);
-        if ($requestError !== null) {
+        if ($requestError instanceof IdentifierRuleError) {
             $errors[] = $requestError;
         }
 

@@ -76,12 +76,12 @@ final readonly class CombinedMethodCallRule extends BaseNoDebugRule
         $errors = [];
 
         $debugError = $this->checkDebugMethodCall($node, $methodName, $scope);
-        if ($debugError !== null) {
+        if ($debugError instanceof IdentifierRuleError) {
             $errors[] = $debugError;
         }
 
         $requestError = $this->checkUnsafeRequestData($node, $methodName, $scope);
-        if ($requestError !== null) {
+        if ($requestError instanceof IdentifierRuleError) {
             $errors[] = $requestError;
         }
 
