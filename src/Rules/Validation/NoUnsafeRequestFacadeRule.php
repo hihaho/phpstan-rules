@@ -61,8 +61,12 @@ final readonly class NoUnsafeRequestFacadeRule implements Rule
             return [];
         }
 
-        // Class check is a single string compare; do it before the
-        // method-name lookup to bail fastest for unrelated static calls.
+        // Fast pre-filter: only 'Request' (exact case) and fully-qualified variants
+        // can match the facade. getLast() avoids strtolower+toString on every miss.
+        if ($node->class->getLast() !== 'Request') {
+            return [];
+        }
+
         if (strtolower($node->class->toString()) !== $this->requestFacadeClassLower) {
             return [];
         }
