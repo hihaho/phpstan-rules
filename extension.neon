@@ -37,11 +37,17 @@ parameters:
             - App\Http\Responses
 
 rules:
-    - Hihaho\PhpstanRules\Rules\NoInvadeInAppCode
-    - Hihaho\PhpstanRules\Rules\Debug\NoDebugInNamespaceRule
     - Hihaho\PhpstanRules\Rules\Debug\ChainedNoDebugInNamespaceRule
 
 services:
+    -
+        class: Hihaho\PhpstanRules\Rules\CombinedFuncCallRule
+        arguments:
+            namespaces: %noUnsafeRequestData.namespaces%
+            excludeNamespaces: %noUnsafeRequestData.excludeNamespaces%
+            reflectionProvider: @reflectionProvider
+        tags:
+            - phpstan.rules.rule
     -
         class: Hihaho\PhpstanRules\Rules\CombinedStaticCallRule
         arguments:
