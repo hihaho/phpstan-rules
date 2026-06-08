@@ -8,8 +8,27 @@ trait ChecksNamespace
 {
     protected function namespaceStartsWith(Scope $scope, string $namespace): bool
     {
+        return $this->scopeNamespaceMatchesPrefix($scope->getNamespace(), $namespace);
+    }
+
+    /**
+     * @param  list<string>  $namespaces
+     */
+    protected function namespaceStartsWithAny(Scope $scope, array $namespaces): bool
+    {
         $scopeNamespace = $scope->getNamespace();
 
+        foreach ($namespaces as $namespace) {
+            if ($this->scopeNamespaceMatchesPrefix($scopeNamespace, $namespace)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function scopeNamespaceMatchesPrefix(?string $scopeNamespace, string $namespace): bool
+    {
         if ($scopeNamespace === null) {
             return false;
         }
@@ -19,19 +38,5 @@ trait ChecksNamespace
         }
 
         return str_starts_with($scopeNamespace, rtrim($namespace, '\\') . '\\');
-    }
-
-    /**
-     * @param  list<string>  $namespaces
-     */
-    protected function namespaceStartsWithAny(Scope $scope, array $namespaces): bool
-    {
-        foreach ($namespaces as $namespace) {
-            if ($this->namespaceStartsWith($scope, $namespace)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 }
