@@ -26,6 +26,26 @@ final readonly class CombinedFuncCallRule extends BaseNoDebugRule
     private const string DEBUG_MESSAGE = 'No debug statements should be present in the %s namespace.';
 
     /**
+     * Exact $node->name->name values that may be interesting. Calls whose name is not in
+     * this set and contains no backslash can be rejected immediately without checking each
+     * sub-rule. Qualified names (containing backslash) are always allowed through so that
+     * edge-cases like `\Namespace\request()` are still caught via getLast().
+     *
+     * @var array<string, true>
+     */
+    private const array INTERESTING_FUNC_NAMES = [
+        'dump' => true,
+        'dd' => true,
+        'ddd' => true,
+        'ray' => true,
+        'print_r' => true,
+        'var_dump' => true,
+        'invade' => true,
+        'Livewire\\invade' => true,
+        'request' => true,
+    ];
+
+    /**
      * @param  list<string>  $namespaces
      * @param  list<string>  $excludeNamespaces
      */
@@ -53,6 +73,11 @@ final readonly class CombinedFuncCallRule extends BaseNoDebugRule
         }
 
         $funcName = $node->name->name;
+
+        if (! isset(self::INTERESTING_FUNC_NAMES[$funcName]) && ! str_contains($funcName, '\\')) {
+            return [];
+        }
+
         $errors = [];
 
         $debugError = $this->checkDebugStatement($funcName, $scope);
