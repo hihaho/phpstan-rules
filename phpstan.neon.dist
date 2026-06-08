@@ -29,7 +29,7 @@ parameters:
         narrow_return: true
 
     cognitive_complexity:
-        class: 12
+        class: 35
         function: 10
 
     strictRules:

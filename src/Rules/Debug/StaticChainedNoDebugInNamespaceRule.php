@@ -53,31 +53,21 @@ final readonly class StaticChainedNoDebugInNamespaceRule extends BaseNoDebugRule
             return [];
         }
 
-        if ($this->namespaceStartsWith($scope, 'App')) {
-            if (! $this->isLaravelStaticDebugCall($node, $scope, $methodName)) {
-                return [];
-            }
+        $namespace = $this->matchDebugNamespace($scope);
 
-            return [
-                RuleErrorBuilder::message(sprintf(self::MESSAGE, 'App'))
-                    ->identifier('hihaho.debug.noStaticChainedDebugInApp')
-                    ->build(),
-            ];
+        if ($namespace === null) {
+            return [];
         }
 
-        if ($this->namespaceStartsWith($scope, 'Tests')) {
-            if (! $this->isLaravelStaticDebugCall($node, $scope, $methodName)) {
-                return [];
-            }
-
-            return [
-                RuleErrorBuilder::message(sprintf(self::MESSAGE, 'Tests'))
-                    ->identifier('hihaho.debug.noStaticChainedDebugInTests')
-                    ->build(),
-            ];
+        if (! $this->isLaravelStaticDebugCall($node, $scope, $methodName)) {
+            return [];
         }
 
-        return [];
+        return [
+            RuleErrorBuilder::message(sprintf(self::MESSAGE, $namespace))
+                ->identifier("hihaho.debug.noStaticChainedDebugIn{$namespace}")
+                ->build(),
+        ];
     }
 
     /**

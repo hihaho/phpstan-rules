@@ -3,7 +3,6 @@
 namespace Hihaho\PhpstanRules\Rules;
 
 use Hihaho\PhpstanRules\Rules\Debug\BaseNoDebugRule;
-use Hihaho\PhpstanRules\Traits\ChecksNamespace;
 use Illuminate\Support\Facades\Facade;
 use Illuminate\Support\Facades\Request;
 use Override;
@@ -15,7 +14,6 @@ use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Rules\IdentifierRuleError;
-use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
 use ReflectionClass;
 use ReflectionException;
@@ -26,12 +24,10 @@ use ReflectionException;
  *
  * Merges: OnlyAllowFacadeAliasInBlade + StaticChainedNoDebugInNamespaceRule + NoUnsafeRequestFacadeRule
  *
- * @implements Rule<StaticCall>
+ * @extends BaseNoDebugRule<StaticCall>
  */
-final readonly class CombinedStaticCallRule extends BaseNoDebugRule implements Rule
+final readonly class CombinedStaticCallRule extends BaseNoDebugRule
 {
-    use ChecksNamespace;
-
     private const string DEBUG_MESSAGE = 'No statically called debug statements should be present in the %s namespace.';
 
     private readonly ?ClassReflection $facadeReflection;
@@ -79,17 +75,9 @@ final readonly class CombinedStaticCallRule extends BaseNoDebugRule implements R
 
         $errors = [];
 
-        // --- OnlyAllowFacadeAliasInBlade ---
-        if (! $node->class->isRelative()
-            && ! $node->class->isSpecialClassName()
-            && ! str_contains($node->class->name, '\\')
-            && ! str_ends_with($scope->getFileDescription(), '.blade.php')
-        ) {
-            $facadeError = $this->checkFacadeAlias($node);
-
-            if ($facadeError !== null) {
-                $errors[] = $facadeError;
-            }
+        $facadeError = $this->checkFacadeAlias($node->class, $scope);
+        if ($facadeError !== null) {
+            $errors[] = $facadeError;
         }
 
         if (! $node->name instanceof Identifier) {
@@ -98,45 +86,34 @@ final readonly class CombinedStaticCallRule extends BaseNoDebugRule implements R
 
         $methodName = $node->name->name;
 
-        // --- StaticChainedNoDebugInNamespaceRule ---
-        if ($this->isDebugMethod($methodName)) {
-            if ($this->namespaceStartsWith($scope, 'App')) {
-                if ($this->isLaravelStaticDebugCall($node, $scope, $methodName)) {
-                    $errors[] = RuleErrorBuilder::message(sprintf(self::DEBUG_MESSAGE, 'App'))
-                        ->identifier('hihaho.debug.noStaticChainedDebugInApp')
-                        ->build();
-                }
-            } elseif ($this->namespaceStartsWith($scope, 'Tests')) {
-                if ($this->isLaravelStaticDebugCall($node, $scope, $methodName)) {
-                    $errors[] = RuleErrorBuilder::message(sprintf(self::DEBUG_MESSAGE, 'Tests'))
-                        ->identifier('hihaho.debug.noStaticChainedDebugInTests')
-                        ->build();
-                }
-            }
+        $debugError = $this->checkStaticDebugCall($node, $methodName, $scope);
+        if ($debugError !== null) {
+            $errors[] = $debugError;
         }
 
-        // --- NoUnsafeRequestFacadeRule ---
-        if ($node->class->getLast() === 'Request'
-            && strtolower($node->class->name) === $this->requestFacadeClassLower
-            && isset($this->unsafeMethodsLookup[strtolower($methodName)])
-            && $this->isInRequestNamespace($scope)
-        ) {
-            $errors[] = RuleErrorBuilder::message(sprintf(
-                'Reading unvalidated request data via %s::%s() is not allowed. Use a FormRequest, $request->validated(), or $request->safe().',
-                Request::class,
-                $methodName,
-            ))
-                ->identifier('hihaho.validation.noUnsafeRequestFacade')
-                ->tip('Inject a FormRequest (or Request typehint) and consume via $request->validated() / $request->safe() instead of the Request facade.')
-                ->build();
+        $requestError = $this->checkUnsafeRequestFacade($node->class, $methodName, $scope);
+        if ($requestError !== null) {
+            $errors[] = $requestError;
         }
 
         return $errors;
     }
 
-    private function checkFacadeAlias(StaticCall $node): ?IdentifierRuleError
+    private function checkFacadeAlias(Name $class, Scope $scope): ?IdentifierRuleError
     {
-        $className = $node->class->name;
+        if ($class->isRelative() || $class->isSpecialClassName()) {
+            return null;
+        }
+
+        if (str_contains($class->name, '\\')) {
+            return null;
+        }
+
+        if (str_ends_with($scope->getFileDescription(), '.blade.php')) {
+            return null;
+        }
+
+        $className = $class->name;
 
         /** @var array<string, ReflectionClass<object>|null> $cache */
         static $cache = [];
@@ -163,13 +140,62 @@ final readonly class CombinedStaticCallRule extends BaseNoDebugRule implements R
 
         if ($reflectionClass->isSubclassOf(Facade::class)) {
             return RuleErrorBuilder::message(
-                "Disallowed usage of `{$node->class->name}` facade alias, use `{$reflectionClass->getName()}`. A facade alias can only be used in Blade."
+                "Disallowed usage of `{$class->name}` facade alias, use `{$reflectionClass->getName()}`. A facade alias can only be used in Blade."
             )
                 ->identifier('hihaho.generic.onlyAllowFacadeAliasInBlade')
                 ->build();
         }
 
         return null;
+    }
+
+    private function checkStaticDebugCall(StaticCall $node, string $methodName, Scope $scope): ?IdentifierRuleError
+    {
+        if (! $this->isDebugMethod($methodName)) {
+            return null;
+        }
+
+        $namespace = $this->matchDebugNamespace($scope);
+
+        if ($namespace === null) {
+            return null;
+        }
+
+        if (! $this->isLaravelStaticDebugCall($node, $scope, $methodName)) {
+            return null;
+        }
+
+        return RuleErrorBuilder::message(sprintf(self::DEBUG_MESSAGE, $namespace))
+            ->identifier("hihaho.debug.noStaticChainedDebugIn{$namespace}")
+            ->build();
+    }
+
+    private function checkUnsafeRequestFacade(Name $class, string $methodName, Scope $scope): ?IdentifierRuleError
+    {
+        if ($class->getLast() !== 'Request') {
+            return null;
+        }
+
+        if (strtolower($class->name) !== $this->requestFacadeClassLower) {
+            return null;
+        }
+
+        if (! isset($this->unsafeMethodsLookup[strtolower($methodName)])) {
+            return null;
+        }
+
+        if (! $this->isInRequestNamespace($scope)) {
+            return null;
+        }
+
+        return RuleErrorBuilder::message(sprintf(
+            'Reading unvalidated request data via %s::%s() is not allowed. Use a FormRequest, $request->validated(), or $request->safe().',
+            Request::class,
+            $methodName,
+        ))
+            ->identifier('hihaho.validation.noUnsafeRequestFacade')
+            ->tip('Inject a FormRequest (or Request typehint) and consume via $request->validated() / $request->safe() instead of the Request facade.')
+            ->build();
     }
 
     private function isLaravelStaticDebugCall(StaticCall $node, Scope $scope, string $methodName): bool

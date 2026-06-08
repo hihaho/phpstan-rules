@@ -112,6 +112,7 @@ final readonly class NoUnsafeRequestDataRule implements Rule
 
     private function classIsRequest(string $className): bool
     {
+        /** @var array<string, bool> $cache */
         static $cache = [];
 
         if (! array_key_exists($className, $cache)) {

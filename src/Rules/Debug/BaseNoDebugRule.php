@@ -3,6 +3,7 @@
 namespace Hihaho\PhpstanRules\Rules\Debug;
 
 use Hihaho\PhpstanRules\Traits\ChecksNamespace;
+use PHPStan\Analyser\Scope;
 use PHPStan\Rules\Rule;
 
 /**
@@ -47,5 +48,18 @@ abstract readonly class BaseNoDebugRule implements Rule
     final protected function isDebugMethod(string $statement): bool
     {
         return isset(self::METHOD_DEBUG_STATEMENTS[$statement]);
+    }
+
+    final protected function matchDebugNamespace(Scope $scope): ?string
+    {
+        if ($this->namespaceStartsWith($scope, 'App')) {
+            return 'App';
+        }
+
+        if ($this->namespaceStartsWith($scope, 'Tests')) {
+            return 'Tests';
+        }
+
+        return null;
     }
 }

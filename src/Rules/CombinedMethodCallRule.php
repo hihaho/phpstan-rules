@@ -3,7 +3,6 @@
 namespace Hihaho\PhpstanRules\Rules;
 
 use Hihaho\PhpstanRules\Rules\Debug\BaseNoDebugRule;
-use Hihaho\PhpstanRules\Traits\ChecksNamespace;
 use Illuminate\Http\Request;
 use Override;
 use PhpParser\Node;
@@ -12,7 +11,6 @@ use PhpParser\Node\Identifier;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Rules\IdentifierRuleError;
-use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
 use PHPStan\Type\ObjectType;
 use PHPStan\Type\Type;
@@ -23,12 +21,10 @@ use PHPStan\Type\Type;
  *
  * Merges: ChainedNoDebugInNamespaceRule + NoUnsafeRequestDataRule
  *
- * @implements Rule<MethodCall>
+ * @extends BaseNoDebugRule<MethodCall>
  */
-final readonly class CombinedMethodCallRule extends BaseNoDebugRule implements Rule
+final readonly class CombinedMethodCallRule extends BaseNoDebugRule
 {
-    use ChecksNamespace;
-
     private const string DEBUG_MESSAGE = 'No chained debug statements should be present in the %s namespace.';
 
     /** @var array<string, true> */
@@ -70,39 +66,65 @@ final readonly class CombinedMethodCallRule extends BaseNoDebugRule implements R
         $methodName = $node->name->name;
         $errors = [];
 
-        // --- ChainedNoDebugInNamespaceRule ---
-        if ($this->isDebugMethod($methodName)) {
-            if ($this->namespaceStartsWith($scope, 'App')) {
-                if ($this->isDebugHelperMethodCall($node, $scope, $methodName)) {
-                    $errors[] = RuleErrorBuilder::message(sprintf(self::DEBUG_MESSAGE, 'App'))
-                        ->identifier('hihaho.debug.noChainedDebugInApp')
-                        ->build();
-                }
-            } elseif ($this->namespaceStartsWith($scope, 'Tests')) {
-                if ($this->isDebugHelperMethodCall($node, $scope, $methodName)) {
-                    $errors[] = RuleErrorBuilder::message(sprintf(self::DEBUG_MESSAGE, 'Tests'))
-                        ->identifier('hihaho.debug.noChainedDebugInTests')
-                        ->build();
-                }
-            }
+        $debugError = $this->checkDebugMethodCall($node, $methodName, $scope);
+        if ($debugError !== null) {
+            $errors[] = $debugError;
         }
 
-        // --- NoUnsafeRequestDataRule ---
-        if (isset($this->unsafeMethodsLookup[strtolower($methodName)])
-            && $this->isInRequestNamespace($scope)
-            && ! $this->scopeClassIsRequest($scope)
-            && $this->typeIsRequest($scope->getType($node->var))
-        ) {
-            $errors[] = RuleErrorBuilder::message(sprintf(
-                'Reading unvalidated request data via %s() is not allowed. Use a FormRequest, $request->validated(), or $request->safe().',
-                $methodName,
-            ))
-                ->identifier('hihaho.validation.noUnsafeRequestData')
-                ->tip('Use $request->validated() or $request->safe() to consume validated data. For Stringable/int/bool accessors, $request->safe()->string(\'key\') mirrors $request->string(\'key\') against validated input.')
-                ->build();
+        $requestError = $this->checkUnsafeRequestData($node, $methodName, $scope);
+        if ($requestError !== null) {
+            $errors[] = $requestError;
         }
 
         return $errors;
+    }
+
+    private function checkDebugMethodCall(MethodCall $node, string $methodName, Scope $scope): ?IdentifierRuleError
+    {
+        if (! $this->isDebugMethod($methodName)) {
+            return null;
+        }
+
+        $namespace = $this->matchDebugNamespace($scope);
+
+        if ($namespace === null) {
+            return null;
+        }
+
+        if (! $this->isDebugHelperMethodCall($node, $scope, $methodName)) {
+            return null;
+        }
+
+        return RuleErrorBuilder::message(sprintf(self::DEBUG_MESSAGE, $namespace))
+            ->identifier("hihaho.debug.noChainedDebugIn{$namespace}")
+            ->build();
+    }
+
+    private function checkUnsafeRequestData(MethodCall $node, string $methodName, Scope $scope): ?IdentifierRuleError
+    {
+        if (! isset($this->unsafeMethodsLookup[strtolower($methodName)])) {
+            return null;
+        }
+
+        if (! $this->isInRequestNamespace($scope)) {
+            return null;
+        }
+
+        if ($this->scopeClassIsRequest($scope)) {
+            return null;
+        }
+
+        if (! $this->typeIsRequest($scope->getType($node->var))) {
+            return null;
+        }
+
+        return RuleErrorBuilder::message(sprintf(
+            'Reading unvalidated request data via %s() is not allowed. Use a FormRequest, $request->validated(), or $request->safe().',
+            $methodName,
+        ))
+            ->identifier('hihaho.validation.noUnsafeRequestData')
+            ->tip('Use $request->validated() or $request->safe() to consume validated data. For Stringable/int/bool accessors, $request->safe()->string(\'key\') mirrors $request->string(\'key\') against validated input.')
+            ->build();
     }
 
     /**
@@ -154,6 +176,7 @@ final readonly class CombinedMethodCallRule extends BaseNoDebugRule implements R
 
     private function classIsRequest(string $className): bool
     {
+        /** @var array<string, bool> $cache */
         static $cache = [];
 
         if (! array_key_exists($className, $cache)) {

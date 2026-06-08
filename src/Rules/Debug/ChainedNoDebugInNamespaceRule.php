@@ -40,31 +40,21 @@ final readonly class ChainedNoDebugInNamespaceRule extends BaseNoDebugRule
             return [];
         }
 
-        if ($this->namespaceStartsWith($scope, 'App')) {
-            if (! $this->isDebugHelperMethodCall($node, $scope, $methodName)) {
-                return [];
-            }
+        $namespace = $this->matchDebugNamespace($scope);
 
-            return [
-                RuleErrorBuilder::message(sprintf(self::MESSAGE, 'App'))
-                    ->identifier('hihaho.debug.noChainedDebugInApp')
-                    ->build(),
-            ];
+        if ($namespace === null) {
+            return [];
         }
 
-        if ($this->namespaceStartsWith($scope, 'Tests')) {
-            if (! $this->isDebugHelperMethodCall($node, $scope, $methodName)) {
-                return [];
-            }
-
-            return [
-                RuleErrorBuilder::message(sprintf(self::MESSAGE, 'Tests'))
-                    ->identifier('hihaho.debug.noChainedDebugInTests')
-                    ->build(),
-            ];
+        if (! $this->isDebugHelperMethodCall($node, $scope, $methodName)) {
+            return [];
         }
 
-        return [];
+        return [
+            RuleErrorBuilder::message(sprintf(self::MESSAGE, $namespace))
+                ->identifier("hihaho.debug.noChainedDebugIn{$namespace}")
+                ->build(),
+        ];
     }
 
     /**
