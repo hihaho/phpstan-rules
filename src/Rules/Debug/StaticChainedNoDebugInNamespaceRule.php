@@ -21,9 +21,13 @@ final readonly class StaticChainedNoDebugInNamespaceRule extends BaseNoDebugRule
 {
     private const string MESSAGE = 'No statically called debug statements should be present in the %s namespace.';
 
+    private readonly ?ClassReflection $facadeReflection;
+
     public function __construct(private ReflectionProvider $reflectionProvider)
     {
-        //
+        $this->facadeReflection = $reflectionProvider->hasClass(Facade::class)
+            ? $reflectionProvider->getClass(Facade::class)
+            : null;
     }
 
     #[Override]
@@ -116,10 +120,10 @@ final readonly class StaticChainedNoDebugInNamespaceRule extends BaseNoDebugRule
 
     private function isFacadeSubclass(ClassReflection $classReflection): bool
     {
-        if (! $this->reflectionProvider->hasClass(Facade::class)) {
+        if ($this->facadeReflection === null) {
             return false;
         }
 
-        return $classReflection->isSubclassOfClass($this->reflectionProvider->getClass(Facade::class));
+        return $classReflection->isSubclassOfClass($this->facadeReflection);
     }
 }
