@@ -59,7 +59,7 @@ final readonly class NoUnsafeRequestDataRule implements Rule
             return [];
         }
 
-        if (! isset($this->unsafeMethodsLookup[strtolower($node->name->toString())])) {
+        if (! isset($this->unsafeMethodsLookup[strtolower($node->name->name)])) {
             return [];
         }
 
@@ -78,7 +78,7 @@ final readonly class NoUnsafeRequestDataRule implements Rule
         return [
             RuleErrorBuilder::message(sprintf(
                 'Reading unvalidated request data via %s() is not allowed. Use a FormRequest, $request->validated(), or $request->safe().',
-                $node->name->toString(),
+                $node->name->name,
             ))
                 ->identifier('hihaho.validation.noUnsafeRequestData')
                 ->tip('Use $request->validated() or $request->safe() to consume validated data. For Stringable/int/bool accessors, $request->safe()->string(\'key\') mirrors $request->string(\'key\') against validated input.')

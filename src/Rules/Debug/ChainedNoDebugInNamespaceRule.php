@@ -34,7 +34,7 @@ final readonly class ChainedNoDebugInNamespaceRule extends BaseNoDebugRule
             return [];
         }
 
-        $methodName = $node->name->toString();
+        $methodName = $node->name->name;
 
         if (! $this->isDebugMethod($methodName)) {
             return [];

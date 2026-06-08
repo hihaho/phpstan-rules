@@ -34,7 +34,7 @@ final readonly class NoDebugInNamespaceRule extends BaseNoDebugRule
             return [];
         }
 
-        if (! $this->isDebugFunction($node->name->toString())) {
+        if (! $this->isDebugFunction($node->name->name)) {
             return [];
         }
 

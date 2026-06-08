@@ -36,7 +36,7 @@ final readonly class NoInvadeInAppCode implements Rule
             return [];
         }
 
-        $functionName = $node->name->toString();
+        $functionName = $node->name->name;
 
         if ($functionName === 'Livewire\invade') {
             return [

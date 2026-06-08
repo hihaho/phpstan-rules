@@ -42,7 +42,7 @@ final readonly class OnlyAllowFacadeAliasInBlade implements Rule
         }
 
         // The class consists of multiple parts, so it's (likely) not a facade alias.
-        if (count($node->class->getParts()) > 1) {
+        if (str_contains($node->class->name, '\\')) {
             return [];
         }
 
@@ -51,7 +51,7 @@ final readonly class OnlyAllowFacadeAliasInBlade implements Rule
             return [];
         }
 
-        $className = $node->class->toCodeString();
+        $className = $node->class->name;
 
         /** @var array<string, ReflectionClass<object>|null> $cache */
         static $cache = [];
@@ -79,7 +79,7 @@ final readonly class OnlyAllowFacadeAliasInBlade implements Rule
         if ($reflectionClass->isSubclassOf(Facade::class)) {
             return [
                 RuleErrorBuilder::message(
-                    "Disallowed usage of `{$node->class->toString()}` facade alias, use `{$reflectionClass->getName()}`. A facade alias can only be used in Blade."
+                    "Disallowed usage of `{$node->class->name}` facade alias, use `{$reflectionClass->getName()}`. A facade alias can only be used in Blade."
                 )
                     ->identifier('hihaho.generic.onlyAllowFacadeAliasInBlade')
                     ->build(),

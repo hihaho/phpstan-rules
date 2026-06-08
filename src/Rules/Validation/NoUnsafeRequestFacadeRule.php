@@ -67,11 +67,11 @@ final readonly class NoUnsafeRequestFacadeRule implements Rule
             return [];
         }
 
-        if (strtolower($node->class->toString()) !== $this->requestFacadeClassLower) {
+        if (strtolower($node->class->name) !== $this->requestFacadeClassLower) {
             return [];
         }
 
-        $methodName = $node->name->toString();
+        $methodName = $node->name->name;
 
         if (! isset($this->unsafeMethodsLookup[strtolower($methodName)])) {
             return [];
