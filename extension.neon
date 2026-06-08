@@ -38,13 +38,16 @@ parameters:
 
 rules:
     - Hihaho\PhpstanRules\Rules\NoInvadeInAppCode
-    - Hihaho\PhpstanRules\Rules\OnlyAllowFacadeAliasInBlade
     - Hihaho\PhpstanRules\Rules\Debug\NoDebugInNamespaceRule
     - Hihaho\PhpstanRules\Rules\Debug\ChainedNoDebugInNamespaceRule
 
 services:
     -
-        class: Hihaho\PhpstanRules\Rules\Debug\StaticChainedNoDebugInNamespaceRule
+        class: Hihaho\PhpstanRules\Rules\CombinedStaticCallRule
+        arguments:
+            unsafeMethods: %noUnsafeRequestData.unsafeMethods%
+            namespaces: %noUnsafeRequestData.namespaces%
+            excludeNamespaces: %noUnsafeRequestData.excludeNamespaces%
         tags:
             - phpstan.rules.rule
     -
@@ -61,13 +64,5 @@ services:
             namespaces: %noUnsafeRequestData.namespaces%
             excludeNamespaces: %noUnsafeRequestData.excludeNamespaces%
             reflectionProvider: @reflectionProvider
-        tags:
-            - phpstan.rules.rule
-    -
-        class: Hihaho\PhpstanRules\Rules\Validation\NoUnsafeRequestFacadeRule
-        arguments:
-            unsafeMethods: %noUnsafeRequestData.unsafeMethods%
-            namespaces: %noUnsafeRequestData.namespaces%
-            excludeNamespaces: %noUnsafeRequestData.excludeNamespaces%
         tags:
             - phpstan.rules.rule
