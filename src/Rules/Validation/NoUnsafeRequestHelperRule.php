@@ -58,15 +58,15 @@ final readonly class NoUnsafeRequestHelperRule implements Rule
             return [];
         }
 
+        if (! $this->isInConfiguredNamespace($scope)) {
+            return [];
+        }
+
         if (! $this->reflectionProvider->hasFunction($node->name, $scope)) {
             return [];
         }
 
         if (strtolower($this->reflectionProvider->getFunction($node->name, $scope)->getName()) !== 'request') {
-            return [];
-        }
-
-        if (! $this->isInConfiguredNamespace($scope)) {
             return [];
         }
 
