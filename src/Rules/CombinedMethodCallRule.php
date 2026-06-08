@@ -30,6 +30,9 @@ final readonly class CombinedMethodCallRule extends BaseNoDebugRule
     /** @var array<string, true> */
     private array $unsafeMethodsLookup;
 
+    /** @var array<string, true> */
+    private array $quickRejectLookup;
+
     private ObjectType $requestType;
 
     /**
@@ -44,6 +47,7 @@ final readonly class CombinedMethodCallRule extends BaseNoDebugRule
     ) {
         $this->unsafeMethodsLookup = array_fill_keys(array_map(strtolower(...), $unsafeMethods), true);
         $this->requestType = new ObjectType(Request::class);
+        $this->quickRejectLookup = $this->unsafeMethodsLookup + ['dump' => true, 'dd' => true, 'ddd' => true, 'ray' => true];
     }
 
     #[Override]
@@ -64,6 +68,11 @@ final readonly class CombinedMethodCallRule extends BaseNoDebugRule
         }
 
         $methodName = $node->name->name;
+
+        if (! isset($this->quickRejectLookup[strtolower($methodName)])) {
+            return [];
+        }
+
         $errors = [];
 
         $debugError = $this->checkDebugMethodCall($node, $methodName, $scope);
