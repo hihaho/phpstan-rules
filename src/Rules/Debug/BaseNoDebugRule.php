@@ -13,32 +13,22 @@ abstract readonly class BaseNoDebugRule implements Rule
 {
     use ChecksNamespace;
 
-    /**
-     * Debug helpers that can only appear as global function calls.
-     *
-     * @var list<string>
-     */
+    /** @var array<string, true> */
     private const array FUNCTION_DEBUG_STATEMENTS = [
-        'dump',
-        'dd',
-        'ddd',
-        'ray',
-        'print_r',
-        'var_dump',
+        'dump' => true,
+        'dd' => true,
+        'ddd' => true,
+        'ray' => true,
+        'print_r' => true,
+        'var_dump' => true,
     ];
 
-    /**
-     * Debug helpers that can appear as method or static calls.
-     *
-     * `print_r` and `var_dump` are excluded — they only exist as global functions.
-     *
-     * @var list<string>
-     */
+    /** @var array<string, true> */
     private const array METHOD_DEBUG_STATEMENTS = [
-        'dump',
-        'dd',
-        'ddd',
-        'ray',
+        'dump' => true,
+        'dd' => true,
+        'ddd' => true,
+        'ray' => true,
     ];
 
     /**
@@ -51,11 +41,11 @@ abstract readonly class BaseNoDebugRule implements Rule
 
     final protected function isDebugFunction(string $statement): bool
     {
-        return in_array($statement, self::FUNCTION_DEBUG_STATEMENTS, true);
+        return isset(self::FUNCTION_DEBUG_STATEMENTS[$statement]);
     }
 
     final protected function isDebugMethod(string $statement): bool
     {
-        return in_array($statement, self::METHOD_DEBUG_STATEMENTS, true);
+        return isset(self::METHOD_DEBUG_STATEMENTS[$statement]);
     }
 }
