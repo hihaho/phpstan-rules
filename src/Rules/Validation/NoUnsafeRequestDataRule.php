@@ -112,6 +112,12 @@ final readonly class NoUnsafeRequestDataRule implements Rule
 
     private function classIsRequest(string $className): bool
     {
-        return $this->requestType->isSuperTypeOf(new ObjectType($className))->yes();
+        static $cache = [];
+
+        if (! array_key_exists($className, $cache)) {
+            $cache[$className] = $this->requestType->isSuperTypeOf(new ObjectType($className))->yes();
+        }
+
+        return $cache[$className];
     }
 }
