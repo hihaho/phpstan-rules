@@ -51,15 +51,28 @@ final readonly class OnlyAllowFacadeAliasInBlade implements Rule
             return [];
         }
 
-        try {
-            // Runtime reflection is required: facade aliases are registered
-            // lazily by Laravel's AliasLoader (an SPL autoloader). PHPStan's
-            // ReflectionProvider does not invoke runtime autoloaders, so a
-            // static-discovery path would silently miss every real-world
-            // facade alias. The try/catch handles non-existent short names.
-            // @phpstan-ignore phpstanApi.runtimeReflection, argument.type
-            $reflectionClass = new ReflectionClass($node->class->toCodeString());
-        } catch (ReflectionException) {
+        $className = $node->class->toCodeString();
+
+        /** @var array<string, ReflectionClass<object>|null> $cache */
+        static $cache = [];
+
+        if (! array_key_exists($className, $cache)) {
+            try {
+                // Runtime reflection is required: facade aliases are registered
+                // lazily by Laravel's AliasLoader (an SPL autoloader). PHPStan's
+                // ReflectionProvider does not invoke runtime autoloaders, so a
+                // static-discovery path would silently miss every real-world
+                // facade alias. The try/catch handles non-existent short names.
+                // @phpstan-ignore phpstanApi.runtimeReflection, argument.type
+                $cache[$className] = new ReflectionClass($className);
+            } catch (ReflectionException) {
+                $cache[$className] = null;
+            }
+        }
+
+        $reflectionClass = $cache[$className];
+
+        if ($reflectionClass === null) {
             return [];
         }
 
