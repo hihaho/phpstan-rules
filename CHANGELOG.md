@@ -2,6 +2,49 @@
 
 All notable changes to `hihaho/phpstan-rules` will be documented in this file.
 
+## v3.2.0 - 2026-06-09
+
+<!-- verified-sha: c625a78716405a255caef2bf1f05153715b08bb8 -->
+### Performance
+
+Rule dispatch overhead is now negligible (~0ms) across all three node types.
+
+Previously each PHPStan node visit dispatched to multiple independent rule classes. This release merges related rules into three combined rules — one per node type — so PHPStan pays a single dispatch cost regardless of how many checks run on that node.
+
+| Node type | Before | After |
+|-----------|--------|-------|
+| `FuncCall` | 3 rule classes dispatched | 1 (`CombinedFuncCallRule`) |
+| `MethodCall` | 2 rule classes dispatched | 1 (`CombinedMethodCallRule`) |
+| `StaticCall` | 3 rule classes dispatched | 1 (`CombinedStaticCallRule`) |
+
+Additional micro-optimisations applied across the board:
+
+- Early namespace checks placed before any reflection or type-resolution calls
+- `in_array` hot-path lookups replaced with `isset` on pre-built hash maps
+- Facade class reflection cached per constructor (StaticChainedNoDebugInNamespaceRule)
+- `ObjectType` comparison result cached per class name (NoUnsafeRequestDataRule)
+- Static `ReflectionClass` cache added (OnlyAllowFacadeAliasInBlade)
+- `->name` direct property access used instead of `->toString()` where applicable
+- `getLast()` pre-filter added to skip `strtolower` on non-matching calls (NoUnsafeRequestFacadeRule)
+
+All rule identifiers, configuration parameters, and public API are unchanged — this is a drop-in upgrade.
+
+### Internal
+
+- Deduplicated `isDebugHelperMethodCall` by moving it to `BaseNoDebugRule`; `FUNCTION_DEBUG_STATEMENTS` and `METHOD_DEBUG_STATEMENTS` promoted to `protected` so combined rules derive quick-reject lookups from the single authoritative source.
+- CI: `L^11.31` matrix legs marked `continue-on-error` while Packagist security advisories on all `laravel/framework` v11 releases prevent `orchestra/testbench v9.x` from resolving. Laravel 12 and 13 legs are unaffected and remain the authoritative CI gate.
+- Migrated from `sandermuller/package-boost` to `sandermuller/package-boost-php ^1.0` + `sandermuller/boost-skills ^2.4`.
+
+### What's Changed
+
+* Update CHANGELOG for v3.1.1 and v3.1.2 by @SanderMuller in https://github.com/hihaho/phpstan-rules/pull/46
+* Bump peter-evans/create-pull-request from 7.0.8 to 8.1.1 by @dependabot[bot] in https://github.com/hihaho/phpstan-rules/pull/47
+* Update sandermuller/package-boost requirement from ^0.9 to ^0.11 by @dependabot[bot] in https://github.com/hihaho/phpstan-rules/pull/48
+* Update sandermuller/package-boost requirement from ^0.11 to ^0.15 by @dependabot[bot] in https://github.com/hihaho/phpstan-rules/pull/49
+* Bump shivammathur/setup-php from 2.37.0 to 2.37.1 by @dependabot[bot] in https://github.com/hihaho/phpstan-rules/pull/50
+
+**Full Changelog**: https://github.com/hihaho/phpstan-rules/compare/v3.1.2...v3.2.0
+
 ## v3.1.2 - 2026-04-22
 
 Internal performance work on rule hot paths — every optimisation is strictly a filter-order or data-structure change. No behaviour change, no public API change, no new or removed errors, no new configuration keys. All five rules remain `final readonly class`.
@@ -16,6 +59,7 @@ Internal performance work on rule hot paths — every optimisation is strictly a
 ## v3.1.1 - 2026-04-22
 
 ## What's Changed
+
 * Fix update-changelog workflow + backfill v3.1.0 entry by @SanderMuller in https://github.com/hihaho/phpstan-rules/pull/45
 
 **Full Changelog**: https://github.com/hihaho/phpstan-rules/compare/v3.1.0...v3.1.1
@@ -28,6 +72,7 @@ Internal performance work on rule hot paths — every optimisation is strictly a
   - **`NoUnsafeRequestDataRule`** — flags `MethodCall` on a `Request` or `FormRequest` receiver whose method is in `noUnsafeRequestData.unsafeMethods`. Defaults: `input`, `all`, `get`, `query`, `post`, `only`, `except`, `collect`, `string`, `str`, `integer`, `boolean`, `float`, `json`, `keys`, `fluent`, `array`, `date`, `enum`, `enums`, `file`, `allFiles`. Union-typed receivers (`Request|Other`) are flagged when any member is-a `Request`. Scope-class exemption walks the inheritance chain — custom base `FormRequest` classes are transparent. Identifier: `hihaho.validation.noUnsafeRequestData`.
   - **`NoUnsafeRequestHelperRule`** — flags the `request('key')` direct-argument helper form. Uses PHPStan's `ReflectionProvider` to resolve imports and aliases (`use function request as foo`). Error message interpolates the literal key for grep-friendly triage. Zero-argument `request()` is not flagged — chained method calls on its return are caught by `NoUnsafeRequestDataRule`. Identifier: `hihaho.validation.noUnsafeRequestHelper`.
   - **`NoUnsafeRequestFacadeRule`** — flags static calls on `Illuminate\Support\Facades\Request` (e.g. `Request::boolean('debug')`, `Request::file('attachment')`). Identifier: `hihaho.validation.noUnsafeRequestFacade`.
+  
 - `noUnsafeRequestData` configuration block with `unsafeMethods`, `namespaces`, and `excludeNamespaces`. `excludeNamespaces` defaults to `App\Providers` and `App\Http\Responses` — both areas receive raw `Request` via framework-dictated signatures (`RateLimiter::for(...)` closures, Fortify response contracts) with no FormRequest entry point. `App\Http\Resources` is intentionally **not** defaulted; add it in your own config if `JsonResource::toArray(Request)` reading raw request data is acceptable for your project.
 - `ChecksNamespace::namespaceStartsWithAny()` helper for list-based namespace matching.
 
