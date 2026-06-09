@@ -37,6 +37,10 @@ jobs:
   run_tests:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 5
+    # orchestra/testbench v9 (Laravel 11) requires laravel/framework ^11.x, which is currently
+    # blocked by Packagist security advisories on all v11 releases. Allow L^11.31 legs to fail
+    # until Laravel ships a patched v11 release that clears the advisories.
+    continue-on-error: ${{ matrix.laravel == '^11.31' }}
     strategy:
       fail-fast: true
       matrix:
