@@ -26,24 +26,14 @@ final readonly class CombinedFuncCallRule extends BaseNoDebugRule
     private const string DEBUG_MESSAGE = 'No debug statements should be present in the %s namespace.';
 
     /**
-     * Exact $node->name->name values that may be interesting. Calls whose name is not in
-     * this set and contains no backslash can be rejected immediately without checking each
-     * sub-rule. Qualified names (containing backslash) are always allowed through so that
-     * edge-cases like `\Namespace\request()` are still caught via getLast().
+     * Quick-reject lookup: unqualified calls not in this set can be skipped without checking
+     * each sub-rule. Qualified names (containing backslash) are always passed through.
+     * Built from FUNCTION_DEBUG_STATEMENTS so a new debug function added to the base
+     * is automatically included here.
      *
      * @var array<string, true>
      */
-    private const array INTERESTING_FUNC_NAMES = [
-        'dump' => true,
-        'dd' => true,
-        'ddd' => true,
-        'ray' => true,
-        'print_r' => true,
-        'var_dump' => true,
-        'invade' => true,
-        'Livewire\\invade' => true,
-        'request' => true,
-    ];
+    private array $interestingFuncNames;
 
     /**
      * @param  list<string>  $namespaces
@@ -53,7 +43,13 @@ final readonly class CombinedFuncCallRule extends BaseNoDebugRule
         private array $namespaces,
         private array $excludeNamespaces,
         private ReflectionProvider $reflectionProvider,
-    ) {}
+    ) {
+        $this->interestingFuncNames = self::FUNCTION_DEBUG_STATEMENTS + [
+            'invade' => true,
+            'Livewire\\invade' => true,
+            'request' => true,
+        ];
+    }
 
     #[Override]
     public function getNodeType(): string
@@ -74,7 +70,7 @@ final readonly class CombinedFuncCallRule extends BaseNoDebugRule
 
         $funcName = $node->name->name;
 
-        if (! isset(self::INTERESTING_FUNC_NAMES[$funcName]) && ! str_contains($funcName, '\\')) {
+        if (! isset($this->interestingFuncNames[$funcName]) && ! str_contains($funcName, '\\')) {
             return [];
         }
 

@@ -56,33 +56,4 @@ final readonly class ChainedNoDebugInNamespaceRule extends BaseNoDebugRule
                 ->build(),
         ];
     }
-
-    /**
-     * A `->dump()` / `->dd()` chain is only a real debug call when the method
-     * is declared by a Laravel-framework class or trait. Unrelated user methods
-     * that happen to share the name (e.g. a custom `->dump()` on a value object)
-     * are not flagged. Unknown receiver types are skipped.
-     */
-    private function isDebugHelperMethodCall(MethodCall $node, Scope $scope, string $methodName): bool
-    {
-        $classReflections = $scope->getType($node->var)->getObjectClassReflections();
-
-        if ($classReflections === []) {
-            return false;
-        }
-
-        foreach ($classReflections as $classReflection) {
-            if (! $classReflection->hasMethod($methodName)) {
-                continue;
-            }
-
-            $declaringClassName = $classReflection->getMethod($methodName, $scope)->getDeclaringClass()->getName();
-
-            if (str_starts_with($declaringClassName, self::LARAVEL_NAMESPACE_PREFIX)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
 }

@@ -47,7 +47,7 @@ final readonly class CombinedMethodCallRule extends BaseNoDebugRule
     ) {
         $this->unsafeMethodsLookup = array_fill_keys(array_map(strtolower(...), $unsafeMethods), true);
         $this->requestType = new ObjectType(Request::class);
-        $this->quickRejectLookup = $this->unsafeMethodsLookup + ['dump' => true, 'dd' => true, 'ddd' => true, 'ray' => true];
+        $this->quickRejectLookup = $this->unsafeMethodsLookup + self::METHOD_DEBUG_STATEMENTS;
     }
 
     #[Override]
@@ -134,35 +134,6 @@ final readonly class CombinedMethodCallRule extends BaseNoDebugRule
             ->identifier('hihaho.validation.noUnsafeRequestData')
             ->tip('Use $request->validated() or $request->safe() to consume validated data. For Stringable/int/bool accessors, $request->safe()->string(\'key\') mirrors $request->string(\'key\') against validated input.')
             ->build();
-    }
-
-    /**
-     * A `->dump()` / `->dd()` chain is only a real debug call when the method
-     * is declared by a Laravel-framework class or trait. Unrelated user methods
-     * that happen to share the name (e.g. a custom `->dump()` on a value object)
-     * are not flagged. Unknown receiver types are skipped.
-     */
-    private function isDebugHelperMethodCall(MethodCall $node, Scope $scope, string $methodName): bool
-    {
-        $classReflections = $scope->getType($node->var)->getObjectClassReflections();
-
-        if ($classReflections === []) {
-            return false;
-        }
-
-        foreach ($classReflections as $classReflection) {
-            if (! $classReflection->hasMethod($methodName)) {
-                continue;
-            }
-
-            $declaringClassName = $classReflection->getMethod($methodName, $scope)->getDeclaringClass()->getName();
-
-            if (str_starts_with($declaringClassName, self::LARAVEL_NAMESPACE_PREFIX)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private function scopeClassIsRequest(Scope $scope): bool
