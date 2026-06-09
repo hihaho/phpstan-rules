@@ -1,0 +1,150 @@
+{
+    "version": 1,
+    "generatedBy": "boost-core",
+    "emitted": {
+        ".claude/skills/ai-guidelines/SKILL.md": {
+            "sha256": "c97b639b2574e6db1abd5fb4179e24b3958e4d97b8d94e042545d68f6f1bfc29",
+            "category": "skill",
+            "provenance": "engine",
+            "scope": "project"
+        },
+        ".claude/skills/autoresearch/SKILL.md": {
+            "sha256": "c240997d8e206058a99c581c85d3fd4ce8a21087d4300ae4781f0011739bdd83",
+            "category": "skill",
+            "provenance": "engine",
+            "scope": "project"
+        },
+        ".claude/skills/backend-quality/SKILL.md": {
+            "sha256": "1691dcfcdeb6bc80b55cd3238783dd9e250830733a0357a8d2420e5f063ddf10",
+            "category": "skill",
+            "provenance": "engine",
+            "scope": "project"
+        },
+        ".claude/skills/bug-fixing/SKILL.md": {
+            "sha256": "ea1f93067f11809ecf188c00960eb0e9654c5f94373514e2c7f2be4cfdb67d29",
+            "category": "skill",
+            "provenance": "engine",
+            "scope": "project"
+        },
+        ".claude/skills/code-review/SKILL.md": {
+            "sha256": "adf87487ab69fcf4059a15f016e80db7a84de4e27d87bf1c6e55985c9b0f6237",
+            "category": "skill",
+            "provenance": "engine",
+            "scope": "project"
+        },
+        ".claude/skills/codex-review/SKILL.md": {
+            "sha256": "d91511f93f22e9a2098876c4c6bcd8b78c0e7d0b78d110b67e73ef163415b8b5",
+            "category": "skill",
+            "provenance": "engine",
+            "scope": "project"
+        },
+        ".claude/skills/evaluate/SKILL.md": {
+            "sha256": "a596167fd5382a7d7434fec8a8ce0e46ed617a3f84ada3ee50ebc086d834f876",
+            "category": "skill",
+            "provenance": "engine",
+            "scope": "project"
+        },
+        ".claude/skills/final-verification-review/SKILL.md": {
+            "sha256": "7ea42d9af89eb5359be63135755ba427c167e1c64101af2a18346650f258794c",
+            "category": "skill",
+            "provenance": "engine",
+            "scope": "project"
+        },
+        ".claude/skills/humanizer/SKILL.md": {
+            "sha256": "d1eeae4bb9551354d6ebc8cc4e5162922a0009e0e6e7de82db6d06fa799f908a",
+            "category": "skill",
+            "provenance": "engine",
+            "scope": "project"
+        },
+        ".claude/skills/implement-spec/SKILL.md": {
+            "sha256": "9f61c4a934b7c32a6e9adb6cb55768992c146534e4ba77ca9bfff403db9c38f8",
+            "category": "skill",
+            "provenance": "engine",
+            "scope": "project"
+        },
+        ".claude/skills/interview/SKILL.md": {
+            "sha256": "551d564150e28ea125edbd5313eb67c3db04093b352812c492677def8c72a4af",
+            "category": "skill",
+            "provenance": "engine",
+            "scope": "project"
+        },
+        ".claude/skills/lean-dist/SKILL.md": {
+            "sha256": "832469f5e71ad51d25035325e09fc96def4fa488d3510830e619aac6966e8358",
+            "category": "skill",
+            "provenance": "engine",
+            "scope": "project"
+        },
+        ".claude/skills/phpstan-developer/SKILL.md": {
+            "sha256": "dc8ca2b5d7b4689555cf72a8224a5d4fb1983b41ae78010f2907fc2bc5193aa5",
+            "category": "skill",
+            "provenance": "engine",
+            "scope": "project"
+        },
+        ".claude/skills/pr-review-feedback/SKILL.md": {
+            "sha256": "dd6a8b5589c6bec850d967003ef156044b099013f3d001232717324c9fadd96b",
+            "category": "skill",
+            "provenance": "engine",
+            "scope": "project"
+        },
+        ".claude/skills/pre-release/SKILL.md": {
+            "sha256": "306db65876fffbcf0c9acaa819c961f656c57c0f36d956e356a91c3d5551e959",
+            "category": "skill",
+            "provenance": "engine",
+            "scope": "project"
+        },
+        ".claude/skills/pull-requests/SKILL.md": {
+            "sha256": "d9a1b7bd01828fd2100641a5f4f127e12feb7cc34216ab5516a9d1519d74ae72",
+            "category": "skill",
+            "provenance": "engine",
+            "scope": "project"
+        },
+        ".claude/skills/readme/SKILL.md": {
+            "sha256": "dbd321587fdeabcc0cfb485155cecb6904a3c17f89b181f9f0c13939a4d0774f",
+            "category": "skill",
+            "provenance": "engine",
+            "scope": "project"
+        },
+        ".claude/skills/release-notes/SKILL.md": {
+            "sha256": "cb72ad4dbaedc7b3e26eaa1da9cc013faf3cc7c4c11fbee73b4abfda98060d4a",
+            "category": "skill",
+            "provenance": "engine",
+            "scope": "project"
+        },
+        ".claude/skills/resolve-conflicts/SKILL.md": {
+            "sha256": "6b76778c9dea3093df73f45d09c3d121cd3f7862e2a30fdc8dea0ace6dce75db",
+            "category": "skill",
+            "provenance": "engine",
+            "scope": "project"
+        },
+        ".claude/skills/test-writing/SKILL.md": {
+            "sha256": "bf9f730133d62b4bb6dcc41cb8ef75cff7bfcb1df09d1bf4d9225663381472fb",
+            "category": "skill",
+            "provenance": "engine",
+            "scope": "project"
+        },
+        ".claude/skills/upgrading/SKILL.md": {
+            "sha256": "4cf53b180e5ffd6d6f85dcb2cc157d74d9fbc4059d34768e9498db9e1ec8c0ad",
+            "category": "skill",
+            "provenance": "engine",
+            "scope": "project"
+        },
+        ".claude/skills/ux-review/SKILL.md": {
+            "sha256": "6a530cfaa0bf096897a9746f44a50eea4279243655567a9aeb68f368f584a265",
+            "category": "skill",
+            "provenance": "engine",
+            "scope": "project"
+        },
+        ".claude/skills/write-spec/SKILL.md": {
+            "sha256": "947ed7746bd730bb30e8260dab71b5c59636940b2c520039b6fdce8c4515893f",
+            "category": "skill",
+            "provenance": "engine",
+            "scope": "project"
+        },
+        "CLAUDE.md": {
+            "sha256": "c853d5f379b349711557b8b5a94c2c919973488173d72f5be9f065bcbebf4dc9",
+            "category": "guidance",
+            "provenance": "engine",
+            "scope": "project"
+        }
+    }
+}

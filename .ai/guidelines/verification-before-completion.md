@@ -25,27 +25,20 @@ These are slow checks — only run them once at the very end:
 |-------------------|-----------------------------------------------------------------|
 | Rector ran clean  | `vendor/bin/rector process` showing 0 changes                   |
 | PHPStan clean     | `vendor/bin/phpstan analyse --memory-limit=2G` showing 0 errors |
-| Full suite passes | `vendor/bin/pest` output showing 0 failures                     |
+| Full suite passes | `vendor/bin/phpunit` output showing 0 failures                  |
 | Feature complete  | All above checks pass                                           |
 
 ### Always Capture Command Output
 
-Append `|| true` to all verification commands (tests, linting, type checks) so the output is always captured, even on failure. Without it, a non-zero exit code can hide the output, forcing an expensive second run just to read the errors.
+Append `|| true` to all verification commands so the output is always visible, even on failure. Without it, a non-zero exit code can hide the output.
 
 ```bash
-# CORRECT — output always visible
-vendor/bin/pest --filter=testName || true
+vendor/bin/phpunit --filter=TestName || true
 vendor/bin/pint --dirty --format agent || true
-
-# WRONG — output lost on failure, wastes time re-running
-vendor/bin/pest --filter=testName
 ```
 
 ### Never Use Without Evidence
 
-- "should work now"
-- "that should fix it"
-- "looks correct"
-- "I'm confident this works"
+- "should work now" / "that should fix it" / "looks correct"
 
-These phrases indicate missing verification. Run the command first, then report what actually happened.
+These phrases indicate missing verification. Run the command first.
