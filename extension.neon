@@ -4,6 +4,9 @@ parametersSchema:
         namespaces: listOf(string())
         excludeNamespaces: listOf(string())
     ])
+    unvalidatedFormRequestField: structure([
+        accessors: listOf(string())
+    ])
 
 parameters:
     noUnsafeRequestData:
@@ -35,6 +38,24 @@ parameters:
         excludeNamespaces:
             - App\Providers
             - App\Http\Responses
+    unvalidatedFormRequestField:
+        accessors:
+            - input
+            - get
+            - query
+            - post
+            - string
+            - str
+            - integer
+            - boolean
+            - float
+            - json
+            - array
+            - collect
+            - date
+            - enum
+            - enums
+            - file
 
 rules: []
 
@@ -59,7 +80,9 @@ services:
         class: Hihaho\PhpstanRules\Rules\CombinedMethodCallRule
         arguments:
             unsafeMethods: %noUnsafeRequestData.unsafeMethods%
+            fieldAccessors: %unvalidatedFormRequestField.accessors%
             namespaces: %noUnsafeRequestData.namespaces%
             excludeNamespaces: %noUnsafeRequestData.excludeNamespaces%
+            parser: @defaultAnalysisParser
         tags:
             - phpstan.rules.rule

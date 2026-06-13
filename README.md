@@ -9,8 +9,8 @@
 A set of PHPStan rules that enforce [Hihaho's Laravel guidelines](https://guidelines.hihaho.com/laravel.html)
 at analyse time. They flag `invade()` calls in app code, facade aliases
 outside Blade, stray debug helpers (`dump`, `dd`, `ray`, and friends)
-left behind in production or test paths, and unvalidated reads from
-`Illuminate\Http\Request`.
+left behind in production or test paths, and unvalidated request reads —
+including `FormRequest` fields read outside the class's own `rules()`.
 
 If you want the auto-fix counterparts for class-naming and route-group
 conventions, see [`hihaho/rector-rules`](https://github.com/hihaho/rector-rules).
@@ -87,13 +87,14 @@ Identifiers: `hihaho.debug.noDebugIn{App,Tests}`,
 
 ### Request-validation rules
 
-Three rules flag unvalidated reads from `Illuminate\Http\Request`. Use validated data instead: `$request->validated()`, `$request->safe()->string('key')`, or the array returned by `$request->validate([...])`.
+Four rules flag unvalidated request data. The first three flag reads from `Illuminate\Http\Request`; the fourth flags reading a field inside a `FormRequest` that the same class's `rules()` never validates. Use validated data instead: `$request->validated()`, `$request->safe()->string('key')`, or the array returned by `$request->validate([...])`.
 
-| Rule                        | Targets                                              | Identifier                                |
-|-----------------------------|------------------------------------------------------|-------------------------------------------|
-| `NoUnsafeRequestDataRule`   | Method calls on `Request` / `FormRequest`            | `hihaho.validation.noUnsafeRequestData`   |
-| `NoUnsafeRequestHelperRule` | `request('key')` helper with a literal arg           | `hihaho.validation.noUnsafeRequestHelper` |
-| `NoUnsafeRequestFacadeRule` | Static calls on `Illuminate\Support\Facades\Request` | `hihaho.validation.noUnsafeRequestFacade` |
+| Rule                              | Targets                                                          | Identifier                                      |
+|-----------------------------------|------------------------------------------------------------------|-------------------------------------------------|
+| `NoUnsafeRequestDataRule`         | Method calls on `Request` / `FormRequest`                        | `hihaho.validation.noUnsafeRequestData`         |
+| `NoUnsafeRequestHelperRule`       | `request('key')` helper with a literal arg                       | `hihaho.validation.noUnsafeRequestHelper`       |
+| `NoUnsafeRequestFacadeRule`       | Static calls on `Illuminate\Support\Facades\Request`             | `hihaho.validation.noUnsafeRequestFacade`       |
+| `UnvalidatedFormRequestFieldRule` | `$this->input('key')` inside a `FormRequest`, `key` ∉ `rules()`  | `hihaho.validation.unvalidatedFormRequestField` |
 
 `FormRequest` auto-validation runs on dispatch, but inherited readers still return the full payload including keys outside `rules()`, so they're flagged on `FormRequest` too. Chained `request()->input('x')` is caught by the Data rule because the receiver resolves to `Request`. Zero-argument `request()` is not flagged.
 
@@ -120,6 +121,8 @@ final class StoreUserController
 
 Reads from `$this` inside a `Request` subclass, including your own `FormRequest` bases, are exempted. The scope-class check walks the inheritance chain, so a custom `App\Http\Requests\FormRequest extends BaseFormRequest extends Illuminate\Foundation\Http\FormRequest` works without extra config. Static calls on `Illuminate\Http\Request` itself (e.g. `Request::capture()`) aren't flagged; they don't return raw input.
 
+`UnvalidatedFormRequestFieldRule` covers that `$this`-inside-a-`FormRequest` exemption from the other side: it flags `$this->boolean('submit_redirect')` when `submit_redirect` is never declared in the same class's `rules()`. To stay high-precision it only resolves a literal `return [...]` array — a conditional, spread, `array_merge()`, returned variable, or a `rules()` it can't read statically makes the class opaque and skips it — and it skips any class that overrides `prepareForValidation()`, `validationData()`, or `all()` (including via a shared base or trait), since those rewrite the validated set. `rules()` declared on a base class is followed; nested keys match on their root segment, so a rule for `address.street` validates a read of `address`.
+
 Out of scope: ArrayAccess (`$request['x']`), magic property access (`$request->x`), and Symfony `InputBag` property access (`$request->query->get('x')`, `->headers->get()`, `->cookies->get()`). The InputBag path is legitimate for raw header or cookie reads, but flag it in code review so it doesn't turn into a de-facto suppression channel.
 
 #### Configuration
@@ -141,6 +144,8 @@ parameters:
 ```
 
 `App\Providers` and `App\Http\Responses` are default-excluded because the signatures there come from the framework (`RateLimiter::for(...)` closures, `LoginResponse::toResponse(Request)`) and there's no FormRequest to route the data through. `App\Http\Resources` is opt-in. Whether a resource should read raw request is a team call.
+
+`UnvalidatedFormRequestFieldRule` reuses `noUnsafeRequestData.namespaces` / `excludeNamespaces` and carries its own list of single-key readers under `unvalidatedFormRequestField.accessors` (`input`, `get`, `query`, `post`, `string`, `str`, `integer`, `boolean`, `float`, `json`, `array`, `collect`, `date`, `enum`, `enums`, `file`); the full default is in `extension.neon`.
 
 #### Adopting on an existing codebase
 

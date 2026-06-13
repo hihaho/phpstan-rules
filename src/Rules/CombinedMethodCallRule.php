@@ -3,12 +3,16 @@
 namespace Hihaho\PhpstanRules\Rules;
 
 use Hihaho\PhpstanRules\Rules\Debug\BaseNoDebugRule;
+use Hihaho\PhpstanRules\Traits\ResolvesFormRequestRuleKeys;
 use Illuminate\Http\Request;
 use Override;
 use PhpParser\Node;
 use PhpParser\Node\Expr\MethodCall;
+use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Identifier;
+use PhpParser\Node\Scalar\String_;
 use PHPStan\Analyser\Scope;
+use PHPStan\Parser\Parser;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Rules\IdentifierRuleError;
 use PHPStan\Rules\RuleErrorBuilder;
@@ -17,18 +21,23 @@ use PHPStan\Type\Type;
 
 /**
  * Combined rule that handles all MethodCall checks in a single PHPStan dispatch,
- * eliminating the overhead of dispatching to two separate rules for every method call.
+ * eliminating the overhead of dispatching to separate rules for every method call.
  *
- * Merges: ChainedNoDebugInNamespaceRule + NoUnsafeRequestDataRule
+ * Merges: ChainedNoDebugInNamespaceRule + NoUnsafeRequestDataRule + UnvalidatedFormRequestFieldRule
  *
  * @extends BaseNoDebugRule<MethodCall>
  */
 final readonly class CombinedMethodCallRule extends BaseNoDebugRule
 {
+    use ResolvesFormRequestRuleKeys;
+
     private const string DEBUG_MESSAGE = 'No chained debug statements should be present in the %s namespace.';
 
     /** @var array<string, true> */
     private array $unsafeMethodsLookup;
+
+    /** @var array<string, true> */
+    private array $fieldAccessorsLookup;
 
     /** @var array<string, true> */
     private array $quickRejectLookup;
@@ -37,17 +46,21 @@ final readonly class CombinedMethodCallRule extends BaseNoDebugRule
 
     /**
      * @param  list<string>  $unsafeMethods
+     * @param  list<string>  $fieldAccessors
      * @param  list<string>  $namespaces
      * @param  list<string>  $excludeNamespaces
      */
     public function __construct(
         array $unsafeMethods,
+        array $fieldAccessors,
         private array $namespaces,
         private array $excludeNamespaces,
+        private Parser $parser,
     ) {
         $this->unsafeMethodsLookup = array_fill_keys(array_map(strtolower(...), $unsafeMethods), true);
+        $this->fieldAccessorsLookup = array_fill_keys(array_map(strtolower(...), $fieldAccessors), true);
         $this->requestType = new ObjectType(Request::class);
-        $this->quickRejectLookup = $this->unsafeMethodsLookup + self::METHOD_DEBUG_STATEMENTS;
+        $this->quickRejectLookup = $this->unsafeMethodsLookup + $this->fieldAccessorsLookup + self::METHOD_DEBUG_STATEMENTS;
     }
 
     #[Override]
@@ -85,7 +98,66 @@ final readonly class CombinedMethodCallRule extends BaseNoDebugRule
             $errors[] = $requestError;
         }
 
+        $fieldError = $this->checkUnvalidatedFormRequestField($node, $methodName, $scope);
+        if ($fieldError instanceof IdentifierRuleError) {
+            $errors[] = $fieldError;
+        }
+
         return $errors;
+    }
+
+    /**
+     * Mutually exclusive with checkUnsafeRequestData: that check bails when the
+     * scope class is a Request (a FormRequest is-a Request), so it never fires
+     * inside a FormRequest, while this one fires only inside a FormRequest.
+     */
+    private function checkUnvalidatedFormRequestField(MethodCall $node, string $methodName, Scope $scope): ?IdentifierRuleError
+    {
+        if (! isset($this->fieldAccessorsLookup[strtolower($methodName)])) {
+            return null;
+        }
+
+        if (! $node->var instanceof Variable || $node->var->name !== 'this') {
+            return null;
+        }
+
+        if (! $this->isInRequestNamespace($scope)) {
+            return null;
+        }
+
+        $args = $node->getArgs();
+
+        if ($args === []) {
+            return null;
+        }
+
+        $keyArg = $args[0]->value;
+
+        if (! $keyArg instanceof String_) {
+            return null;
+        }
+
+        $classReflection = $scope->getClassReflection();
+
+        if (! $classReflection instanceof ClassReflection) {
+            return null;
+        }
+
+        if (! $this->classIsFormRequest($classReflection->getName())) {
+            return null;
+        }
+
+        $validatedRoots = $this->resolveValidatedRoots($this->parser, $classReflection, $scope);
+
+        if ($validatedRoots === null) {
+            return null;
+        }
+
+        if (isset($validatedRoots[$this->rootSegment($keyArg->value)])) {
+            return null;
+        }
+
+        return $this->buildUnvalidatedFieldError($keyArg->value, $methodName);
     }
 
     private function checkDebugMethodCall(MethodCall $node, string $methodName, Scope $scope): ?IdentifierRuleError
