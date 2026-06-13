@@ -7,6 +7,9 @@ parametersSchema:
     unvalidatedFormRequestField: structure([
         accessors: listOf(string())
     ])
+    positionalFlagArgument: structure([
+        firstPartyNamespaces: listOf(string())
+    ])
 
 parameters:
     noUnsafeRequestData:
@@ -56,6 +59,11 @@ parameters:
             - enum
             - enums
             - file
+    positionalFlagArgument:
+        firstPartyNamespaces:
+            - App
+            - Database\Factories
+            - Tests
 
 rules: []
 
@@ -74,6 +82,7 @@ services:
             unsafeMethods: %noUnsafeRequestData.unsafeMethods%
             namespaces: %noUnsafeRequestData.namespaces%
             excludeNamespaces: %noUnsafeRequestData.excludeNamespaces%
+            firstPartyNamespaces: %positionalFlagArgument.firstPartyNamespaces%
         tags:
             - phpstan.rules.rule
     -
@@ -84,5 +93,13 @@ services:
             namespaces: %noUnsafeRequestData.namespaces%
             excludeNamespaces: %noUnsafeRequestData.excludeNamespaces%
             parser: @defaultAnalysisParser
+            firstPartyNamespaces: %positionalFlagArgument.firstPartyNamespaces%
+        tags:
+            - phpstan.rules.rule
+    -
+        class: Hihaho\PhpstanRules\Rules\Conventions\PositionalFlagArgumentConstructorRule
+        arguments:
+            reflectionProvider: @reflectionProvider
+            firstPartyNamespaces: %positionalFlagArgument.firstPartyNamespaces%
         tags:
             - phpstan.rules.rule

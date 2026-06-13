@@ -20,6 +20,7 @@ return RectorConfig::configure()
     ->withSkip([
         __DIR__ . '/tests/Rules/stubs',
         __DIR__ . '/tests/Rules/Debug/stubs',
+        __DIR__ . '/tests/Rules/Conventions/stubs',
         AddArrowFunctionReturnTypeRector::class,
         EncapsedStringsToSprintfRector::class,
         ExplicitBoolCompareRector::class,

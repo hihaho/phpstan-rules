@@ -3,6 +3,7 @@
 namespace Hihaho\PhpstanRules\Rules;
 
 use Hihaho\PhpstanRules\Rules\Debug\BaseNoDebugRule;
+use Hihaho\PhpstanRules\Traits\DetectsPositionalFlagArgument;
 use Hihaho\PhpstanRules\Traits\ResolvesFormRequestRuleKeys;
 use Illuminate\Http\Request;
 use Override;
@@ -29,6 +30,7 @@ use PHPStan\Type\Type;
  */
 final readonly class CombinedMethodCallRule extends BaseNoDebugRule
 {
+    use DetectsPositionalFlagArgument;
     use ResolvesFormRequestRuleKeys;
 
     private const string DEBUG_MESSAGE = 'No chained debug statements should be present in the %s namespace.';
@@ -49,6 +51,7 @@ final readonly class CombinedMethodCallRule extends BaseNoDebugRule
      * @param  list<string>  $fieldAccessors
      * @param  list<string>  $namespaces
      * @param  list<string>  $excludeNamespaces
+     * @param  list<string>  $firstPartyNamespaces
      */
     public function __construct(
         array $unsafeMethods,
@@ -56,6 +59,7 @@ final readonly class CombinedMethodCallRule extends BaseNoDebugRule
         private array $namespaces,
         private array $excludeNamespaces,
         private Parser $parser,
+        private array $firstPartyNamespaces,
     ) {
         $this->unsafeMethodsLookup = array_fill_keys(array_map(strtolower(...), $unsafeMethods), true);
         $this->fieldAccessorsLookup = array_fill_keys(array_map(strtolower(...), $fieldAccessors), true);
@@ -80,13 +84,20 @@ final readonly class CombinedMethodCallRule extends BaseNoDebugRule
             return [];
         }
 
+        $errors = [];
+
+        // Runs on every method call (not method-name gated) but bails cheaply
+        // unless the final argument is a bare bool/null literal.
+        $flagError = $this->positionalFlagErrorForMethodCall($node, $scope, $this->firstPartyNamespaces);
+        if ($flagError instanceof IdentifierRuleError) {
+            $errors[] = $flagError;
+        }
+
         $methodName = $node->name->name;
 
         if (! isset($this->quickRejectLookup[strtolower($methodName)])) {
-            return [];
+            return $errors;
         }
-
-        $errors = [];
 
         $debugError = $this->checkDebugMethodCall($node, $methodName, $scope);
         if ($debugError instanceof IdentifierRuleError) {

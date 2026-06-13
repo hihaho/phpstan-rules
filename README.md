@@ -178,6 +178,41 @@ Common traps:
 
 Rule hits in `Support` or utility namespaces often point at dead code. Grep the call graph before adding to the baseline; the fix may be a delete.
 
+### Convention rules
+
+Flag a bare `true`/`false`/`null` literal passed **positionally** as the last argument of a **first-party** method, static, or constructor call. A positional `setActive('name', false)` hides what the flag means; naming it — `setActive('name', active: false)` — makes the call self-documenting.
+
+| Rule                                     | Targets                              | Identifier                                  |
+|------------------------------------------|--------------------------------------|---------------------------------------------|
+| `PositionalFlagArgumentMethodCallRule`   | `$obj->method(..., true)`            | `hihaho.conventions.positionalFlagArgument` |
+| `PositionalFlagArgumentStaticCallRule`   | `Klass::method(..., true)`           | `hihaho.conventions.positionalFlagArgument` |
+| `PositionalFlagArgumentConstructorRule`  | `new Klass(..., true)`               | `hihaho.conventions.positionalFlagArgument` |
+
+```php
+namespace App\Services;
+
+$toggle->setActive('name', false);          // reported — name the flag: active: false
+StaticFlag::toggle('name', false);          // reported
+new Widget('name', true);                   // reported
+
+$toggle->setActive('name', active: false);  // fine — already named
+```
+
+This pairs with rector-rules' `FirstPartyFlagArgumentToNamedRector`, which auto-fixes the flags it can resolve with bare PHPStan. Because PHPStan rules inherit the consumer's extensions, this rule flags the rest in a larastan-equipped app — including receivers (generic or inherited properties) that rector cannot resolve. rector rewrites; this rule gates.
+
+Scope is deliberately tight (v1): the **last** argument only, and only when every argument is positional (no named or spread args), never a variadic parameter. Callee namespaces are configurable:
+
+```neon
+parameters:
+    positionalFlagArgument:
+        firstPartyNamespaces:
+            - App
+            - Database\Factories
+            - Tests
+```
+
+Param names aren't semver-stable in vendor code, so only first-party callees are flagged.
+
 ## Testing
 
 ```bash

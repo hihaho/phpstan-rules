@@ -3,6 +3,7 @@
 namespace Hihaho\PhpstanRules\Rules;
 
 use Hihaho\PhpstanRules\Rules\Debug\BaseNoDebugRule;
+use Hihaho\PhpstanRules\Traits\DetectsPositionalFlagArgument;
 use Illuminate\Support\Facades\Facade;
 use Illuminate\Support\Facades\Request;
 use Override;
@@ -28,6 +29,8 @@ use ReflectionException;
  */
 final readonly class CombinedStaticCallRule extends BaseNoDebugRule
 {
+    use DetectsPositionalFlagArgument;
+
     private const string DEBUG_MESSAGE = 'No statically called debug statements should be present in the %s namespace.';
 
     private ?ClassReflection $facadeReflection;
@@ -41,12 +44,14 @@ final readonly class CombinedStaticCallRule extends BaseNoDebugRule
      * @param  list<string>  $unsafeMethods
      * @param  list<string>  $namespaces
      * @param  list<string>  $excludeNamespaces
+     * @param  list<string>  $firstPartyNamespaces
      */
     public function __construct(
         private ReflectionProvider $reflectionProvider,
         array $unsafeMethods,
         private array $namespaces,
         private array $excludeNamespaces,
+        private array $firstPartyNamespaces,
     ) {
         $this->facadeReflection = $reflectionProvider->hasClass(Facade::class)
             ? $reflectionProvider->getClass(Facade::class)
@@ -78,6 +83,11 @@ final readonly class CombinedStaticCallRule extends BaseNoDebugRule
         $facadeError = $this->checkFacadeAlias($node->class, $scope);
         if ($facadeError instanceof IdentifierRuleError) {
             $errors[] = $facadeError;
+        }
+
+        $flagError = $this->positionalFlagErrorForStaticCall($node, $scope, $this->reflectionProvider, $this->firstPartyNamespaces);
+        if ($flagError instanceof IdentifierRuleError) {
+            $errors[] = $flagError;
         }
 
         if (! $node->name instanceof Identifier) {
