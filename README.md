@@ -1,9 +1,10 @@
 # Hihaho PHPStan rules
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/hihaho/phpstan-rules.svg?style=flat-square)](https://packagist.org/packages/hihaho/phpstan-rules)
-[![Tests](https://img.shields.io/github/actions/workflow/status/hihaho/phpstan-rules/tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/hihaho/phpstan-rules/actions/workflows/tests.yml)
-[![PHPStan](https://img.shields.io/github/actions/workflow/status/hihaho/phpstan-rules/analyzer.yml?branch=main&label=phpstan&style=flat-square)](https://github.com/hihaho/phpstan-rules/actions/workflows/analyzer.yml)
+[![Tests](https://img.shields.io/github/actions/workflow/status/hihaho/phpstan-rules/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/hihaho/phpstan-rules/actions/workflows/run-tests.yml)
+[![PHPStan](https://img.shields.io/github/actions/workflow/status/hihaho/phpstan-rules/phpstan.yml?branch=main&label=phpstan&style=flat-square)](https://github.com/hihaho/phpstan-rules/actions/workflows/phpstan.yml)
 [![Total Downloads](https://img.shields.io/packagist/dt/hihaho/phpstan-rules.svg?style=flat-square)](https://packagist.org/packages/hihaho/phpstan-rules)
+[![License](https://img.shields.io/packagist/l/hihaho/phpstan-rules.svg?style=flat-square)](LICENSE.md)
 [![Laravel Compatibility](https://badge.laravel.cloud/badge/hihaho/phpstan-rules?style=flat)](https://packagist.org/packages/hihaho/phpstan-rules)
 
 A set of PHPStan rules that enforce [Hihaho's Laravel guidelines](https://guidelines.hihaho.com/laravel.html)

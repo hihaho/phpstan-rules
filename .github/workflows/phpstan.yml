@@ -14,7 +14,7 @@ on:
       - 'extension.neon'
       - 'composer.json'
       - 'composer.lock'
-      - '.github/workflows/analyzer.yml'
+      - '.github/workflows/phpstan.yml'
   pull_request:
     paths:
       - '**.php'
@@ -23,7 +23,7 @@ on:
       - 'extension.neon'
       - 'composer.json'
       - 'composer.lock'
-      - '.github/workflows/analyzer.yml'
+      - '.github/workflows/phpstan.yml'
   workflow_dispatch:
 
 concurrency:

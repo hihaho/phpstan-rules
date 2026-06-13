@@ -9,11 +9,11 @@ on:
       - main
     paths:
       - '**.php'
-      - 'phpunit.xml.dist'
+      - 'phpunit.xml'
       - 'composer.json'
       - 'composer.lock'
       - 'extension.neon'
-      - '.github/workflows/tests.yml'
+      - '.github/workflows/run-tests.yml'
   pull_request:
     types:
       - opened
@@ -22,11 +22,11 @@ on:
       - ready_for_review
     paths:
       - '**.php'
-      - 'phpunit.xml.dist'
+      - 'phpunit.xml'
       - 'composer.json'
       - 'composer.lock'
       - 'extension.neon'
-      - '.github/workflows/tests.yml'
+      - '.github/workflows/run-tests.yml'
   workflow_dispatch:
 
 concurrency:
