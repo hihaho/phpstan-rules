@@ -19,7 +19,7 @@ conventions, see [`hihaho/rector-rules`](https://github.com/hihaho/rector-rules)
 
 - PHP 8.3 or higher
 - PHPStan 2.1 or higher
-- Laravel 11.31, 12.x, or 13.x (via `illuminate/support`)
+- Laravel 12.x or 13.x (via `illuminate/support`)
 
 ## Installation
 
