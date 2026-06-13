@@ -63,12 +63,18 @@
         "phpstan-simplified": "vendor/bin/phpstan analyse --memory-limit=2G --error-format symplify",
         "rector": "vendor/bin/rector process",
         "test": "vendor/bin/phpunit",
-        "sync-ai": "vendor/bin/testbench package-boost:sync",
         "qa": [
             "@rector",
             "@format",
             "@phpstan-simplified",
             "@test"
+        ],
+        "sync-ai": "vendor/bin/boost sync",
+        "post-install-cmd": [
+            "SanderMuller\\PackageBoostPhp\\Scripts\\AutoSync::run"
+        ],
+        "post-update-cmd": [
+            "SanderMuller\\PackageBoostPhp\\Scripts\\AutoSync::run"
         ]
     },
     "extra": {

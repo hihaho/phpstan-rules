@@ -81,7 +81,7 @@
             "scope": "project"
         },
         ".claude/skills/pr-review-feedback/SKILL.md": {
-            "sha256": "dd6a8b5589c6bec850d967003ef156044b099013f3d001232717324c9fadd96b",
+            "sha256": "394d905106277b6a8b4944033e7ac97dea0fe9967ab5fdd4779c94afd3524d28",
             "category": "skill",
             "provenance": "engine",
             "scope": "project"
@@ -111,7 +111,7 @@
             "scope": "project"
         },
         ".claude/skills/resolve-conflicts/SKILL.md": {
-            "sha256": "6b76778c9dea3093df73f45d09c3d121cd3f7862e2a30fdc8dea0ace6dce75db",
+            "sha256": "37b394d59bfd985cb4da98c27cb8366e3e180f10ea1693c4645350aa1f4567a6",
             "category": "skill",
             "provenance": "engine",
             "scope": "project"
