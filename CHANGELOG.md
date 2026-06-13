@@ -2,6 +2,35 @@
 
 All notable changes to `hihaho/phpstan-rules` will be documented in this file.
 
+## v3.4.0 - 2026-06-13
+
+<!-- verified-sha: 92b67121077aaad66856477d01229a655b3b32db -->
+### Added
+
+**Positional flag-argument rule** (`hihaho.conventions.positionalFlagArgument`) — flags a bare `true`/`false`/`null` literal passed **positionally** as the last argument of a **first-party** method, static, or constructor call. A positional `setActive('name', false)` hides what the flag means; naming it — `setActive('name', active: false)` — makes the call self-documenting. Three node types are covered: `PositionalFlagArgumentMethodCallRule`, `PositionalFlagArgumentStaticCallRule`, and `PositionalFlagArgumentConstructorRule`.
+
+It pairs with [rector-rules'](https://github.com/hihaho/rector-rules) `FirstPartyFlagArgumentToNamedRector`: rector rewrites the flags it can resolve with bare PHPStan, and this rule flags the rest in a larastan-equipped app — including receivers (generic or inherited properties) that rector cannot resolve. rector rewrites; this rule gates.
+
+Scope is deliberately tight in this first version: the last argument only, and only when every argument is positional (no named or spread args); the matched parameter must be `bool`/`?bool` and not variadic; and the gate is on the **declaring** class of the resolved member, so an `App\` class inheriting a vendor method is not flagged against vendor-declared parameter names. Callee namespaces are configurable under `positionalFlagArgument.firstPartyNamespaces` (default `App`, `Database\Factories`, `Tests`).
+
+### Changed
+
+**Dropped Laravel 11 support.** `illuminate/support` is now `^12.0||^13.0` (was `^11.31|^12.0|^13.0`) and `orchestra/testbench` is `^10.0||^11.0`. Laravel 11 can no longer be exercised on the test matrix: every `laravel/framework` v11 release carries an unpatched Packagist security advisory (CVE-2026-48019) with no patched v11 release, which Composer's advisory blocking rejects — so a Laravel 11 install no longer resolves.
+
+This is **not a breaking change** for consumers. Tightening the constraint only narrows which release installs; Composer keeps a Laravel 11 project on the last compatible release (3.3.x) with no install error. Upgrade to Laravel 12 or 13 to receive this release.
+
+### Tests
+
+Suite: 103 tests / 131 assertions. The new rule ships with method/static/constructor coverage including the precision guards (non-bool nullable parameters, inherited vendor methods, variadic parameters, named and spread arguments).
+
+### Notes
+
+The flag rule fires on a pattern not previously analysed, so on an existing codebase it will surface new findings. Generate a baseline (`vendor/bin/phpstan analyse --generate-baseline`) and work it down — each hit is a bare flag that reads better named.
+
+No public API or configuration removed. Update in place (or stay on 3.3.x if you are still on Laravel 11).
+
+**Full Changelog**: https://github.com/hihaho/phpstan-rules/compare/v3.3.0...v3.4.0
+
 ## v3.3.0 - 2026-06-13
 
 <!-- verified-sha: d3a9e1685ad4e9f746619f26c60f794e1d64c3ee -->
