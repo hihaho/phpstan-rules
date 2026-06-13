@@ -2,6 +2,38 @@
 
 All notable changes to `hihaho/phpstan-rules` will be documented in this file.
 
+## v3.3.0 - 2026-06-13
+
+<!-- verified-sha: d3a9e1685ad4e9f746619f26c60f794e1d64c3ee -->
+### Added
+
+**`UnvalidatedFormRequestFieldRule`** (`hihaho.validation.unvalidatedFormRequestField`) — flags reading a request field inside a `FormRequest` when that field's key is never declared in the same class's `rules()`. It is the inverse of `NoUnsafeRequestDataRule`: the existing request rules exempt `$this` reads inside a `Request` subclass, and this rule covers that gap from the other side. A `FormRequest` that reads `$this->boolean('submit_redirect')` while `rules()` only validates other keys silently consumes unvalidated input; this catches it at analyse time.
+
+Sourced from real-world adoption — the densest recurring review nit on `FormRequest`-heavy controllers.
+
+The rule is high-precision and bails to a skip rather than risk a false positive:
+
+- It resolves only a literal `return [...]` array in `rules()`. A conditional return, a spread, `array_merge()`, a returned variable, or any non-literal key marks the class opaque and skips it.
+- It skips any class that overrides `prepareForValidation()`, `validationData()`, or `all()` anywhere in its hierarchy (including a shared base class or trait), since those rewrite the validated data. Framework defaults inherited by every `FormRequest` are not treated as overrides.
+- `rules()` inherited from a base class is followed to where it is declared; reads from a trait method are resolved against the using class.
+- Nested keys match on their root segment, so a rule for `address.street` validates a read of `address`.
+
+The accessor list — the single-key readers it inspects (`input`, `get`, `query`, `post`, `string`, `str`, `integer`, `boolean`, `float`, `json`, `array`, `collect`, `date`, `enum`, `enums`, `file`) — is configurable under `unvalidatedFormRequestField.accessors`. The rule reuses `noUnsafeRequestData.namespaces` / `excludeNamespaces` for scoping. It is registered through the combined single-dispatch method-call rule, so it adds no extra per-node dispatch overhead.
+
+### Tests
+
+- `tests/Rules/Validation/UnvalidatedFormRequestFieldRuleTest.php` with 19 cases and 18 fixtures covering: flagged unvalidated reads across every accessor, validated and root-segment-validated keys, empty `rules()`, a missing `rules()` method, conditional / `array_merge` / variable / spread `rules()`, an overridden `prepareForValidation()` (direct and inherited from a base), inherited base-class `rules()`, a read from a trait method, dynamic keys, a same-named method on a non-`FormRequest`, and out-of-namespace classes.
+
+Suite: 96 tests / 122 assertions.
+
+### Notes
+
+The rule is opt-in only in the sense that it fires on a previously unanalysed pattern; on existing codebases it will surface new errors for `FormRequest` fields read outside `rules()`. Generate a baseline (`vendor/bin/phpstan analyse --generate-baseline`) and work it down — each hit is either a missing rule, a typo'd key, or a field that should be validated.
+
+No public API or configuration removed. Update in place.
+
+**Full Changelog**: https://github.com/hihaho/phpstan-rules/compare/v3.2.0...v3.3.0
+
 ## v3.2.0 - 2026-06-09
 
 <!-- verified-sha: c625a78716405a255caef2bf1f05153715b08bb8 -->
@@ -69,12 +101,15 @@ Internal performance work on rule hot paths — every optimisation is strictly a
 ### Added
 
 - Three rules preventing unvalidated reads from `Illuminate\Http\Request` in application code:
+  
   - **`NoUnsafeRequestDataRule`** — flags `MethodCall` on a `Request` or `FormRequest` receiver whose method is in `noUnsafeRequestData.unsafeMethods`. Defaults: `input`, `all`, `get`, `query`, `post`, `only`, `except`, `collect`, `string`, `str`, `integer`, `boolean`, `float`, `json`, `keys`, `fluent`, `array`, `date`, `enum`, `enums`, `file`, `allFiles`. Union-typed receivers (`Request|Other`) are flagged when any member is-a `Request`. Scope-class exemption walks the inheritance chain — custom base `FormRequest` classes are transparent. Identifier: `hihaho.validation.noUnsafeRequestData`.
   - **`NoUnsafeRequestHelperRule`** — flags the `request('key')` direct-argument helper form. Uses PHPStan's `ReflectionProvider` to resolve imports and aliases (`use function request as foo`). Error message interpolates the literal key for grep-friendly triage. Zero-argument `request()` is not flagged — chained method calls on its return are caught by `NoUnsafeRequestDataRule`. Identifier: `hihaho.validation.noUnsafeRequestHelper`.
   - **`NoUnsafeRequestFacadeRule`** — flags static calls on `Illuminate\Support\Facades\Request` (e.g. `Request::boolean('debug')`, `Request::file('attachment')`). Identifier: `hihaho.validation.noUnsafeRequestFacade`.
   
 - `noUnsafeRequestData` configuration block with `unsafeMethods`, `namespaces`, and `excludeNamespaces`. `excludeNamespaces` defaults to `App\Providers` and `App\Http\Responses` — both areas receive raw `Request` via framework-dictated signatures (`RateLimiter::for(...)` closures, Fortify response contracts) with no FormRequest entry point. `App\Http\Resources` is intentionally **not** defaulted; add it in your own config if `JsonResource::toArray(Request)` reading raw request data is acceptable for your project.
+  
 - `ChecksNamespace::namespaceStartsWithAny()` helper for list-based namespace matching.
+  
 
 ### Changed
 
