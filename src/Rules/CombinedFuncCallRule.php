@@ -12,7 +12,6 @@ use PhpParser\Node\Name;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Rules\IdentifierRuleError;
-use PHPStan\Rules\RuleErrorBuilder;
 
 /**
  * Combined rule that handles all FuncCall checks in a single PHPStan dispatch,
@@ -26,8 +25,6 @@ final readonly class CombinedFuncCallRule extends BaseNoDebugRule
 {
     use DetectsInvadeUsage;
     use DetectsUnsafeRequestHelper;
-
-    private const string DEBUG_MESSAGE = 'No debug statements should be present in the %s namespace.';
 
     /**
      * Quick-reject lookup: unqualified calls not in this set can be skipped without checking
@@ -88,7 +85,7 @@ final readonly class CombinedFuncCallRule extends BaseNoDebugRule
 
         $errors = [];
 
-        $debugError = $this->checkDebugStatement($funcName, $scope);
+        $debugError = $this->funcDebugError($funcName, $scope);
         if ($debugError instanceof IdentifierRuleError) {
             $errors[] = $debugError;
         }
@@ -104,22 +101,5 @@ final readonly class CombinedFuncCallRule extends BaseNoDebugRule
         }
 
         return $errors;
-    }
-
-    private function checkDebugStatement(string $funcName, Scope $scope): ?IdentifierRuleError
-    {
-        if (! $this->isDebugFunction($funcName)) {
-            return null;
-        }
-
-        $namespace = $this->matchDebugNamespace($scope);
-
-        if ($namespace === null) {
-            return null;
-        }
-
-        return RuleErrorBuilder::message(sprintf(self::DEBUG_MESSAGE, $namespace))
-            ->identifier("hihaho.debug.noDebugIn{$namespace}")
-            ->build();
     }
 }

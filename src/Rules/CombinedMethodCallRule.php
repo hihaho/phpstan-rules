@@ -13,7 +13,6 @@ use PhpParser\Node\Identifier;
 use PHPStan\Analyser\Scope;
 use PHPStan\Parser\Parser;
 use PHPStan\Rules\IdentifierRuleError;
-use PHPStan\Rules\RuleErrorBuilder;
 
 /**
  * Combined rule that handles all MethodCall checks in a single PHPStan dispatch,
@@ -28,8 +27,6 @@ final readonly class CombinedMethodCallRule extends BaseNoDebugRule
     use DetectsPositionalFlagArgument;
     use DetectsUnsafeRequestData;
     use ResolvesFormRequestRuleKeys;
-
-    private const string DEBUG_MESSAGE = 'No chained debug statements should be present in the %s namespace.';
 
     /** @var array<string, true> */
     private array $unsafeMethodsLookup;
@@ -92,7 +89,7 @@ final readonly class CombinedMethodCallRule extends BaseNoDebugRule
             return $errors;
         }
 
-        $debugError = $this->checkDebugMethodCall($node, $methodName, $scope);
+        $debugError = $this->chainedDebugError($node, $methodName, $scope);
         if ($debugError instanceof IdentifierRuleError) {
             $errors[] = $debugError;
         }
@@ -108,26 +105,5 @@ final readonly class CombinedMethodCallRule extends BaseNoDebugRule
         }
 
         return $errors;
-    }
-
-    private function checkDebugMethodCall(MethodCall $node, string $methodName, Scope $scope): ?IdentifierRuleError
-    {
-        if (! $this->isDebugMethod($methodName)) {
-            return null;
-        }
-
-        $namespace = $this->matchDebugNamespace($scope);
-
-        if ($namespace === null) {
-            return null;
-        }
-
-        if (! $this->isDebugHelperMethodCall($node, $scope, $methodName)) {
-            return null;
-        }
-
-        return RuleErrorBuilder::message(sprintf(self::DEBUG_MESSAGE, $namespace))
-            ->identifier("hihaho.debug.noChainedDebugIn{$namespace}")
-            ->build();
     }
 }

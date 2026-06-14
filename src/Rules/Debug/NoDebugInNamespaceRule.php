@@ -8,15 +8,12 @@ use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Name;
 use PHPStan\Analyser\Scope;
 use PHPStan\Rules\IdentifierRuleError;
-use PHPStan\Rules\RuleErrorBuilder;
 
 /**
  * @extends BaseNoDebugRule<FuncCall>
  */
 final readonly class NoDebugInNamespaceRule extends BaseNoDebugRule
 {
-    private const string MESSAGE = 'No debug statements should be present in the %s namespace.';
-
     #[Override]
     public function getNodeType(): string
     {
@@ -34,26 +31,8 @@ final readonly class NoDebugInNamespaceRule extends BaseNoDebugRule
             return [];
         }
 
-        if (! $this->isDebugFunction($node->name->name)) {
-            return [];
-        }
+        $error = $this->funcDebugError($node->name->name, $scope);
 
-        if ($this->namespaceStartsWith($scope, 'App')) {
-            return [
-                RuleErrorBuilder::message(sprintf(self::MESSAGE, 'App'))
-                    ->identifier('hihaho.debug.noDebugInApp')
-                    ->build(),
-            ];
-        }
-
-        if ($this->namespaceStartsWith($scope, 'Tests')) {
-            return [
-                RuleErrorBuilder::message(sprintf(self::MESSAGE, 'Tests'))
-                    ->identifier('hihaho.debug.noDebugInTests')
-                    ->build(),
-            ];
-        }
-
-        return [];
+        return $error instanceof IdentifierRuleError ? [$error] : [];
     }
 }
