@@ -2,6 +2,19 @@
 
 All notable changes to `hihaho/phpstan-rules` will be documented in this file.
 
+## v3.6.1 - 2026-06-14
+
+<!-- verified-sha: 344342dd545e9041023752650cf734e5d18cc55f -->
+### Changed
+
+**Faster positional-flag analysis.** To report an opaque positional `true`/`false`/`null` argument, the rule resolves the corresponding parameter name. When the called method has a single signature — the overwhelmingly common case — it now reads that name straight from the signature instead of running PHPStan's argument-based variant selection (overload resolution plus, for generic methods, template-type inference from the call's arguments), which produced the same name. The per-call flag check also drops a small array allocation. The flag check runs on every method, static, constructor, and nullsafe call, so this trims work across the hottest path in the extension.
+
+### Notes
+
+Internal performance optimization only — no rule behavior, error identifier, public API, or configuration changed. The same call sites are flagged with the same messages. Update in place.
+
+**Full Changelog**: https://github.com/hihaho/phpstan-rules/compare/v3.6.0...v3.6.1
+
 ## v3.5.0 - 2026-06-14
 
 <!-- verified-sha: cef4ad0a63ae559df4a03ea5f8f2d1ba68ec4411 -->
@@ -20,6 +33,7 @@ parameters:
             - Database\Factories
             - Tests
         outputPath: named-arguments-manifest.json
+
 
 ```
 `vendor/bin/phpstan analyse` then writes `named-arguments-manifest.json` — the positional-flag detection emitted as records (`{file, line, method, argIndex, paramName, value}`) instead of errors, raising no CI errors. It is a PHPStan Collector, not an error formatter, so it is independent of the gate rules and **unaffected by your baseline** — baselined sites still appear in the manifest, and it never touches `--error-format`.
