@@ -2,6 +2,44 @@
 
 All notable changes to `hihaho/phpstan-rules` will be documented in this file.
 
+## v3.5.0 - 2026-06-14
+
+<!-- verified-sha: cef4ad0a63ae559df4a03ea5f8f2d1ba68ec4411 -->
+### Added
+
+**Named-argument manifest producer** (opt-in). rector-rules' `NamedArgumentFromManifestRector` names positional `true`/`false`/`null` flags at call sites whose receiver only resolves under larastan — the sites bare-PHPStan auto-fixers can't reach. It is inert without a JSON manifest, which this package now produces. Include the opt-in extension and run analysis in a larastan-equipped project:
+
+```neon
+includes:
+    - vendor/hihaho/phpstan-rules/named-argument-manifest.neon
+
+parameters:
+    namedArgumentManifest:
+        firstPartyNamespaces:
+            - App
+            - Database\Factories
+            - Tests
+        outputPath: named-arguments-manifest.json
+
+```
+`vendor/bin/phpstan analyse` then writes `named-arguments-manifest.json` — the positional-flag detection emitted as records (`{file, line, method, argIndex, paramName, value}`) instead of errors, raising no CI errors. It is a PHPStan Collector, not an error formatter, so it is independent of the gate rules and **unaffected by your baseline** — baselined sites still appear in the manifest, and it never touches `--error-format`.
+
+### Changed
+
+**`hihaho.conventions.positionalFlagArgument` now flags a bare flag on any named parameter, not only `bool`/`?bool`.** The convention treats a bare `null`/`true`/`false` as opaque regardless of the parameter's type, and the sister rector fixer names them without a type check. The previous `bool`/`?bool` guard excluded exactly the `?Object`/`mixed` sites the manifest exists to cover, so it has been dropped — the rule (and the manifest) are now faithful to the convention and to the fixer's coverage.
+
+On an existing codebase this surfaces additional findings (a bare `null` passed positionally to, say, a `?SomeObject` parameter). Baseline them if noisy, or name the arguments. The gate remains on the resolved member's **declaring** class, so inherited vendor methods are still never flagged.
+
+### Internal
+
+- Rule-detection logic consolidated into shared traits and the combined per-node rules, with direct test coverage for the registered combined rules. No behaviour change.
+
+### Notes
+
+No public API or configuration removed; the manifest producer is opt-in and the flag-scope change only widens an existing rule. Update in place.
+
+**Full Changelog**: https://github.com/hihaho/phpstan-rules/compare/v3.4.1...v3.5.0
+
 ## v3.4.1 - 2026-06-14
 
 <!-- verified-sha: 924ca678ac153250e08f20a803f17e2950d0f51f -->
