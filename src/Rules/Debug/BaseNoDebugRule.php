@@ -3,9 +3,15 @@
 namespace Hihaho\PhpstanRules\Rules\Debug;
 
 use Hihaho\PhpstanRules\Traits\ChecksNamespace;
+use Hihaho\PhpstanRules\Traits\DetectsLaravelStaticDebugCall;
 use PhpParser\Node\Expr\MethodCall;
+use PhpParser\Node\Expr\StaticCall;
 use PHPStan\Analyser\Scope;
+use PHPStan\Reflection\ClassReflection;
+use PHPStan\Reflection\ReflectionProvider;
+use PHPStan\Rules\IdentifierRuleError;
 use PHPStan\Rules\Rule;
+use PHPStan\Rules\RuleErrorBuilder;
 
 /**
  * @template T of \PhpParser\Node
@@ -14,6 +20,7 @@ use PHPStan\Rules\Rule;
 abstract readonly class BaseNoDebugRule implements Rule
 {
     use ChecksNamespace;
+    use DetectsLaravelStaticDebugCall;
 
     /** @var array<string, true> */
     protected const array FUNCTION_DEBUG_STATEMENTS = [
@@ -40,6 +47,12 @@ abstract readonly class BaseNoDebugRule implements Rule
      * flagged.
      */
     protected const string LARAVEL_NAMESPACE_PREFIX = 'Illuminate\\';
+
+    private const string FUNC_DEBUG_MESSAGE = 'No debug statements should be present in the %s namespace.';
+
+    private const string CHAINED_DEBUG_MESSAGE = 'No chained debug statements should be present in the %s namespace.';
+
+    private const string STATIC_DEBUG_MESSAGE = 'No statically called debug statements should be present in the %s namespace.';
 
     final protected function isDebugFunction(string $statement): bool
     {
@@ -91,5 +104,81 @@ abstract readonly class BaseNoDebugRule implements Rule
         }
 
         return false;
+    }
+
+    /**
+     * Shared detection for a direct debug-function call (`dump(...)`,
+     * `dd(...)`, `print_r(...)`, …) inside the App/Tests namespaces. Used by
+     * both NoDebugInNamespaceRule and CombinedFuncCallRule.
+     */
+    final protected function funcDebugError(string $funcName, Scope $scope): ?IdentifierRuleError
+    {
+        if (! $this->isDebugFunction($funcName)) {
+            return null;
+        }
+
+        $namespace = $this->matchDebugNamespace($scope);
+
+        if ($namespace === null) {
+            return null;
+        }
+
+        return RuleErrorBuilder::message(sprintf(self::FUNC_DEBUG_MESSAGE, $namespace))
+            ->identifier("hihaho.debug.noDebugIn{$namespace}")
+            ->build();
+    }
+
+    /**
+     * Shared detection for a chained debug method call (`$x->dump()`) declared
+     * by a Laravel class/trait. Used by both ChainedNoDebugInNamespaceRule and
+     * CombinedMethodCallRule.
+     */
+    final protected function chainedDebugError(MethodCall $node, string $methodName, Scope $scope): ?IdentifierRuleError
+    {
+        if (! $this->isDebugMethod($methodName)) {
+            return null;
+        }
+
+        $namespace = $this->matchDebugNamespace($scope);
+
+        if ($namespace === null) {
+            return null;
+        }
+
+        if (! $this->isDebugHelperMethodCall($node, $scope, $methodName)) {
+            return null;
+        }
+
+        return RuleErrorBuilder::message(sprintf(self::CHAINED_DEBUG_MESSAGE, $namespace))
+            ->identifier("hihaho.debug.noChainedDebugIn{$namespace}")
+            ->build();
+    }
+
+    /**
+     * Shared detection for a statically called debug method (`Cache::dump()`)
+     * that proxies to a Laravel debug helper. Used by both
+     * StaticChainedNoDebugInNamespaceRule and CombinedStaticCallRule. The
+     * `$facadeReflection` is supplied by the caller (resolved once in its
+     * constructor) so this readonly hierarchy keeps no mutable state.
+     */
+    final protected function staticDebugError(StaticCall $node, string $methodName, Scope $scope, ReflectionProvider $reflectionProvider, ?ClassReflection $facadeReflection): ?IdentifierRuleError
+    {
+        if (! $this->isDebugMethod($methodName)) {
+            return null;
+        }
+
+        $namespace = $this->matchDebugNamespace($scope);
+
+        if ($namespace === null) {
+            return null;
+        }
+
+        if (! $this->isLaravelStaticDebugCall($node, $scope, $methodName, $reflectionProvider, $facadeReflection)) {
+            return null;
+        }
+
+        return RuleErrorBuilder::message(sprintf(self::STATIC_DEBUG_MESSAGE, $namespace))
+            ->identifier("hihaho.debug.noStaticChainedDebugIn{$namespace}")
+            ->build();
     }
 }

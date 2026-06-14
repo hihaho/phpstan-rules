@@ -8,15 +8,12 @@ use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Identifier;
 use PHPStan\Analyser\Scope;
 use PHPStan\Rules\IdentifierRuleError;
-use PHPStan\Rules\RuleErrorBuilder;
 
 /**
  * @extends BaseNoDebugRule<MethodCall>
  */
 final readonly class ChainedNoDebugInNamespaceRule extends BaseNoDebugRule
 {
-    private const string MESSAGE = 'No chained debug statements should be present in the %s namespace.';
-
     #[Override]
     public function getNodeType(): string
     {
@@ -34,26 +31,8 @@ final readonly class ChainedNoDebugInNamespaceRule extends BaseNoDebugRule
             return [];
         }
 
-        $methodName = $node->name->name;
+        $error = $this->chainedDebugError($node, $node->name->name, $scope);
 
-        if (! $this->isDebugMethod($methodName)) {
-            return [];
-        }
-
-        $namespace = $this->matchDebugNamespace($scope);
-
-        if ($namespace === null) {
-            return [];
-        }
-
-        if (! $this->isDebugHelperMethodCall($node, $scope, $methodName)) {
-            return [];
-        }
-
-        return [
-            RuleErrorBuilder::message(sprintf(self::MESSAGE, $namespace))
-                ->identifier("hihaho.debug.noChainedDebugIn{$namespace}")
-                ->build(),
-        ];
+        return $error instanceof IdentifierRuleError ? [$error] : [];
     }
 }

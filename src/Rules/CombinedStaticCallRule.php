@@ -4,7 +4,6 @@ namespace Hihaho\PhpstanRules\Rules;
 
 use Hihaho\PhpstanRules\Rules\Debug\BaseNoDebugRule;
 use Hihaho\PhpstanRules\Traits\DetectsFacadeAlias;
-use Hihaho\PhpstanRules\Traits\DetectsLaravelStaticDebugCall;
 use Hihaho\PhpstanRules\Traits\DetectsPositionalFlagArgument;
 use Hihaho\PhpstanRules\Traits\DetectsUnsafeRequestFacade;
 use Illuminate\Support\Facades\Facade;
@@ -17,7 +16,6 @@ use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Rules\IdentifierRuleError;
-use PHPStan\Rules\RuleErrorBuilder;
 
 /**
  * Combined rule that handles all StaticCall checks in a single PHPStan dispatch,
@@ -30,11 +28,8 @@ use PHPStan\Rules\RuleErrorBuilder;
 final readonly class CombinedStaticCallRule extends BaseNoDebugRule
 {
     use DetectsFacadeAlias;
-    use DetectsLaravelStaticDebugCall;
     use DetectsPositionalFlagArgument;
     use DetectsUnsafeRequestFacade;
-
-    private const string DEBUG_MESSAGE = 'No statically called debug statements should be present in the %s namespace.';
 
     private ?ClassReflection $facadeReflection;
 
@@ -96,7 +91,7 @@ final readonly class CombinedStaticCallRule extends BaseNoDebugRule
 
         $methodName = $node->name->name;
 
-        $debugError = $this->checkStaticDebugCall($node, $methodName, $scope);
+        $debugError = $this->staticDebugError($node, $methodName, $scope, $this->reflectionProvider, $this->facadeReflection);
         if ($debugError instanceof IdentifierRuleError) {
             $errors[] = $debugError;
         }
@@ -107,26 +102,5 @@ final readonly class CombinedStaticCallRule extends BaseNoDebugRule
         }
 
         return $errors;
-    }
-
-    private function checkStaticDebugCall(StaticCall $node, string $methodName, Scope $scope): ?IdentifierRuleError
-    {
-        if (! $this->isDebugMethod($methodName)) {
-            return null;
-        }
-
-        $namespace = $this->matchDebugNamespace($scope);
-
-        if ($namespace === null) {
-            return null;
-        }
-
-        if (! $this->isLaravelStaticDebugCall($node, $scope, $methodName, $this->reflectionProvider, $this->facadeReflection)) {
-            return null;
-        }
-
-        return RuleErrorBuilder::message(sprintf(self::DEBUG_MESSAGE, $namespace))
-            ->identifier("hihaho.debug.noStaticChainedDebugIn{$namespace}")
-            ->build();
     }
 }
