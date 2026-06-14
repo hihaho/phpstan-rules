@@ -2,6 +2,27 @@
 
 All notable changes to `hihaho/phpstan-rules` will be documented in this file.
 
+## v3.4.1 - 2026-06-14
+
+<!-- verified-sha: 924ca678ac153250e08f20a803f17e2950d0f51f -->
+### Fixed
+
+**Mixed-case `request()` helper calls are now detected** (`hihaho.validation.noUnsafeRequestHelper`). The combined function-call rule quick-rejected on the case-sensitive function name, so a mixed-case global call such as `\REQUEST('key')` slipped past the unvalidated-request-helper check even though PHP resolves it to the same `request()` helper. The quick-reject is now case-insensitive on the last name segment, matching the rest of the check. Conventional `request('key')` calls were already flagged and are unaffected.
+
+### Internal
+
+The six checks that were duplicated between each single-responsibility rule and its registered combined counterpart now live in shared traits, called by both, so the two can no longer drift. The registered combined rules also gained direct test coverage — previously every test exercised an unregistered standalone rule, leaving the rules that actually ship untested. No rule identifiers, configuration keys, or public constructor signatures changed.
+
+### Tests
+
+Suite: 205 tests / 261 assertions (up from 103), adding direct coverage for the three registered combined rules across every merged concern.
+
+### Notes
+
+The `request()` fix detects a shape not previously caught, so a codebase using mixed-case helper calls in the configured namespaces will see new findings on upgrade. Each is a genuine unvalidated-request read; address it or baseline it (`vendor/bin/phpstan analyse --generate-baseline`). No public API or configuration changed — update in place.
+
+**Full Changelog**: https://github.com/hihaho/phpstan-rules/compare/v3.4.0...v3.4.1
+
 ## v3.4.0 - 2026-06-13
 
 <!-- verified-sha: 92b67121077aaad66856477d01229a655b3b32db -->
