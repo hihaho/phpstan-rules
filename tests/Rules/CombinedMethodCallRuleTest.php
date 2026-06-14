@@ -446,9 +446,12 @@ final class CombinedMethodCallRuleTest extends RuleTestCase
     }
 
     #[Test]
-    public function does_not_flag_a_null_passed_to_a_non_bool_nullable_parameter(): void
+    public function flags_a_bare_null_on_any_named_parameter_not_only_bool(): void
     {
-        $this->analyse([__DIR__ . '/Conventions/stubs/NonBoolNullArgStub.php'], []);
+        $this->analyse([__DIR__ . '/Conventions/stubs/NonBoolNullArgStub.php'], [
+            [$this->flagMessage('id'), 18, $this->flagTip()],
+            [$this->flagMessage('name'), 19, $this->flagTip()],
+        ]);
     }
 
     #[Test]

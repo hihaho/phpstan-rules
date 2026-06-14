@@ -1,0 +1,38 @@
+# Opt-in producer for the named-argument manifest consumed by hihaho/rector-rules'
+# NamedArgumentFromManifestRector. Include this only when producing the manifest:
+#
+#   includes:
+#       - vendor/hihaho/phpstan-rules/named-argument-manifest.neon
+#
+# Then run `vendor/bin/phpstan analyse` (in a larastan-equipped project for full
+# coverage) — the manifest is written as a side artifact, no errors emitted. It
+# is independent of extension.neon's CI-gate rules.
+
+parametersSchema:
+    namedArgumentManifest: structure([
+        firstPartyNamespaces: listOf(string())
+        outputPath: string()
+    ])
+
+parameters:
+    namedArgumentManifest:
+        firstPartyNamespaces:
+            - App
+            - Database\Factories
+            - Tests
+        outputPath: named-arguments-manifest.json
+
+services:
+    -
+        class: Hihaho\PhpstanRules\Collectors\FlagArgumentManifestCollector
+        arguments:
+            reflectionProvider: @reflectionProvider
+            firstPartyNamespaces: %namedArgumentManifest.firstPartyNamespaces%
+        tags:
+            - phpstan.collector
+    -
+        class: Hihaho\PhpstanRules\Rules\Conventions\WriteNamedArgumentManifestRule
+        arguments:
+            outputPath: %namedArgumentManifest.outputPath%
+        tags:
+            - phpstan.rules.rule

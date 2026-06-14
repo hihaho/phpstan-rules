@@ -22,10 +22,16 @@ use PHPStan\Type\TypeCombinator;
  * argument of a first-party method, static, or constructor call — where naming
  * the argument (`paramName: false`) would make the call self-documenting.
  *
- * v1 scope: the last argument only, and only when every argument is positional
- * (no named or spread args), so the arg index maps directly to the parameter
- * index. This is the dominant case (`->getToken(..., false)`) and trailing-safe
- * by construction; the full trailing-run widening can come later.
+ * The detection core (`flagSiteFor*`) returns a `{method, argIndex, paramName,
+ * value}` record so it can drive both the error rules (CI gate) and the
+ * named-argument manifest Collector (rector producer) from one implementation.
+ *
+ * Scope: the last argument only, and only when every argument is positional (no
+ * named or spread args), so the arg index maps directly to the parameter index.
+ * Any bare flag on a named, non-variadic parameter qualifies — the parameter is
+ * NOT required to be bool-typed, matching the convention (a bare null on a
+ * `?Object`/`mixed` parameter is opaque too) and the sister rector fixer, which
+ * names bare flags without a type check.
  *
  * Type resolution uses whatever PHPStan extensions the consumer loads. In a
  * larastan-equipped app this resolves receivers (generic/inherited properties)
@@ -35,8 +41,9 @@ trait DetectsPositionalFlagArgument
 {
     /**
      * @param  list<string>  $firstPartyNamespaces
+     * @return array{method: string, argIndex: int, paramName: string, value: string}|null
      */
-    private function positionalFlagErrorForMethodCall(MethodCall $node, Scope $scope, array $firstPartyNamespaces): ?IdentifierRuleError
+    private function flagSiteForMethodCall(MethodCall $node, Scope $scope, array $firstPartyNamespaces): ?array
     {
         if (! $node->name instanceof Identifier) {
             return null;
@@ -53,18 +60,19 @@ trait DetectsPositionalFlagArgument
 
         // Single concrete receiver only (matches the sister rector rule). A union
         // receiver whose members name the flag parameter differently would make
-        // the suggested name ambiguous; cross-member agreement is v2 scope.
+        // the suggested name ambiguous; cross-member agreement is later scope.
         if (count($classReflections) !== 1 || ! $classReflections[0]->hasMethod($node->name->name)) {
             return null;
         }
 
-        return $this->flagError($classReflections[0]->getMethod($node->name->name, $scope), $args, $flagIndex, $scope, $firstPartyNamespaces);
+        return $this->flagRecord($classReflections[0]->getMethod($node->name->name, $scope), $node->name->name, $args, $flagIndex, $scope, $firstPartyNamespaces);
     }
 
     /**
      * @param  list<string>  $firstPartyNamespaces
+     * @return array{method: string, argIndex: int, paramName: string, value: string}|null
      */
-    private function positionalFlagErrorForStaticCall(StaticCall $node, Scope $scope, ReflectionProvider $reflectionProvider, array $firstPartyNamespaces): ?IdentifierRuleError
+    private function flagSiteForStaticCall(StaticCall $node, Scope $scope, ReflectionProvider $reflectionProvider, array $firstPartyNamespaces): ?array
     {
         if (! $node->class instanceof Name || ! $node->name instanceof Identifier) {
             return null;
@@ -89,13 +97,14 @@ trait DetectsPositionalFlagArgument
             return null;
         }
 
-        return $this->flagError($classReflection->getMethod($node->name->name, $scope), $args, $flagIndex, $scope, $firstPartyNamespaces);
+        return $this->flagRecord($classReflection->getMethod($node->name->name, $scope), $node->name->name, $args, $flagIndex, $scope, $firstPartyNamespaces);
     }
 
     /**
      * @param  list<string>  $firstPartyNamespaces
+     * @return array{method: string, argIndex: int, paramName: string, value: string}|null
      */
-    private function positionalFlagErrorForNew(New_ $node, Scope $scope, ReflectionProvider $reflectionProvider, array $firstPartyNamespaces): ?IdentifierRuleError
+    private function flagSiteForNew(New_ $node, Scope $scope, ReflectionProvider $reflectionProvider, array $firstPartyNamespaces): ?array
     {
         if (! $node->class instanceof Name) {
             return null;
@@ -120,7 +129,80 @@ trait DetectsPositionalFlagArgument
             return null;
         }
 
-        return $this->flagError($classReflection->getConstructor(), $args, $flagIndex, $scope, $firstPartyNamespaces);
+        // The rector rule keys constructor records on the resolved FQCN.
+        return $this->flagRecord($classReflection->getConstructor(), $className, $args, $flagIndex, $scope, $firstPartyNamespaces);
+    }
+
+    /**
+     * @param  list<string>  $firstPartyNamespaces
+     */
+    private function positionalFlagErrorForMethodCall(MethodCall $node, Scope $scope, array $firstPartyNamespaces): ?IdentifierRuleError
+    {
+        $site = $this->flagSiteForMethodCall($node, $scope, $firstPartyNamespaces);
+
+        return $site === null ? null : $this->flagError($site['paramName']);
+    }
+
+    /**
+     * @param  list<string>  $firstPartyNamespaces
+     */
+    private function positionalFlagErrorForStaticCall(StaticCall $node, Scope $scope, ReflectionProvider $reflectionProvider, array $firstPartyNamespaces): ?IdentifierRuleError
+    {
+        $site = $this->flagSiteForStaticCall($node, $scope, $reflectionProvider, $firstPartyNamespaces);
+
+        return $site === null ? null : $this->flagError($site['paramName']);
+    }
+
+    /**
+     * @param  list<string>  $firstPartyNamespaces
+     */
+    private function positionalFlagErrorForNew(New_ $node, Scope $scope, ReflectionProvider $reflectionProvider, array $firstPartyNamespaces): ?IdentifierRuleError
+    {
+        $site = $this->flagSiteForNew($node, $scope, $reflectionProvider, $firstPartyNamespaces);
+
+        return $site === null ? null : $this->flagError($site['paramName']);
+    }
+
+    /**
+     * Builds the shared `{method, argIndex, paramName, value}` record, gating on
+     * the member's declaring class (not the receiver) so an App\ class inheriting
+     * a vendor method is not named against vendor-declared, non-semver-stable
+     * parameter names.
+     *
+     * @param  array<Arg>  $args
+     * @param  list<string>  $firstPartyNamespaces
+     * @return array{method: string, argIndex: int, paramName: string, value: string}|null
+     */
+    private function flagRecord(ExtendedMethodReflection $method, string $methodLabel, array $args, int $flagIndex, Scope $scope, array $firstPartyNamespaces): ?array
+    {
+        if (! $this->isFirstPartyClass($method->getDeclaringClass()->getName(), $firstPartyNamespaces)) {
+            return null;
+        }
+
+        $parameters = ParametersAcceptorSelector::selectFromArgs($scope, $args, $method->getVariants())->getParameters();
+        $parameter = $parameters[$flagIndex] ?? null;
+
+        if ($parameter === null || $parameter->isVariadic()) {
+            return null;
+        }
+
+        return [
+            'method' => $methodLabel,
+            'argIndex' => $flagIndex,
+            'paramName' => $parameter->getName(),
+            'value' => $this->flagLiteral($args[$flagIndex]),
+        ];
+    }
+
+    private function flagError(string $paramName): IdentifierRuleError
+    {
+        return RuleErrorBuilder::message(sprintf(
+            'Pass a named argument (%s: ...) for the bool/null flag — it is opaque positionally.',
+            $paramName,
+        ))
+            ->identifier('hihaho.conventions.positionalFlagArgument')
+            ->tip('Name the flag at the call site so its meaning is visible: instead of foo(true), write foo(enabled: true).')
+            ->build();
     }
 
     /**
@@ -164,6 +246,11 @@ trait DetectsPositionalFlagArgument
         return in_array($arg->value->name->toLowerString(), ['true', 'false', 'null'], true);
     }
 
+    private function flagLiteral(Arg $arg): string
+    {
+        return $arg->value instanceof ConstFetch ? $arg->value->name->toLowerString() : '';
+    }
+
     /**
      * @param  list<string>  $namespaces
      */
@@ -176,40 +263,5 @@ trait DetectsPositionalFlagArgument
         }
 
         return false;
-    }
-
-    /**
-     * @param  array<Arg>  $args
-     * @param  list<string>  $firstPartyNamespaces
-     */
-    private function flagError(ExtendedMethodReflection $method, array $args, int $flagIndex, Scope $scope, array $firstPartyNamespaces): ?IdentifierRuleError
-    {
-        // Gate on where the member is DECLARED, not the receiver: an App\ class
-        // inheriting a vendor method would otherwise be flagged against
-        // vendor-declared parameter names, which are not semver-stable.
-        if (! $this->isFirstPartyClass($method->getDeclaringClass()->getName(), $firstPartyNamespaces)) {
-            return null;
-        }
-
-        $parameters = ParametersAcceptorSelector::selectFromArgs($scope, $args, $method->getVariants())->getParameters();
-        $parameter = $parameters[$flagIndex] ?? null;
-
-        if ($parameter === null || $parameter->isVariadic()) {
-            return null;
-        }
-
-        // Only a bool / ?bool parameter is a flag. A bare null passed to a
-        // nullable value type (?int, ?User) is not a flag, so skip it.
-        if (! TypeCombinator::removeNull($parameter->getType())->isBoolean()->yes()) {
-            return null;
-        }
-
-        return RuleErrorBuilder::message(sprintf(
-            'Pass a named argument (%s: ...) for the bool/null flag — it is opaque positionally.',
-            $parameter->getName(),
-        ))
-            ->identifier('hihaho.conventions.positionalFlagArgument')
-            ->tip('Name the flag at the call site so its meaning is visible: instead of foo(true), write foo(enabled: true).')
-            ->build();
     }
 }

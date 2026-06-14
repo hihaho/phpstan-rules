@@ -200,7 +200,7 @@ $toggle->setActive('name', active: false);  // fine — already named
 
 This pairs with rector-rules' `FirstPartyFlagArgumentToNamedRector`, which auto-fixes the flags it can resolve with bare PHPStan. Because PHPStan rules inherit the consumer's extensions, this rule flags the rest in a larastan-equipped app — including receivers (generic or inherited properties) that rector cannot resolve. rector rewrites; this rule gates.
 
-Scope is deliberately tight (v1): the **last** argument only, and only when every argument is positional (no named or spread args), never a variadic parameter. Callee namespaces are configurable:
+Scope: the **last** argument only, and only when every argument is positional (no named or spread args); the matched parameter must be named and non-variadic. The parameter need **not** be bool-typed — a bare `null` on a `?Object` or `mixed` parameter is opaque too, matching the convention and the rector fixer (which names any bare flag without a type check). The gate is on the resolved member's **declaring** class, so an `App\` class inheriting a vendor method isn't flagged against vendor-declared, non-semver-stable parameter names. Callee namespaces are configurable:
 
 ```neon
 parameters:
@@ -212,6 +212,25 @@ parameters:
 ```
 
 Param names aren't semver-stable in vendor code, so only first-party callees are flagged.
+
+#### Named-argument manifest (opt-in producer)
+
+rector-rules' `NamedArgumentFromManifestRector` names these flags at call sites whose receiver only resolves under larastan — the sites bare-PHPStan auto-fixers can't reach. It is inert without a JSON manifest, which this package can produce: include the opt-in extension and run analysis in your larastan-equipped project.
+
+```neon
+includes:
+    - vendor/hihaho/phpstan-rules/named-argument-manifest.neon
+
+parameters:
+    namedArgumentManifest:
+        firstPartyNamespaces:
+            - App
+            - Database\Factories
+            - Tests
+        outputPath: named-arguments-manifest.json
+```
+
+`vendor/bin/phpstan analyse` then writes `named-arguments-manifest.json` — the same detection emitted as records (`{file, line, method, argIndex, paramName, value}`) instead of errors, with no CI errors raised. It is a PHPStan Collector, not an error formatter, so it is independent of the gate rules and unaffected by your baseline (baselined sites still appear in the manifest).
 
 ## Testing
 
