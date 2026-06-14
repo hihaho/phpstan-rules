@@ -3,11 +3,12 @@
 namespace Hihaho\PhpstanRules\Rules;
 
 use Hihaho\PhpstanRules\Rules\Debug\BaseNoDebugRule;
+use Hihaho\PhpstanRules\Traits\DetectsInvadeUsage;
+use Hihaho\PhpstanRules\Traits\DetectsUnsafeRequestHelper;
 use Override;
 use PhpParser\Node;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Name;
-use PhpParser\Node\Scalar\String_;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Rules\IdentifierRuleError;
@@ -23,6 +24,9 @@ use PHPStan\Rules\RuleErrorBuilder;
  */
 final readonly class CombinedFuncCallRule extends BaseNoDebugRule
 {
+    use DetectsInvadeUsage;
+    use DetectsUnsafeRequestHelper;
+
     private const string DEBUG_MESSAGE = 'No debug statements should be present in the %s namespace.';
 
     /**
@@ -70,7 +74,15 @@ final readonly class CombinedFuncCallRule extends BaseNoDebugRule
 
         $funcName = $node->name->name;
 
-        if (! isset($this->interestingFuncNames[$funcName]) && ! str_contains($funcName, '\\')) {
+        // Quick reject: skip calls no sub-rule could match. The request-helper
+        // check is case-insensitive on the last name segment, so a mixed-case
+        // `\REQUEST(...)` must pass through here too — gating it case-sensitively
+        // would silently drop those calls.
+        if (
+            ! isset($this->interestingFuncNames[$funcName])
+            && strtolower($node->name->getLast()) !== 'request'
+            && ! str_contains($funcName, '\\')
+        ) {
             return [];
         }
 
@@ -81,12 +93,12 @@ final readonly class CombinedFuncCallRule extends BaseNoDebugRule
             $errors[] = $debugError;
         }
 
-        $invadeError = $this->checkInvadeUsage($funcName, $scope);
+        $invadeError = $this->invadeUsageError($funcName, $scope);
         if ($invadeError instanceof IdentifierRuleError) {
             $errors[] = $invadeError;
         }
 
-        $requestError = $this->checkRequestHelper($node, $node->name, $scope);
+        $requestError = $this->unsafeRequestHelperError($node, $node->name, $scope, $this->reflectionProvider, $this->namespaces, $this->excludeNamespaces);
         if ($requestError instanceof IdentifierRuleError) {
             $errors[] = $requestError;
         }
@@ -109,74 +121,5 @@ final readonly class CombinedFuncCallRule extends BaseNoDebugRule
         return RuleErrorBuilder::message(sprintf(self::DEBUG_MESSAGE, $namespace))
             ->identifier("hihaho.debug.noDebugIn{$namespace}")
             ->build();
-    }
-
-    private function checkInvadeUsage(string $funcName, Scope $scope): ?IdentifierRuleError
-    {
-        if ($funcName === 'Livewire\invade') {
-            return RuleErrorBuilder::message(
-                'Usage of `\Livewire\invade` is disallowed, please use the global `invade` from spatie/invade.'
-            )
-                ->identifier('hihaho.generic.disallowedUsageOfLivewireInvade')
-                ->build();
-        }
-
-        if ($funcName === 'invade' && $this->namespaceStartsWith($scope, 'App')) {
-            return RuleErrorBuilder::message(
-                'Usage of method `invade` is not allowed in the App namespace.'
-            )
-                ->identifier('hihaho.generic.noInvadeInAppCode')
-                ->build();
-        }
-
-        return null;
-    }
-
-    private function checkRequestHelper(FuncCall $node, Name $name, Scope $scope): ?IdentifierRuleError
-    {
-        if ($node->getArgs() === []) {
-            return null;
-        }
-
-        if (strtolower($name->getLast()) !== 'request') {
-            return null;
-        }
-
-        if (! $this->isInConfiguredNamespace($scope)) {
-            return null;
-        }
-
-        if (! $this->reflectionProvider->hasFunction($name, $scope)) {
-            return null;
-        }
-
-        if (strtolower($this->reflectionProvider->getFunction($name, $scope)->getName()) !== 'request') {
-            return null;
-        }
-
-        return RuleErrorBuilder::message(sprintf(
-            'Reading unvalidated request data via %s is not allowed. Use a FormRequest, $request->validated(), or $request->safe().',
-            $this->callLabel($node),
-        ))
-            ->identifier('hihaho.validation.noUnsafeRequestHelper')
-            ->tip('Inject a FormRequest (or Request typehint) and consume via $request->validated() / $request->safe() instead of the global helper.')
-            ->build();
-    }
-
-    private function callLabel(FuncCall $node): string
-    {
-        $firstArg = $node->getArgs()[0]->value;
-
-        if ($firstArg instanceof String_) {
-            return "request('{$firstArg->value}')";
-        }
-
-        return 'request(...)';
-    }
-
-    private function isInConfiguredNamespace(Scope $scope): bool
-    {
-        return $this->namespaceStartsWithAny($scope, $this->namespaces)
-            && ! $this->namespaceStartsWithAny($scope, $this->excludeNamespaces);
     }
 }

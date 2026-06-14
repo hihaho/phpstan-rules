@@ -5,6 +5,8 @@ namespace Hihaho\PhpstanRules\Traits;
 use Illuminate\Foundation\Http\FormRequest;
 use PhpParser\Node;
 use PhpParser\Node\Expr\Array_;
+use PhpParser\Node\Expr\MethodCall;
+use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Name;
 use PhpParser\Node\Scalar\String_;
@@ -62,6 +64,75 @@ trait ResolvesFormRequestRuleKeys
         }
 
         return $cache[$className];
+    }
+
+    /**
+     * Flags reading a request field via `$this->accessor('key')` inside a
+     * FormRequest when 'key' is never declared in the class's rules(). Shared by
+     * the standalone UnvalidatedFormRequestFieldRule and the registered
+     * CombinedMethodCallRule so the two cannot drift.
+     *
+     * The consuming class must provide `namespaceStartsWithAny()` (via the
+     * ChecksNamespace trait, directly or through a parent).
+     *
+     * @param  array<string, true>  $fieldAccessorsLookup
+     * @param  list<string>  $namespaces
+     * @param  list<string>  $excludeNamespaces
+     */
+    private function unvalidatedFormRequestFieldError(
+        MethodCall $node,
+        string $methodName,
+        Scope $scope,
+        Parser $parser,
+        array $fieldAccessorsLookup,
+        array $namespaces,
+        array $excludeNamespaces,
+    ): ?IdentifierRuleError {
+        if (! isset($fieldAccessorsLookup[strtolower($methodName)])) {
+            return null;
+        }
+
+        if (! $node->var instanceof Variable || $node->var->name !== 'this') {
+            return null;
+        }
+
+        if (! $this->namespaceStartsWithAny($scope, $namespaces) || $this->namespaceStartsWithAny($scope, $excludeNamespaces)) {
+            return null;
+        }
+
+        $args = $node->getArgs();
+
+        if ($args === []) {
+            return null;
+        }
+
+        $keyArg = $args[0]->value;
+
+        if (! $keyArg instanceof String_) {
+            return null;
+        }
+
+        $classReflection = $scope->getClassReflection();
+
+        if (! $classReflection instanceof ClassReflection) {
+            return null;
+        }
+
+        if (! $this->classIsFormRequest($classReflection->getName())) {
+            return null;
+        }
+
+        $validatedRoots = $this->resolveValidatedRoots($parser, $classReflection, $scope);
+
+        if ($validatedRoots === null) {
+            return null;
+        }
+
+        if (isset($validatedRoots[$this->rootSegment($keyArg->value)])) {
+            return null;
+        }
+
+        return $this->buildUnvalidatedFieldError($keyArg->value, $methodName);
     }
 
     private function buildUnvalidatedFieldError(string $fieldKey, string $methodName): IdentifierRuleError
