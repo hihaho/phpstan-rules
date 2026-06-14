@@ -91,4 +91,32 @@ final class WriteNamedArgumentManifestRuleTest extends RuleTestCase
         $this->assertStringContainsString('App\\\\Models\\\\Widget', $json);
         $this->assertStringContainsString('"paramName": "visible"', $json);
     }
+
+    #[Test]
+    public function it_writes_records_for_nullsafe_method_call_flag_sites(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/NullsafeFlagCallStub.php'], []);
+
+        $json = (string) file_get_contents($this->manifestPath);
+
+        $this->assertStringContainsString('"method": "setActive"', $json);
+        $this->assertStringContainsString('"paramName": "active"', $json);
+        $this->assertStringContainsString('"value": "true"', $json);
+
+        // PHPStan visits a nullsafe call in two scopes; the writer must dedup to
+        // a single record (not one per scope visit).
+        $this->assertSame(1, substr_count($json, '"method": "setActive"'));
+    }
+
+    #[Test]
+    public function it_keeps_two_distinct_same_line_calls_as_separate_records(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/SameLineNullsafeFlagsStub.php'], []);
+
+        $json = (string) file_get_contents($this->manifestPath);
+
+        // Two distinct nullsafe calls share line/method/argIndex/paramName/value
+        // but are separate sites — dedup must key on position, not content.
+        $this->assertSame(2, substr_count($json, '"method": "setActive"'));
+    }
 }

@@ -180,18 +180,20 @@ Rule hits in `Support` or utility namespaces often point at dead code. Grep the 
 
 ### Convention rules
 
-Flag a bare `true`/`false`/`null` literal passed **positionally** as the last argument of a **first-party** method, static, or constructor call. A positional `setActive('name', false)` hides what the flag means; naming it — `setActive('name', active: false)` — makes the call self-documenting.
+Flag a bare `true`/`false`/`null` literal passed **positionally** as the last argument of a **first-party** method, nullsafe-method, static, or constructor call. A positional `setActive('name', false)` hides what the flag means; naming it — `setActive('name', active: false)` — makes the call self-documenting.
 
-| Rule                                     | Targets                              | Identifier                                  |
-|------------------------------------------|--------------------------------------|---------------------------------------------|
-| `PositionalFlagArgumentMethodCallRule`   | `$obj->method(..., true)`            | `hihaho.conventions.positionalFlagArgument` |
-| `PositionalFlagArgumentStaticCallRule`   | `Klass::method(..., true)`           | `hihaho.conventions.positionalFlagArgument` |
-| `PositionalFlagArgumentConstructorRule`  | `new Klass(..., true)`               | `hihaho.conventions.positionalFlagArgument` |
+| Rule                                          | Targets                       | Identifier                                  |
+|-----------------------------------------------|-------------------------------|---------------------------------------------|
+| `PositionalFlagArgumentMethodCallRule`        | `$obj->method(..., true)`     | `hihaho.conventions.positionalFlagArgument` |
+| `PositionalFlagArgumentNullsafeMethodCallRule`| `$obj?->method(..., true)`    | `hihaho.conventions.positionalFlagArgument` |
+| `PositionalFlagArgumentStaticCallRule`        | `Klass::method(..., true)`    | `hihaho.conventions.positionalFlagArgument` |
+| `PositionalFlagArgumentConstructorRule`       | `new Klass(..., true)`        | `hihaho.conventions.positionalFlagArgument` |
 
 ```php
 namespace App\Services;
 
 $toggle->setActive('name', false);          // reported — name the flag: active: false
+$toggle?->setActive('name', false);         // reported
 StaticFlag::toggle('name', false);          // reported
 new Widget('name', true);                   // reported
 

@@ -3,9 +3,11 @@
 namespace Hihaho\PhpstanRules\Traits;
 
 use PhpParser\Node\Arg;
+use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\ConstFetch;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\New_;
+use PhpParser\Node\Expr\NullsafeMethodCall;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
@@ -49,23 +51,49 @@ trait DetectsPositionalFlagArgument
             return null;
         }
 
-        $args = $node->getArgs();
+        return $this->instanceCallFlagSite($node->var, $node->name->name, $node->getArgs(), $scope, $firstPartyNamespaces);
+    }
+
+    /**
+     * @param  list<string>  $firstPartyNamespaces
+     * @return array{method: string, argIndex: int, paramName: string, value: string}|null
+     */
+    private function flagSiteForNullsafeMethodCall(NullsafeMethodCall $node, Scope $scope, array $firstPartyNamespaces): ?array
+    {
+        if (! $node->name instanceof Identifier) {
+            return null;
+        }
+
+        return $this->instanceCallFlagSite($node->var, $node->name->name, $node->getArgs(), $scope, $firstPartyNamespaces);
+    }
+
+    /**
+     * Shared resolution for `$obj->m(...)` and `$obj?->m(...)` — both carry a
+     * receiver expression, a method name, and args; the receiver type resolution
+     * is identical (a nullable receiver collapses via removeNull).
+     *
+     * @param  array<Arg>  $args
+     * @param  list<string>  $firstPartyNamespaces
+     * @return array{method: string, argIndex: int, paramName: string, value: string}|null
+     */
+    private function instanceCallFlagSite(Expr $receiver, string $methodName, array $args, Scope $scope, array $firstPartyNamespaces): ?array
+    {
         $flagIndex = $this->lastBareFlagIndex($args);
 
         if ($flagIndex === null) {
             return null;
         }
 
-        $classReflections = TypeCombinator::removeNull($scope->getType($node->var))->getObjectClassReflections();
+        $classReflections = TypeCombinator::removeNull($scope->getType($receiver))->getObjectClassReflections();
 
         // Single concrete receiver only (matches the sister rector rule). A union
         // receiver whose members name the flag parameter differently would make
         // the suggested name ambiguous; cross-member agreement is later scope.
-        if (count($classReflections) !== 1 || ! $classReflections[0]->hasMethod($node->name->name)) {
+        if (count($classReflections) !== 1 || ! $classReflections[0]->hasMethod($methodName)) {
             return null;
         }
 
-        return $this->flagRecord($classReflections[0]->getMethod($node->name->name, $scope), $node->name->name, $args, $flagIndex, $scope, $firstPartyNamespaces);
+        return $this->flagRecord($classReflections[0]->getMethod($methodName, $scope), $methodName, $args, $flagIndex, $scope, $firstPartyNamespaces);
     }
 
     /**
@@ -138,9 +166,15 @@ trait DetectsPositionalFlagArgument
      */
     private function positionalFlagErrorForMethodCall(MethodCall $node, Scope $scope, array $firstPartyNamespaces): ?IdentifierRuleError
     {
-        $site = $this->flagSiteForMethodCall($node, $scope, $firstPartyNamespaces);
+        return $this->flagErrorFromSite($this->flagSiteForMethodCall($node, $scope, $firstPartyNamespaces));
+    }
 
-        return $site === null ? null : $this->flagError($site['paramName']);
+    /**
+     * @param  list<string>  $firstPartyNamespaces
+     */
+    private function positionalFlagErrorForNullsafeMethodCall(NullsafeMethodCall $node, Scope $scope, array $firstPartyNamespaces): ?IdentifierRuleError
+    {
+        return $this->flagErrorFromSite($this->flagSiteForNullsafeMethodCall($node, $scope, $firstPartyNamespaces));
     }
 
     /**
@@ -148,9 +182,7 @@ trait DetectsPositionalFlagArgument
      */
     private function positionalFlagErrorForStaticCall(StaticCall $node, Scope $scope, ReflectionProvider $reflectionProvider, array $firstPartyNamespaces): ?IdentifierRuleError
     {
-        $site = $this->flagSiteForStaticCall($node, $scope, $reflectionProvider, $firstPartyNamespaces);
-
-        return $site === null ? null : $this->flagError($site['paramName']);
+        return $this->flagErrorFromSite($this->flagSiteForStaticCall($node, $scope, $reflectionProvider, $firstPartyNamespaces));
     }
 
     /**
@@ -158,8 +190,14 @@ trait DetectsPositionalFlagArgument
      */
     private function positionalFlagErrorForNew(New_ $node, Scope $scope, ReflectionProvider $reflectionProvider, array $firstPartyNamespaces): ?IdentifierRuleError
     {
-        $site = $this->flagSiteForNew($node, $scope, $reflectionProvider, $firstPartyNamespaces);
+        return $this->flagErrorFromSite($this->flagSiteForNew($node, $scope, $reflectionProvider, $firstPartyNamespaces));
+    }
 
+    /**
+     * @param  array{method: string, argIndex: int, paramName: string, value: string}|null  $site
+     */
+    private function flagErrorFromSite(?array $site): ?IdentifierRuleError
+    {
         return $site === null ? null : $this->flagError($site['paramName']);
     }
 
