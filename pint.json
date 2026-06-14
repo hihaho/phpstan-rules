@@ -57,6 +57,9 @@
         ".cache",
         ".github",
         "vendor",
-        "tests/*/stubs/*"
+        "tests/Rules/stubs",
+        "tests/Rules/Debug/stubs",
+        "tests/Rules/Validation/stubs",
+        "tests/Rules/Conventions/stubs"
     ]
 }

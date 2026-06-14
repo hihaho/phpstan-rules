@@ -47,9 +47,24 @@ final readonly class WriteNamedArgumentManifestRule implements Rule
                     continue;
                 }
 
-                $records[] = ['file' => $relativeFile] + $normalized;
+                // Dedup by call-site position: PHPStan visits a nullsafe call
+                // (`$x?->m(...)`) in both its null and non-null scopes, so the
+                // collector fires twice for one node. The byte offset is stable
+                // across those visits but distinct for two same-line calls, so
+                // genuinely distinct sites are preserved. `pos` is internal —
+                // dropped from the emitted record.
+                $records[$relativeFile . '|' . $normalized['pos']] = [
+                    'file' => $relativeFile,
+                    'line' => $normalized['line'],
+                    'method' => $normalized['method'],
+                    'argIndex' => $normalized['argIndex'],
+                    'paramName' => $normalized['paramName'],
+                    'value' => $normalized['value'],
+                ];
             }
         }
+
+        $records = array_values($records);
 
         usort(
             $records,
@@ -65,12 +80,13 @@ final readonly class WriteNamedArgumentManifestRule implements Rule
      * Validates a deserialized collected record (collector data crosses the
      * worker→main boundary as plain arrays, so the type is not statically known).
      *
-     * @return array{line: int, method: string, argIndex: int, paramName: string, value: string}|null
+     * @return array{pos: int, line: int, method: string, argIndex: int, paramName: string, value: string}|null
      */
     private function normalizeRecord(mixed $record): ?array
     {
         if (! is_array($record)
-            || ! isset($record['line'], $record['method'], $record['argIndex'], $record['paramName'], $record['value'])
+            || ! isset($record['pos'], $record['line'], $record['method'], $record['argIndex'], $record['paramName'], $record['value'])
+            || ! is_int($record['pos'])
             || ! is_int($record['line'])
             || ! is_string($record['method'])
             || ! is_int($record['argIndex'])
@@ -81,6 +97,7 @@ final readonly class WriteNamedArgumentManifestRule implements Rule
         }
 
         return [
+            'pos' => $record['pos'],
             'line' => $record['line'],
             'method' => $record['method'],
             'argIndex' => $record['argIndex'],
