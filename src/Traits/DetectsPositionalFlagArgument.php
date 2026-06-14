@@ -217,7 +217,16 @@ trait DetectsPositionalFlagArgument
             return null;
         }
 
-        $parameters = ParametersAcceptorSelector::selectFromArgs($scope, $args, $method->getVariants())->getParameters();
+        $variants = $method->getVariants();
+
+        // Parameter names and the variadic flag are static metadata, independent
+        // of the argument types — so the expensive arg-based variant selection is
+        // only needed to disambiguate overloads. The overwhelmingly common
+        // single-variant case can read the parameters directly.
+        $parameters = (count($variants) === 1
+            ? $variants[0]
+            : ParametersAcceptorSelector::selectFromArgs($scope, $args, $variants)
+        )->getParameters();
         $parameter = $parameters[$flagIndex] ?? null;
 
         if ($parameter === null || $parameter->isVariadic()) {
@@ -281,7 +290,10 @@ trait DetectsPositionalFlagArgument
             return false;
         }
 
-        return in_array($arg->value->name->toLowerString(), ['true', 'false', 'null'], true);
+        return match ($arg->value->name->toLowerString()) {
+            'true', 'false', 'null' => true,
+            default => false,
+        };
     }
 
     private function flagLiteral(Arg $arg): string
