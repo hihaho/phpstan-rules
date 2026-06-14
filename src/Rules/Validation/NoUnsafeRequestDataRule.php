@@ -3,18 +3,14 @@
 namespace Hihaho\PhpstanRules\Rules\Validation;
 
 use Hihaho\PhpstanRules\Traits\ChecksNamespace;
-use Illuminate\Http\Request;
+use Hihaho\PhpstanRules\Traits\DetectsUnsafeRequestData;
 use Override;
 use PhpParser\Node;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Identifier;
 use PHPStan\Analyser\Scope;
-use PHPStan\Reflection\ClassReflection;
 use PHPStan\Rules\IdentifierRuleError;
 use PHPStan\Rules\Rule;
-use PHPStan\Rules\RuleErrorBuilder;
-use PHPStan\Type\ObjectType;
-use PHPStan\Type\Type;
 
 /**
  * @implements Rule<MethodCall>
@@ -22,11 +18,10 @@ use PHPStan\Type\Type;
 final readonly class NoUnsafeRequestDataRule implements Rule
 {
     use ChecksNamespace;
+    use DetectsUnsafeRequestData;
 
     /** @var array<string, true> */
     private array $unsafeMethodsLookup;
-
-    private ObjectType $requestType;
 
     /**
      * @param  list<string>  $unsafeMethods
@@ -39,7 +34,6 @@ final readonly class NoUnsafeRequestDataRule implements Rule
         private array $excludeNamespaces,
     ) {
         $this->unsafeMethodsLookup = array_fill_keys(array_map(strtolower(...), $unsafeMethods), true);
-        $this->requestType = new ObjectType(Request::class);
     }
 
     #[Override]
@@ -59,66 +53,15 @@ final readonly class NoUnsafeRequestDataRule implements Rule
             return [];
         }
 
-        if (! isset($this->unsafeMethodsLookup[strtolower($node->name->name)])) {
-            return [];
-        }
+        $error = $this->unsafeRequestDataError(
+            $node,
+            $node->name->name,
+            $scope,
+            $this->unsafeMethodsLookup,
+            $this->namespaces,
+            $this->excludeNamespaces,
+        );
 
-        if (! $this->isInConfiguredNamespace($scope)) {
-            return [];
-        }
-
-        if ($this->scopeClassIsRequest($scope)) {
-            return [];
-        }
-
-        if (! $this->typeIsRequest($scope->getType($node->var))) {
-            return [];
-        }
-
-        return [
-            RuleErrorBuilder::message(sprintf(
-                'Reading unvalidated request data via %s() is not allowed. Use a FormRequest, $request->validated(), or $request->safe().',
-                $node->name->name,
-            ))
-                ->identifier('hihaho.validation.noUnsafeRequestData')
-                ->tip('Use $request->validated() or $request->safe() to consume validated data. For Stringable/int/bool accessors, $request->safe()->string(\'key\') mirrors $request->string(\'key\') against validated input.')
-                ->build(),
-        ];
-    }
-
-    private function isInConfiguredNamespace(Scope $scope): bool
-    {
-        return $this->namespaceStartsWithAny($scope, $this->namespaces)
-            && ! $this->namespaceStartsWithAny($scope, $this->excludeNamespaces);
-    }
-
-    private function scopeClassIsRequest(Scope $scope): bool
-    {
-        $classReflection = $scope->getClassReflection();
-
-        return $classReflection instanceof ClassReflection && $this->classIsRequest($classReflection->getName());
-    }
-
-    private function typeIsRequest(Type $type): bool
-    {
-        foreach ($type->getObjectClassNames() as $className) {
-            if ($this->classIsRequest($className)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private function classIsRequest(string $className): bool
-    {
-        /** @var array<string, bool> $cache */
-        static $cache = [];
-
-        if (! array_key_exists($className, $cache)) {
-            $cache[$className] = $this->requestType->isSuperTypeOf(new ObjectType($className))->yes();
-        }
-
-        return $cache[$className];
+        return $error instanceof IdentifierRuleError ? [$error] : [];
     }
 }

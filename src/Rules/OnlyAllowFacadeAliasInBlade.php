@@ -2,7 +2,7 @@
 
 namespace Hihaho\PhpstanRules\Rules;
 
-use Illuminate\Support\Facades\Facade;
+use Hihaho\PhpstanRules\Traits\DetectsFacadeAlias;
 use Override;
 use PhpParser\Node;
 use PhpParser\Node\Expr\StaticCall;
@@ -10,15 +10,14 @@ use PhpParser\Node\Name;
 use PHPStan\Analyser\Scope;
 use PHPStan\Rules\IdentifierRuleError;
 use PHPStan\Rules\Rule;
-use PHPStan\Rules\RuleErrorBuilder;
-use ReflectionClass;
-use ReflectionException;
 
 /**
  * @implements Rule<StaticCall>
  */
 final readonly class OnlyAllowFacadeAliasInBlade implements Rule
 {
+    use DetectsFacadeAlias;
+
     #[Override]
     public function getNodeType(): string
     {
@@ -36,56 +35,8 @@ final readonly class OnlyAllowFacadeAliasInBlade implements Rule
             return [];
         }
 
-        // A facade alias is not relative to the current namespace, neither is it `self`, `parent` or `static`.
-        if ($node->class->isRelative() || $node->class->isSpecialClassName()) {
-            return [];
-        }
+        $error = $this->facadeAliasError($node->class, $scope);
 
-        // The class consists of multiple parts, so it's (likely) not a facade alias.
-        if (str_contains($node->class->name, '\\')) {
-            return [];
-        }
-
-        // Ignore calls in Blade files.
-        if (str_ends_with($scope->getFileDescription(), '.blade.php')) {
-            return [];
-        }
-
-        $className = $node->class->name;
-
-        /** @var array<string, ReflectionClass<object>|null> $cache */
-        static $cache = [];
-
-        if (! array_key_exists($className, $cache)) {
-            try {
-                // Runtime reflection is required: facade aliases are registered
-                // lazily by Laravel's AliasLoader (an SPL autoloader). PHPStan's
-                // ReflectionProvider does not invoke runtime autoloaders, so a
-                // static-discovery path would silently miss every real-world
-                // facade alias. The try/catch handles non-existent short names.
-                // @phpstan-ignore phpstanApi.runtimeReflection, argument.type
-                $cache[$className] = new ReflectionClass($className);
-            } catch (ReflectionException) {
-                $cache[$className] = null;
-            }
-        }
-
-        $reflectionClass = $cache[$className];
-
-        if (! $reflectionClass instanceof ReflectionClass) {
-            return [];
-        }
-
-        if ($reflectionClass->isSubclassOf(Facade::class)) {
-            return [
-                RuleErrorBuilder::message(
-                    "Disallowed usage of `{$node->class->name}` facade alias, use `{$reflectionClass->getName()}`. A facade alias can only be used in Blade."
-                )
-                    ->identifier('hihaho.generic.onlyAllowFacadeAliasInBlade')
-                    ->build(),
-            ];
-        }
-
-        return [];
+        return $error instanceof IdentifierRuleError ? [$error] : [];
     }
 }

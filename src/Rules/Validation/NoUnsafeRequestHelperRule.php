@@ -3,16 +3,15 @@
 namespace Hihaho\PhpstanRules\Rules\Validation;
 
 use Hihaho\PhpstanRules\Traits\ChecksNamespace;
+use Hihaho\PhpstanRules\Traits\DetectsUnsafeRequestHelper;
 use Override;
 use PhpParser\Node;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Name;
-use PhpParser\Node\Scalar\String_;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Rules\IdentifierRuleError;
 use PHPStan\Rules\Rule;
-use PHPStan\Rules\RuleErrorBuilder;
 
 /**
  * @implements Rule<FuncCall>
@@ -20,6 +19,7 @@ use PHPStan\Rules\RuleErrorBuilder;
 final readonly class NoUnsafeRequestHelperRule implements Rule
 {
     use ChecksNamespace;
+    use DetectsUnsafeRequestHelper;
 
     /**
      * @param  list<string>  $namespaces
@@ -48,53 +48,15 @@ final readonly class NoUnsafeRequestHelperRule implements Rule
             return [];
         }
 
-        if ($node->getArgs() === []) {
-            return [];
-        }
+        $error = $this->unsafeRequestHelperError(
+            $node,
+            $node->name,
+            $scope,
+            $this->reflectionProvider,
+            $this->namespaces,
+            $this->excludeNamespaces,
+        );
 
-        // Cheap pre-filter: skip reflection unless the short name could
-        // possibly resolve to the global `request()` helper.
-        if (strtolower($node->name->getLast()) !== 'request') {
-            return [];
-        }
-
-        if (! $this->isInConfiguredNamespace($scope)) {
-            return [];
-        }
-
-        if (! $this->reflectionProvider->hasFunction($node->name, $scope)) {
-            return [];
-        }
-
-        if (strtolower($this->reflectionProvider->getFunction($node->name, $scope)->getName()) !== 'request') {
-            return [];
-        }
-
-        return [
-            RuleErrorBuilder::message(sprintf(
-                'Reading unvalidated request data via %s is not allowed. Use a FormRequest, $request->validated(), or $request->safe().',
-                $this->callLabel($node),
-            ))
-                ->identifier('hihaho.validation.noUnsafeRequestHelper')
-                ->tip('Inject a FormRequest (or Request typehint) and consume via $request->validated() / $request->safe() instead of the global helper.')
-                ->build(),
-        ];
-    }
-
-    private function callLabel(FuncCall $node): string
-    {
-        $firstArg = $node->getArgs()[0]->value;
-
-        if ($firstArg instanceof String_) {
-            return "request('{$firstArg->value}')";
-        }
-
-        return 'request(...)';
-    }
-
-    private function isInConfiguredNamespace(Scope $scope): bool
-    {
-        return $this->namespaceStartsWithAny($scope, $this->namespaces)
-            && ! $this->namespaceStartsWithAny($scope, $this->excludeNamespaces);
+        return $error instanceof IdentifierRuleError ? [$error] : [];
     }
 }
