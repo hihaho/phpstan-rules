@@ -47,9 +47,12 @@ final class PositionalFlagArgumentMethodCallRuleTest extends RuleTestCase
     }
 
     #[Test]
-    public function does_not_flag_a_null_passed_to_a_non_bool_nullable_parameter(): void
+    public function flags_a_bare_null_on_any_named_parameter_not_only_bool(): void
     {
-        $this->analyse([__DIR__ . '/stubs/NonBoolNullArgStub.php'], []);
+        $this->analyse([__DIR__ . '/stubs/NonBoolNullArgStub.php'], [
+            [$this->message('id'), 18, $this->tip()],
+            [$this->message('name'), 19, $this->tip()],
+        ]);
     }
 
     #[Test]
