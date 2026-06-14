@@ -15,6 +15,27 @@ Internal performance optimization only — no rule behavior, error identifier, p
 
 **Full Changelog**: https://github.com/hihaho/phpstan-rules/compare/v3.6.0...v3.6.1
 
+## v3.6.0 - 2026-06-14
+
+<!-- verified-sha: e473a1b11e69d39630375b500232e3505bf9af25 -->
+### Added
+
+**Nullsafe method calls are now covered by the positional-flag rule and the manifest.** A bare `true`/`false`/`null` flag passed positionally to a first-party nullsafe call — `$user?->profile->setActive('name', true)`, common with nullable Laravel relations — was previously skipped. It is now flagged (`PositionalFlagArgumentNullsafeMethodCallRule`) and collected into the named-argument manifest, alongside the existing method, static, and constructor coverage. The receiver resolves the same way as a plain method call (a nullable receiver collapses via `removeNull`).
+
+### Changed
+
+`hihaho.conventions.positionalFlagArgument` now reports nullsafe call sites. On an existing codebase this surfaces additional findings on `$obj?->method(..., flag)` calls — baseline them if noisy, or name the arguments.
+
+### Fixed
+
+The named-argument manifest now keys deduplication on the call-site position rather than record content. PHPStan visits a nullsafe call in both its null and non-null scopes, so the collector emits two records for one site; the previous content-based key would also have collapsed two genuinely distinct same-line calls that share a signature (`$a?->m('x', true); $b?->m('y', true)`), dropping a real site from the manifest. Both cases are now correct — one record per actual call.
+
+### Notes
+
+The flag-scope widening only adds nullsafe call coverage; no public API or configuration changed. Update in place.
+
+**Full Changelog**: https://github.com/hihaho/phpstan-rules/compare/v3.5.0...v3.6.0
+
 ## v3.5.0 - 2026-06-14
 
 <!-- verified-sha: cef4ad0a63ae559df4a03ea5f8f2d1ba68ec4411 -->
