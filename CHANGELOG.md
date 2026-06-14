@@ -2,6 +2,19 @@
 
 All notable changes to `hihaho/phpstan-rules` will be documented in this file.
 
+## v3.6.1 - 2026-06-14
+
+<!-- verified-sha: 344342dd545e9041023752650cf734e5d18cc55f -->
+### Changed
+
+**Faster positional-flag analysis.** To report an opaque positional `true`/`false`/`null` argument, the rule resolves the corresponding parameter name. When the called method has a single signature — the overwhelmingly common case — it now reads that name straight from the signature instead of running PHPStan's argument-based variant selection (overload resolution plus, for generic methods, template-type inference from the call's arguments), which produced the same name. The per-call flag check also drops a small array allocation. The flag check runs on every method, static, constructor, and nullsafe call, so this trims work across the hottest path in the extension.
+
+### Notes
+
+Internal performance optimization only — no rule behavior, error identifier, public API, or configuration changed. The same call sites are flagged with the same messages. Update in place.
+
+**Full Changelog**: https://github.com/hihaho/phpstan-rules/compare/v3.6.0...v3.6.1
+
 ## v3.6.0 - 2026-06-14
 
 <!-- verified-sha: e473a1b11e69d39630375b500232e3505bf9af25 -->
