@@ -119,4 +119,22 @@ final class WriteNamedArgumentManifestRuleTest extends RuleTestCase
         // but are separate sites — dedup must key on position, not content.
         $this->assertSame(2, substr_count($json, '"method": "setActive"'));
     }
+
+    #[Test]
+    public function it_creates_a_missing_parent_directory_for_a_nested_output_path(): void
+    {
+        $directory = sys_get_temp_dir() . '/phpstan-rules-manifest-' . getmypid() . '/.config';
+        $this->manifestPath = $directory . '/named-arguments-manifest.json';
+
+        $this->assertDirectoryDoesNotExist($directory);
+
+        $this->analyse([__DIR__ . '/stubs/FlagMethodCallStub.php'], []);
+
+        $this->assertFileExists($this->manifestPath);
+        $this->assertStringContainsString('"method": "setActive"', (string) file_get_contents($this->manifestPath));
+
+        unlink($this->manifestPath);
+        rmdir($directory);
+        rmdir(dirname($directory));
+    }
 }

@@ -71,9 +71,28 @@ final readonly class WriteNamedArgumentManifestRule implements Rule
             static fn (array $a, array $b): int => [$a['file'], $a['line'], $a['argIndex']] <=> [$b['file'], $b['line'], $b['argIndex']],
         );
 
+        $this->ensureDirectoryExists($this->outputPath);
+
         file_put_contents($this->outputPath, json_encode($records, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
 
         return [];
+    }
+
+    /**
+     * Creates the manifest's parent directory when it is missing, so a nested
+     * outputPath (e.g. `.config/named-arguments-manifest.json`) writes without
+     * the consumer having to pre-create the directory. file_put_contents does
+     * not create intermediate directories on its own.
+     */
+    private function ensureDirectoryExists(string $path): void
+    {
+        $directory = dirname($path);
+
+        if ($directory === '' || is_dir($directory)) {
+            return;
+        }
+
+        mkdir($directory, 0o755, true);
     }
 
     /**
