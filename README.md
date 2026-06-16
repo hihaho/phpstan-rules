@@ -234,6 +234,8 @@ parameters:
 
 `vendor/bin/phpstan analyse` then writes `named-arguments-manifest.json` — the same detection emitted as records (`{file, line, method, argIndex, paramName, value}`) instead of errors, with no CI errors raised. It is a PHPStan Collector, not an error formatter, so it is independent of the gate rules and unaffected by your baseline (baselined sites still appear in the manifest).
 
+`outputPath` may be nested (e.g. `.config/named-arguments-manifest.json`); the parent directory is created if it does not exist.
+
 ## Testing
 
 ```bash
