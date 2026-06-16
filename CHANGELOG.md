@@ -2,6 +2,19 @@
 
 All notable changes to `hihaho/phpstan-rules` will be documented in this file.
 
+## v3.7.0 - 2026-06-16
+
+<!-- verified-sha: db202f2fa990b99b081479507d698dbeac9e88e6 -->
+### Added
+
+**Nested manifest output paths.** The named-argument manifest producer now creates its output file's parent directory when it does not exist, so `outputPath` may point at a nested location such as `.config/named-arguments-manifest.json`. Previously a nested path silently failed to write unless the directory was created by hand, since `file_put_contents` does not create intermediate directories.
+
+### Notes
+
+Backward compatible — a flat `outputPath` (the existing default) behaves exactly as before. Only consumers of the opt-in `named-argument-manifest.neon` producer are affected; the CI-gate rules are unchanged. Update in place. Pair this with `NamedArgumentFromManifestRector::MANIFEST` set to the same path on the rector-rules side.
+
+**Full Changelog**: https://github.com/hihaho/phpstan-rules/compare/v3.6.1...v3.7.0
+
 ## v3.6.1 - 2026-06-14
 
 <!-- verified-sha: 344342dd545e9041023752650cf734e5d18cc55f -->
@@ -54,6 +67,7 @@ parameters:
             - Database\Factories
             - Tests
         outputPath: named-arguments-manifest.json
+
 
 
 ```
