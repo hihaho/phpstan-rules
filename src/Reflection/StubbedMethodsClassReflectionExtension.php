@@ -10,9 +10,10 @@ use PHPStan\Reflection\MethodReflection;
 use PHPStan\Reflection\MethodsClassReflectionExtension;
 
 /**
- * Resolves methods that exist at runtime but not in PHPStan's reflection — Faker custom providers
- * (added via __call), Laravel macros, facade __callStatic forwarding — so they no longer need a
- * baseline entry, while a typo'd method name (not in the configured set) still fails analysis.
+ * Resolves instance methods that exist at runtime but not in PHPStan's reflection — Faker custom
+ * providers (added via __call) and Laravel macros — so they no longer need a baseline entry, while
+ * a typo'd method name (not in the configured set) still fails analysis. Instance methods only;
+ * statically-called methods (e.g. facade __callStatic) are out of scope.
  *
  * Configure per consumer via the `stubbedMethods` parameter; nothing is resolved by default.
  * @see StubbedMethodsClassReflectionExtensionTest

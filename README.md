@@ -240,11 +240,12 @@ parameters:
 
 ### Stubbed methods
 
-`StubbedMethodsClassReflectionExtension` teaches PHPStan about methods that exist at runtime but
-not in reflection — Faker custom providers (added via `__call`), Laravel macros, facade
-`__callStatic` forwarding. Without it, calls to these resolve to "undefined method" and have to be
-baselined, which also hides genuine typos. With it, the configured methods resolve to their declared
-return type, and a misspelled name (not in the configured set) still fails analysis.
+`StubbedMethodsClassReflectionExtension` teaches PHPStan about **instance** methods that exist at
+runtime but not in reflection — Faker custom providers (added via `__call`) and Laravel macros.
+Without it, calls to these resolve to "undefined method" and have to be baselined, which also hides
+genuine typos. With it, the configured methods resolve to their declared return type, and a
+misspelled name (not in the configured set) still fails analysis. Statically-called methods (e.g.
+facade `__callStatic`) are out of scope — the stubbed methods are modelled as instance methods.
 
 It resolves nothing by default — each project declares its own methods via the `stubbedMethods`
 parameter, a map of `class name => (method name => return type)`:

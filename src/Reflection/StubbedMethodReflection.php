@@ -13,8 +13,8 @@ use PHPStan\Type\Generic\TemplateTypeMap;
 use PHPStan\Type\Type;
 
 /**
- * A synthetic method declared by {@see StubbedMethodsClassReflectionExtension}. Accepts any
- * arguments (variadic) and returns the configured type, so dynamically-registered methods
+ * A synthetic instance method declared by {@see StubbedMethodsClassReflectionExtension}. Accepts
+ * any arguments (variadic) and returns the configured type, so dynamically-registered methods
  * (Faker providers, framework macros) resolve without their names being guessed away.
  */
 final readonly class StubbedMethodReflection implements MethodReflection
