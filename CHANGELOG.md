@@ -2,6 +2,33 @@
 
 All notable changes to `hihaho/phpstan-rules` will be documented in this file.
 
+## v3.8.0 - 2026-06-21
+
+<!-- verified-sha: d68150cd4684be34251cda73d7a6e85d2eec2b98 -->
+### Added
+
+**Stubbed-methods reflection extension.** A new `StubbedMethodsClassReflectionExtension` teaches PHPStan about **instance** methods that exist at runtime but not in reflection — Faker custom providers (added via `__call`) and Laravel macros. Without it, calls to these resolve to "undefined method" and have to be baselined, which also masks genuine typos. With it, the configured methods resolve to their declared return type while a misspelled name still fails analysis.
+
+Configure it per project via the new `stubbedMethods` parameter, a map of `class name => (method name => return type)`:
+
+```neon
+parameters:
+    stubbedMethods:
+        Faker\Generator:
+            videoTimeInMilliseconds: int
+            validPassword: string
+        Illuminate\Testing\TestResponse:
+            assertSeeLivewire: Illuminate\Testing\TestResponse
+
+```
+Return types are parsed with PHPStan's type-string resolver, so any valid PHPDoc type works (`string`, `array<int, int>`, a class name for chainable assertions, etc.). Stubbed methods accept any arguments — only the method name and its return type are modelled. Statically-called methods (e.g. facade `__callStatic`) are out of scope.
+
+### Notes
+
+Backward compatible — `stubbedMethods` is empty by default, so the extension resolves nothing until a consuming project configures it. Existing analysis is unchanged. Update in place.
+
+**Full Changelog**: https://github.com/hihaho/phpstan-rules/compare/v3.7.0...v3.8.0
+
 ## v3.7.0 - 2026-06-16
 
 <!-- verified-sha: db202f2fa990b99b081479507d698dbeac9e88e6 -->
@@ -67,6 +94,7 @@ parameters:
             - Database\Factories
             - Tests
         outputPath: named-arguments-manifest.json
+
 
 
 
