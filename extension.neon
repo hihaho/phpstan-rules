@@ -10,8 +10,14 @@ parametersSchema:
     positionalFlagArgument: structure([
         firstPartyNamespaces: listOf(string())
     ])
+    stubbedMethods: arrayOf(arrayOf(string()))
 
 parameters:
+    # class name => (method name => return type string). Resolves runtime-only instance methods
+    # (Faker providers, macros) so they need no baseline, while typos still fail.
+    # Empty by default — each consuming project configures its own.
+    stubbedMethods: []
+
     noUnsafeRequestData:
         unsafeMethods:
             - input
@@ -109,3 +115,9 @@ services:
             firstPartyNamespaces: %positionalFlagArgument.firstPartyNamespaces%
         tags:
             - phpstan.rules.rule
+    -
+        class: Hihaho\PhpstanRules\Reflection\StubbedMethodsClassReflectionExtension
+        arguments:
+            stubbedMethods: %stubbedMethods%
+        tags:
+            - phpstan.broker.methodsClassReflectionExtension

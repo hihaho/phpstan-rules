@@ -236,6 +236,37 @@ parameters:
 
 `outputPath` may be nested (e.g. `.config/named-arguments-manifest.json`); the parent directory is created if it does not exist.
 
+## Reflection extensions
+
+### Stubbed methods
+
+`StubbedMethodsClassReflectionExtension` teaches PHPStan about **instance** methods that exist at
+runtime but not in reflection — Faker custom providers (added via `__call`) and Laravel macros.
+Without it, calls to these resolve to "undefined method" and have to be baselined, which also hides
+genuine typos. With it, the configured methods resolve to their declared return type, and a
+misspelled name (not in the configured set) still fails analysis. Statically-called methods (e.g.
+facade `__callStatic`) are out of scope — the stubbed methods are modelled as instance methods.
+
+It resolves nothing by default — each project declares its own methods via the `stubbedMethods`
+parameter, a map of `class name => (method name => return type)`:
+
+```neon
+parameters:
+    stubbedMethods:
+        Faker\Generator:
+            videoTimeInMilliseconds: int
+            validPassword: string
+            timestampsOfVideoClicks: 'array<int, int>'
+        Illuminate\Testing\TestResponse:
+            assertSeeLivewire: Illuminate\Testing\TestResponse
+            fillForm: Illuminate\Testing\TestResponse
+```
+
+Return types are parsed with PHPStan's type-string resolver, so any valid PHPDoc type works
+(`string`, `array<int, int>`, a class name for chainable assertions, etc.). Stubbed methods accept
+any arguments, so only the method name and its return type are modelled — argument types are not
+checked.
+
 ## Testing
 
 ```bash

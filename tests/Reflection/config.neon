@@ -1,0 +1,9 @@
+includes:
+    - ../../extension.neon
+
+parameters:
+    stubbedMethods:
+        Hihaho\PhpstanRules\Tests\Reflection\stubs\StubbedMethodsTarget:
+            customString: string
+            customInt: int
+            customList: 'array<int, int>'
