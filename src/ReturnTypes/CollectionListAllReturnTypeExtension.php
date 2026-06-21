@@ -30,14 +30,17 @@ use PHPStan\Type\TypeCombinator;
  *    fires where it can prove the re-key happened. A chain split across variables is not narrowed
  *    (it fails safe rather than guessing).
  *  - The receiver must be a Support\Collection or LazyCollection (or subclass) — the trees whose
- *    values() is provably array_values()-based. A bare Enumerable or a custom implementation with
- *    different key semantics is never narrowed.
+ *    values() re-keys to a 0-based list per its documented contract. Subclasses are included on
+ *    purpose so Eloquent collections (which inherit values() unchanged) benefit; the narrowing
+ *    relies on that contract rather than re-proving it, so a subclass that deliberately overrides
+ *    values() to break it is out of scope. A bare Enumerable or a custom implementation with
+ *    unknown key semantics is never narrowed.
  *
  * Only values() is handled: it is the canonical, unconditional re-key-to-list method. flatten() is
  * also a list at runtime but Laravel does not reliably type its value type; collapse()/flatMap()
  * preserve the inner arrays' string keys via array_merge and are not lists at all.
  */
-final class CollectionListAllReturnTypeExtension implements DynamicMethodReturnTypeExtension
+final readonly class CollectionListAllReturnTypeExtension implements DynamicMethodReturnTypeExtension
 {
     #[Override]
     public function getClass(): string
