@@ -2,7 +2,6 @@
 
 namespace Hihaho\PhpstanRules\Reflection;
 
-use Hihaho\PhpstanRules\Tests\Reflection\StubbedMethodsClassReflectionExtensionTest;
 use Override;
 use PHPStan\PhpDoc\TypeStringResolver;
 use PHPStan\Reflection\ClassReflection;
@@ -16,7 +15,6 @@ use PHPStan\Reflection\MethodsClassReflectionExtension;
  * statically-called methods (e.g. facade __callStatic) are out of scope.
  *
  * Configure per consumer via the `stubbedMethods` parameter; nothing is resolved by default.
- * @see StubbedMethodsClassReflectionExtensionTest
  */
 final class StubbedMethodsClassReflectionExtension implements MethodsClassReflectionExtension
 {
