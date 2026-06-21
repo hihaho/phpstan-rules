@@ -267,6 +267,30 @@ Return types are parsed with PHPStan's type-string resolver, so any valid PHPDoc
 any arguments, so only the method name and its return type are modelled — argument types are not
 checked.
 
+## Return type extensions
+
+### Collection `values()->all()` list typing
+
+`CollectionListAllReturnTypeExtension` types `->values()->all()` on a `Collection`/`LazyCollection`
+as `list<TValue>` instead of `array<int, TValue>`. Laravel types `values()` as `static<int, TValue>`
+and `all()` as `array<TKey, TValue>`, neither of which carries PHPStan's list marker — so a method
+declared `@return list<T>` is forced to wrap the chain in `array_values()` even though `values()`
+already re-keyed to a list at runtime. The list type matters: a non-list array is JSON-encoded as a
+JS object, silently breaking frontend consumers that expect an array.
+
+```php
+/** @return list<int> */
+public function ids(Collection $users): array
+{
+    return $users->map(fn (User $user): int => $user->id)->values()->all(); // list<int>, no array_values()
+}
+```
+
+It is registered automatically — no configuration. Two guards keep it sound: detection is syntactic
+(the receiver must be a direct `->values()` call, so a chain split across variables is left alone
+rather than guessed), and the receiver must be a `Support\Collection`/`LazyCollection` (or subclass)
+— a bare `Enumerable` or a custom implementation with unknown key semantics is never narrowed.
+
 ## Testing
 
 ```bash
