@@ -121,3 +121,7 @@ services:
             stubbedMethods: %stubbedMethods%
         tags:
             - phpstan.broker.methodsClassReflectionExtension
+    -
+        class: Hihaho\PhpstanRules\ReturnTypes\CollectionListAllReturnTypeExtension
+        tags:
+            - phpstan.broker.dynamicMethodReturnTypeExtension
