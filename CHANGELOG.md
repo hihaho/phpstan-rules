@@ -2,6 +2,29 @@
 
 All notable changes to `hihaho/phpstan-rules` will be documented in this file.
 
+## 3.9.0 - 2026-06-21
+
+<!-- verified-sha: 3bc5796dd436e9f4124dc471e677db14292ebd23 -->
+### Added
+
+**Collection `values()->all()` list typing.** A new `CollectionListAllReturnTypeExtension` types `->values()->all()` on a `Collection` or `LazyCollection` as `list<TValue>` instead of `array<int, TValue>`. Laravel types `values()` as `static<int, TValue>` and `all()` as `array<TKey, TValue>`, neither of which carries PHPStan's list marker — so a method declared `@return list<T>` was forced to wrap the chain in `array_values()` even though `values()` already re-keyed to a list at runtime. The list type is load-bearing: a non-list array is JSON-encoded as a JS object, so losing it silently breaks frontend consumers that expect an array.
+
+```php
+/** @return list<int> */
+public function ids(Collection $users): array
+{
+    return $users->map(fn (User $user): int => $user->id)->values()->all(); // list<int>, no array_values()
+}
+
+```
+The extension is registered automatically — no configuration. Two guards keep it sound: detection is syntactic (the receiver must be a direct `->values()` call, so a chain split across variables is left alone rather than guessed), and the receiver must be a `Support\Collection`/`LazyCollection` or subclass — so Eloquent collections benefit while a bare `Enumerable` or a custom implementation with unknown key semantics is never narrowed. Only `values()` is handled; `flatten()`, `collapse()`, and `flatMap()` are deliberately excluded because Laravel doesn't reliably type them as lists.
+
+### Notes
+
+Backward compatible — the extension only narrows a previously-broader type, so existing analysis stays valid and any redundant `array_values()` wrappers can be dropped at your own pace. Update in place.
+
+**Full Changelog**: https://github.com/hihaho/phpstan-rules/compare/v3.8.0...v3.9.0
+
 ## v3.8.0 - 2026-06-21
 
 <!-- verified-sha: d68150cd4684be34251cda73d7a6e85d2eec2b98 -->
@@ -19,6 +42,7 @@ parameters:
             validPassword: string
         Illuminate\Testing\TestResponse:
             assertSeeLivewire: Illuminate\Testing\TestResponse
+
 
 ```
 Return types are parsed with PHPStan's type-string resolver, so any valid PHPDoc type works (`string`, `array<int, int>`, a class name for chainable assertions, etc.). Stubbed methods accept any arguments — only the method name and its return type are modelled. Statically-called methods (e.g. facade `__callStatic`) are out of scope.
@@ -94,6 +118,7 @@ parameters:
             - Database\Factories
             - Tests
         outputPath: named-arguments-manifest.json
+
 
 
 
