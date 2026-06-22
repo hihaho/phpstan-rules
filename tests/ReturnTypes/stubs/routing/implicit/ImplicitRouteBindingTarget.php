@@ -22,10 +22,8 @@ final class ImplicitRouteBindingTarget
         // Same param bound to different models across routes → the union.
         assertType('Hihaho\PhpstanRules\Tests\ReturnTypes\stubs\routing\implicit\Apple|Hihaho\PhpstanRules\Tests\ReturnTypes\stubs\routing\implicit\Banana', $request->route('item'));
 
-        // A closure action, a non-model type-hint, and an unknown parameter are not narrowed.
-        // (Under larastan the default route() type prints as the parenthesised benevolent union.)
-        assertType('(object|string|null)', $request->route('ping'));
-        assertType('(object|string|null)', $request->route('loose'));
-        assertType('(object|string|null)', $request->route('unknown'));
+        // The skip/fail-safe cases (closure action, non-model hint, unknown parameter) assert the
+        // default route() type, whose larastan formatting varies by version — covered in the
+        // Laravel-only ImplicitRouteBindingStaticTarget instead, with a stable type string.
     }
 }
