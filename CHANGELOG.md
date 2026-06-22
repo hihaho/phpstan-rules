@@ -2,6 +2,20 @@
 
 All notable changes to `hihaho/phpstan-rules` will be documented in this file.
 
+## v3.11.2 - 2026-06-22
+
+<!-- verified-sha: 5d8aaf5c37f0d6627410b831d13a277a1509d222 -->
+### Documentation
+
+Added two adoption notes to the README, both surfaced by real-world adoption of the type extensions:
+
+- **Relation-existence closures** — returning the narrowed builder from a `whereHas`/`has` callback (`fn ($q) => $q->where(...)`) trips a `return.type` covariance error, because `Builder<TModel>` is invariant. Use a `void` block closure; the callback constrains the query in place and the return value is ignored at runtime.
+- **Route-model bindings** — once `route('x')` is typed as the bound model, existing `assert($x instanceof Model)` / `instanceof` guards after it become "always true" redundant-condition errors (it is an expression-type resolver, so `treatPhpDocTypesAsCertain: false` does not soften them). Adopting `routeBindingProviders` is therefore a one-time assert-removal sweep; keep only the guards on routes that may legitimately lack the parameter.
+
+No code or behavior change — the extensions are unchanged. Test fixtures were broadened to cover the full relationship-existence method family and a `Route::bind()` closure with a built-in (non-model) return type.
+
+**Full Changelog**: https://github.com/hihaho/phpstan-rules/compare/v3.11.1...v3.11.2
+
 ## v3.11.1 - 2026-06-22
 
 <!-- verified-sha: e06e0f460b4dcc529057b151f0f462ba397e5e49 -->
@@ -35,12 +49,14 @@ parameters:
         - App\Providers\RouteServiceProvider
 
 
+
 ```
 ```php
 public function handle(Request $request): void
 {
     $video = $request->route('video_id'); // Video — no assert() needed
 }
+
 
 
 ```
@@ -70,6 +86,7 @@ public function scopeWithPublishedPosts(Builder $query): void
     // $q is Builder<Post> — Post::PUBLISHED resolves instead of erroring against base Model.
     $query->whereHas('posts', fn (Builder $q) => $q->where(Post::STATUS, Post::PUBLISHED));
 }
+
 
 
 
@@ -103,6 +120,7 @@ public function ids(Collection $users): array
 
 
 
+
 ```
 The extension is registered automatically — no configuration. Two guards keep it sound: detection is syntactic (the receiver must be a direct `->values()` call, so a chain split across variables is left alone rather than guessed), and the receiver must be a `Support\Collection`/`LazyCollection` or subclass — so Eloquent collections benefit while a bare `Enumerable` or a custom implementation with unknown key semantics is never narrowed. Only `values()` is handled; `flatten()`, `collapse()`, and `flatMap()` are deliberately excluded because Laravel doesn't reliably type them as lists.
 
@@ -129,6 +147,7 @@ parameters:
             validPassword: string
         Illuminate\Testing\TestResponse:
             assertSeeLivewire: Illuminate\Testing\TestResponse
+
 
 
 
@@ -208,6 +227,7 @@ parameters:
             - Database\Factories
             - Tests
         outputPath: named-arguments-manifest.json
+
 
 
 
