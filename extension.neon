@@ -134,10 +134,10 @@ services:
         class: Hihaho\PhpstanRules\ReturnTypes\RouteBindingReturnTypeExtension
         arguments:
             routeBindingProviders: %routeBindingProviders%
-            parser: @defaultAnalysisParser
+            parser: @currentPhpVersionSimpleDirectParser
             reflectionProvider: @reflectionProvider
         tags:
-            - phpstan.broker.dynamicMethodReturnTypeExtension
+            - phpstan.broker.expressionTypeResolverExtension
     -
         class: Hihaho\PhpstanRules\ParameterClosureTypes\RelationExistenceClosureBuilderParameterExtension
         arguments:
