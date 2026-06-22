@@ -13,8 +13,6 @@ use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
 use PhpParser\Node\Scalar\String_;
 use PhpParser\NodeFinder;
-use PhpParser\NodeTraverser;
-use PhpParser\NodeVisitor\NameResolver;
 use PHPStan\Analyser\Scope;
 use PHPStan\Parser\Parser;
 use PHPStan\Parser\ParserErrorsException;
@@ -98,17 +96,13 @@ final class ImplicitRouteBindingResolver
         }
 
         try {
+            // The simple direct parser already runs name resolution (PHPStan's SimpleParser does),
+            // so facade/class names come back fully qualified — unlike the default analysis parser,
+            // whose facade static calls are unreliable once larastan is loaded.
             $statements = $this->parser->parseFile($routeFile);
         } catch (ParserErrorsException) {
             return [];
         }
-
-        // Simple direct parser does not resolve names, and is not the default analysis parser whose
-        // facade static calls are unreliable under larastan — resolve names ourselves.
-        $traverser = new NodeTraverser();
-        $traverser->addVisitor(new NameResolver());
-
-        $statements = $traverser->traverse($statements);
 
         return array_values((new NodeFinder())->findInstanceOf($statements, StaticCall::class));
     }
