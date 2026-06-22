@@ -18,8 +18,6 @@ use PhpParser\Node\NullableType;
 use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\UnionType;
 use PhpParser\NodeFinder;
-use PhpParser\NodeTraverser;
-use PhpParser\NodeVisitor\NameResolver;
 use PHPStan\Analyser\Scope;
 use PHPStan\Parser\Parser;
 use PHPStan\Parser\ParserErrorsException;
@@ -166,18 +164,13 @@ final class RouteBindingReturnTypeExtension implements ExpressionTypeResolverExt
         }
 
         try {
+            // The simple direct parser already runs name resolution (PHPStan's SimpleParser does),
+            // so class names come back fully qualified — unlike the default analysis parser, whose
+            // facade static calls are not reliably exposed once larastan is loaded.
             $statements = $this->parser->parseFile($file);
         } catch (ParserErrorsException) {
             return [];
         }
-
-        // Resolve names to their FQCN. The injected parser is the simple direct parser, which does
-        // not run name resolution itself — and crucially is not the default analysis parser, whose
-        // facade static calls are not reliably exposed once larastan is loaded.
-        $traverser = new NodeTraverser();
-        $traverser->addVisitor(new NameResolver());
-
-        $statements = $traverser->traverse($statements);
 
         $bindings = [];
 
