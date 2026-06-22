@@ -2,6 +2,33 @@
 
 All notable changes to `hihaho/phpstan-rules` will be documented in this file.
 
+## v3.12.0 - 2026-06-22
+
+<!-- verified-sha: 33f1f027b1c3ec89e734692357591b5d4ef1a63f -->
+### Added
+
+**Implicit route-model binding typing.** The route-model binding extension now also resolves Laravel's *implicit* bindings — the ones derived from a controller's type-hint, with no `Route::model()`/`Route::bind()` declaration. This retires the remaining `route('x')` + `assert($x instanceof Model)` pairs for parameters that are only bound implicitly.
+
+It works **statically** — no `route:list` manifest, and it never boots your application — by parsing the route files you list in the new `routeFiles` parameter (off by default, layered after the explicit provider bindings):
+
+```neon
+parameters:
+    routeFiles:
+        - routes/web.php
+        - routes/api.php
+
+```
+For each `Route::<verb>('uri/{param}', Action)` — an invokable `Controller::class` or a
+`[Controller::class, 'method']` — it reflects the action parameter Laravel would bind to each route parameter (matched by name or `Str::snake()`, exactly as the framework's `ImplicitRouteBinding` does), keeps its type when it's a `Model`, and unions across every route that declares the parameter. Explicit provider bindings take precedence.
+
+It is fail-safe: closures, group-level controllers, `Route::resource`, non-model type-hints, and unreadable files are skipped, leaving the default type — it never mis-types. The non-null over-claim and `{param?}` caveat are the same as for explicit bindings (documented in the README).
+
+### Notes
+
+Backward compatible — the implicit resolver is inert until `routeFiles` is set, and only narrows a previously-broader type. No new runtime dependency. Update in place.
+
+**Full Changelog**: https://github.com/hihaho/phpstan-rules/compare/v3.11.2...v3.12.0
+
 ## v3.11.2 - 2026-06-22
 
 <!-- verified-sha: 5d8aaf5c37f0d6627410b831d13a277a1509d222 -->
@@ -50,12 +77,14 @@ parameters:
 
 
 
+
 ```
 ```php
 public function handle(Request $request): void
 {
     $video = $request->route('video_id'); // Video — no assert() needed
 }
+
 
 
 
@@ -86,6 +115,7 @@ public function scopeWithPublishedPosts(Builder $query): void
     // $q is Builder<Post> — Post::PUBLISHED resolves instead of erroring against base Model.
     $query->whereHas('posts', fn (Builder $q) => $q->where(Post::STATUS, Post::PUBLISHED));
 }
+
 
 
 
@@ -121,6 +151,7 @@ public function ids(Collection $users): array
 
 
 
+
 ```
 The extension is registered automatically — no configuration. Two guards keep it sound: detection is syntactic (the receiver must be a direct `->values()` call, so a chain split across variables is left alone rather than guessed), and the receiver must be a `Support\Collection`/`LazyCollection` or subclass — so Eloquent collections benefit while a bare `Enumerable` or a custom implementation with unknown key semantics is never narrowed. Only `values()` is handled; `flatten()`, `collapse()`, and `flatMap()` are deliberately excluded because Laravel doesn't reliably type them as lists.
 
@@ -147,6 +178,7 @@ parameters:
             validPassword: string
         Illuminate\Testing\TestResponse:
             assertSeeLivewire: Illuminate\Testing\TestResponse
+
 
 
 
@@ -227,6 +259,7 @@ parameters:
             - Database\Factories
             - Tests
         outputPath: named-arguments-manifest.json
+
 
 
 
