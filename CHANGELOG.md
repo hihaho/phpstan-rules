@@ -2,6 +2,40 @@
 
 All notable changes to `hihaho/phpstan-rules` will be documented in this file.
 
+## v3.11.0 - 2026-06-22
+
+<!-- verified-sha: 41c9213cb43cf8faeb79abea414c37f8de23ad24 -->
+### Added
+
+**Route-model binding typing.** A new `RouteBindingReturnTypeExtension` types `$this->route('x')` and `$request->route('x')` as the model bound to route parameter `x`, read from your application's route-service providers. Laravel types `route()` as `object|string|null`, so resolving a bound model normally needs an `assert($model instanceof Video)` after every call — and the parameter name doesn't reveal the model (`video_id` → `Video`, `container` → `VideoContainer`). The extension reads `Route::model('x', M::class)` and `Route::bind('x', fn (): M => …)` from the configured providers and returns the bound type, so the assert is no longer needed while a wrong assignment still fails.
+
+It is opt-in via the new `routeBindingProviders` parameter — empty by default, so nothing is narrowed until you list your providers:
+
+```neon
+parameters:
+    routeBindingProviders:
+        - App\Providers\RouteServiceProvider
+
+```
+```php
+public function handle(Request $request): void
+{
+    $video = $request->route('video_id'); // Video — no assert() needed
+}
+
+```
+The closure parameter needs no annotation. The extension covers the relationship-existence call forms (`Route::model` and `Route::bind`), nullable (`?M`) and `M|null` union bind return types, class-constant parameter names (`Route::model(RouteParams::VIDEO, …)`, including typed constants), and providers whose `boot()` is inherited from a base class. It is conservative where the bound type isn't guaranteed: `route()` with no argument (returns the `Route` object), a default argument, a dynamic name, or an unknown parameter keeps its default type; `Route::bind()` closures without a return-type hint and `Route::model()` bindings with a missing-model callback are skipped.
+
+A bound parameter is typed as the non-null model, matching the intent of the asserts it replaces. This drops `null` when the current route doesn't carry the parameter (an optional `{param?}` segment, or shared middleware reached from routes without it), so apply it to code reached only via routes that define the parameter and keep an explicit null check where a request may legitimately lack it. The README documents the full scope.
+
+### Notes
+
+This release adds `illuminate/http` to the package's runtime requirements — the extension references `Illuminate\Http\Request` directly. Every Laravel project already has it, so installs are unaffected in practice.
+
+Backward compatible — the extension is inert until `routeBindingProviders` is configured, and only narrows a previously-broader type. Update in place.
+
+**Full Changelog**: https://github.com/hihaho/phpstan-rules/compare/v3.10.0...v3.11.0
+
 ## v3.10.0 - 2026-06-22
 
 <!-- verified-sha: f9fed69a36a3123273885f216301843ee9061287 -->
@@ -16,6 +50,7 @@ public function scopeWithPublishedPosts(Builder $query): void
     // $q is Builder<Post> — Post::PUBLISHED resolves instead of erroring against base Model.
     $query->whereHas('posts', fn (Builder $q) => $q->where(Post::STATUS, Post::PUBLISHED));
 }
+
 
 ```
 The extension is registered automatically — no configuration, and the closure needs no annotation: a bare `Builder` hint is narrowed in place and arrow functions are preserved. It also handles dotted nested relations (`'posts.comments'` → `Builder<Comment>`), calls on a relation (`$user->posts()->whereHas(...)`), custom builder subclasses, named arguments, and related models with a custom builder (Laravel's `HasBuilder` trait or an overridden `newEloquentBuilder()`) — those keep their builder type so relation-specific builder methods inside the closure still resolve.
@@ -45,6 +80,7 @@ public function ids(Collection $users): array
 }
 
 
+
 ```
 The extension is registered automatically — no configuration. Two guards keep it sound: detection is syntactic (the receiver must be a direct `->values()` call, so a chain split across variables is left alone rather than guessed), and the receiver must be a `Support\Collection`/`LazyCollection` or subclass — so Eloquent collections benefit while a bare `Enumerable` or a custom implementation with unknown key semantics is never narrowed. Only `values()` is handled; `flatten()`, `collapse()`, and `flatMap()` are deliberately excluded because Laravel doesn't reliably type them as lists.
 
@@ -71,6 +107,7 @@ parameters:
             validPassword: string
         Illuminate\Testing\TestResponse:
             assertSeeLivewire: Illuminate\Testing\TestResponse
+
 
 
 
@@ -148,6 +185,7 @@ parameters:
             - Database\Factories
             - Tests
         outputPath: named-arguments-manifest.json
+
 
 
 
