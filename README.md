@@ -20,7 +20,7 @@ conventions, see [`hihaho/rector-rules`](https://github.com/hihaho/rector-rules)
 
 - PHP 8.3 or higher
 - PHPStan 2.1 or higher
-- Laravel 12.x or 13.x (via `illuminate/support`)
+- Laravel 12.x or 13.x (via `illuminate/support` and `illuminate/database`)
 
 ## Installation
 
@@ -290,6 +290,33 @@ It is registered automatically — no configuration. Two guards keep it sound: d
 (the receiver must be a direct `->values()` call, so a chain split across variables is left alone
 rather than guessed), and the receiver must be a `Support\Collection`/`LazyCollection` (or subclass)
 — a bare `Enumerable` or a custom implementation with unknown key semantics is never narrowed.
+
+## Parameter closure type extensions
+
+### Relation-existence closure builder typing
+
+`RelationExistenceClosureBuilderParameterExtension` types the closure passed to Eloquent's
+relationship-existence methods (`whereHas`, `orWhereHas`, `whereDoesntHave`, `orWhereDoesntHave`,
+`has`, `orHas`, `doesntHave`, `orDoesntHave`) as the *related* model's builder. Laravel types the
+callback as `Closure(Builder<TRelatedModel>)`, but when the relation is passed as a string PHPStan
+cannot bind `TRelatedModel`, so it falls back to `Builder<Model>`. Under `checkModelProperties` that
+makes every `->where(RelatedModel::SOME_COLUMN)` inside the closure fail on valid columns.
+
+```php
+/** @param Builder<User> $query */
+public function scopeWithPublishedPosts(Builder $query): void
+{
+    // $q is Builder<Post> — Post::PUBLISHED resolves instead of erroring against base Model.
+    $query->whereHas('posts', fn (Builder $q) => $q->where(Post::STATUS, Post::PUBLISHED));
+}
+```
+
+It is registered automatically — no configuration. The closure parameter needs no annotation (a bare
+`Builder` hint is narrowed in place), arrow functions are preserved, dotted nested relations
+(`'posts.comments'`) resolve to the last related model, and a related model with a custom builder
+(`HasBuilder`/`newEloquentBuilder()`) keeps that builder type. It fails safe: when the model or
+relation can't be proven (dynamic relation name, unknown relation), the default typing stands, so a
+genuinely wrong column on the correct related model still fails.
 
 ## Testing
 

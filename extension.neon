@@ -125,3 +125,9 @@ services:
         class: Hihaho\PhpstanRules\ReturnTypes\CollectionListAllReturnTypeExtension
         tags:
             - phpstan.broker.dynamicMethodReturnTypeExtension
+    -
+        class: Hihaho\PhpstanRules\ParameterClosureTypes\RelationExistenceClosureBuilderParameterExtension
+        arguments:
+            reflectionProvider: @reflectionProvider
+        tags:
+            - phpstan.methodParameterClosureTypeExtension
