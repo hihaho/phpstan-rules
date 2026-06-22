@@ -32,3 +32,8 @@ final class UnhintedController
 {
     public function __invoke(string $loose): void {}
 }
+
+final class OptionalVideoController
+{
+    public function __invoke(Video $optionalVideo): void {}
+}

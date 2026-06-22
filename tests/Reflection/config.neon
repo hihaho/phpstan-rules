@@ -7,3 +7,8 @@ parameters:
             customString: string
             customInt: int
             customList: 'array<int, int>'
+        Hihaho\PhpstanRules\Tests\Reflection\stubs\FluentStub:
+            thisChain: '$this'
+            staticChain: static
+            selfChain: self
+            label: string

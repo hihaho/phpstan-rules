@@ -4,6 +4,7 @@ use Hihaho\PhpstanRules\Tests\ReturnTypes\stubs\routing\implicit\AdaptiveSubject
 use Hihaho\PhpstanRules\Tests\ReturnTypes\stubs\routing\implicit\AppleController;
 use Hihaho\PhpstanRules\Tests\ReturnTypes\stubs\routing\implicit\BananaController;
 use Hihaho\PhpstanRules\Tests\ReturnTypes\stubs\routing\implicit\ContainerController;
+use Hihaho\PhpstanRules\Tests\ReturnTypes\stubs\routing\implicit\OptionalVideoController;
 use Hihaho\PhpstanRules\Tests\ReturnTypes\stubs\routing\implicit\UnhintedController;
 use Hihaho\PhpstanRules\Tests\ReturnTypes\stubs\routing\implicit\VideoController;
 use Illuminate\Support\Facades\Route;
@@ -20,6 +21,10 @@ Route::match(['get', 'post'], 'videos/{video}/edit', [VideoController::class, 'e
 // Same route parameter bound to different models across routes — route('item') is their union.
 Route::get('apples/{item}', AppleController::class);
 Route::get('bananas/{item}', BananaController::class);
+
+// An optional {param?} segment is resolved like a required one — the bound model is typed non-null
+// (the same over-claim as explicit bindings; documented).
+Route::get('optional/{optionalVideo?}', OptionalVideoController::class);
 
 // A closure action and a non-model type-hint are both skipped (not narrowed).
 Route::get('ping/{ping}', fn () => 'pong');
