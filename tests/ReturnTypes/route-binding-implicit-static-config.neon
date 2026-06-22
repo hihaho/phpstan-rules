@@ -1,0 +1,6 @@
+includes:
+    - ../../extension.neon
+
+parameters:
+    routeFiles:
+        - tests/ReturnTypes/stubs/routing/implicit/routes.php

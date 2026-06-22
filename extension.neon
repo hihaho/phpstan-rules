@@ -12,6 +12,7 @@ parametersSchema:
     ])
     stubbedMethods: arrayOf(arrayOf(string()))
     routeBindingProviders: listOf(string())
+    routeFiles: listOf(string())
 
 parameters:
     # class name => (method name => return type string). Resolves runtime-only instance methods
@@ -22,6 +23,10 @@ parameters:
     # Provider class names whose source is parsed for Route::model()/Route::bind() bindings, used to
     # type $this->route('x') as the bound model. Empty by default — each project lists its providers.
     routeBindingProviders: []
+
+    # Route file paths parsed for implicit (controller type-hint) route-model bindings, used as the
+    # fallback for $this->route('x') when 'x' is not declared in a provider. Empty by default.
+    routeFiles: []
 
     noUnsafeRequestData:
         unsafeMethods:
@@ -131,11 +136,18 @@ services:
         tags:
             - phpstan.broker.dynamicMethodReturnTypeExtension
     -
+        class: Hihaho\PhpstanRules\ReturnTypes\ImplicitRouteBindingResolver
+        arguments:
+            routeFiles: %routeFiles%
+            parser: @currentPhpVersionSimpleDirectParser
+            reflectionProvider: @reflectionProvider
+    -
         class: Hihaho\PhpstanRules\ReturnTypes\RouteBindingReturnTypeExtension
         arguments:
             routeBindingProviders: %routeBindingProviders%
             parser: @currentPhpVersionSimpleDirectParser
             reflectionProvider: @reflectionProvider
+            implicitResolver: @Hihaho\PhpstanRules\ReturnTypes\ImplicitRouteBindingResolver
         tags:
             - phpstan.broker.expressionTypeResolverExtension
     -

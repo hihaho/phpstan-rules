@@ -19,7 +19,8 @@
             "tests/Rules/Validation/stubs/",
             "tests/Rules/Conventions/stubs/",
             "tests/ParameterClosureTypes/stubs/",
-            "tests/ReturnTypes/stubs/routing/"
+            "tests/ReturnTypes/stubs/routing/",
+            "tests/ReturnTypes/stubs/routing/implicit/"
         ],
         "exclude-from-classmap": [
             "tests/Rules/stubs/facade-alias-in-view.blade.php"
