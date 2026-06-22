@@ -19,6 +19,9 @@ final class ImplicitRouteBindingStaticTarget
         assertType('Hihaho\PhpstanRules\Tests\ReturnTypes\stubs\routing\implicit\VideoContainer', $request->route('videoContainer'));
         assertType('Hihaho\PhpstanRules\Tests\ReturnTypes\stubs\routing\implicit\Apple|Hihaho\PhpstanRules\Tests\ReturnTypes\stubs\routing\implicit\Banana', $request->route('item'));
 
+        // An optional {param?} segment is narrowed to the non-null model (documented over-claim).
+        assertType('Hihaho\PhpstanRules\Tests\ReturnTypes\stubs\routing\implicit\Video', $request->route('optionalVideo'));
+
         // A closure action, a non-model type-hint, and an unknown parameter are not narrowed.
         assertType('object|string|null', $request->route('ping'));
         assertType('object|string|null', $request->route('loose'));

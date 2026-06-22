@@ -260,12 +260,16 @@ parameters:
         Illuminate\Testing\TestResponse:
             assertSeeLivewire: Illuminate\Testing\TestResponse
             fillForm: Illuminate\Testing\TestResponse
+        Laravel\Nova\Fields\Number:
+            onlyOnExport: '$this'
 ```
 
 Return types are parsed with PHPStan's type-string resolver, so any valid PHPDoc type works
-(`string`, `array<int, int>`, a class name for chainable assertions, etc.). Stubbed methods accept
-any arguments, so only the method name and its return type are modelled — argument types are not
-checked.
+(`string`, `array<int, int>`, a class name for chainable assertions, etc.). A return type of
+`$this`, `static`, or `self` is bound to the receiver, so a stubbed **fluent** method (a
+`$this`-returning macro, a chainable Nova field method) keeps its chain typed
+(`Number::make(…)->onlyOnExport()->sortable()`) instead of widening. Stubbed methods accept any
+arguments, so only the method name and its return type are modelled — argument types are not checked.
 
 ## Return type extensions
 
