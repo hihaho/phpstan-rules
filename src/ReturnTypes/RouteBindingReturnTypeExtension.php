@@ -15,6 +15,7 @@ use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
 use PhpParser\Node\NullableType;
 use PhpParser\Node\Scalar\String_;
+use PhpParser\Node\UnionType;
 use PhpParser\NodeFinder;
 use PHPStan\Analyser\Scope;
 use PHPStan\Parser\Parser;
@@ -187,9 +188,9 @@ final class RouteBindingReturnTypeExtension implements DynamicMethodReturnTypeEx
         }
 
         $args = $call->getArgs();
-        $parameterArgument = $args[0]->value ?? null;
+        $parameterName = $this->parameterName($args[0]->value ?? null);
 
-        if (! $parameterArgument instanceof String_) {
+        if ($parameterName === null) {
             return null;
         }
 
@@ -205,7 +206,43 @@ final class RouteBindingReturnTypeExtension implements DynamicMethodReturnTypeEx
             return null;
         }
 
-        return [$parameterArgument->value, $type];
+        return [$parameterName, $type];
+    }
+
+    /**
+     * The route-parameter name from a binding's first argument: a string literal, or a class
+     * constant that resolves to a single string (`RouteParams::LOCALE`). `self::`/`static::` are not
+     * resolved — name resolution leaves them as special names with no reflectable class.
+     */
+    private function parameterName(?Node $argument): ?string
+    {
+        if ($argument instanceof String_) {
+            return $argument->value;
+        }
+
+        if (! $argument instanceof ClassConstFetch
+            || ! $argument->class instanceof Name
+            || ! $argument->name instanceof Identifier) {
+            return null;
+        }
+
+        $class = $argument->class->toString();
+
+        if (! $this->reflectionProvider->hasClass($class)) {
+            return null;
+        }
+
+        $classReflection = $this->reflectionProvider->getClass($class);
+
+        if (! $classReflection->hasConstant($argument->name->toString())) {
+            return null;
+        }
+
+        // The value expression, not the value type — a typed constant (`const string X = 'x'`) types
+        // as `string`, so only the expression carries the literal name.
+        $valueExpr = $classReflection->getConstant($argument->name->toString())->getValueExpr();
+
+        return $valueExpr instanceof String_ ? $valueExpr->value : null;
     }
 
     private function modelBindingType(?Node $argument): ?Type
@@ -231,6 +268,12 @@ final class RouteBindingReturnTypeExtension implements DynamicMethodReturnTypeEx
 
         if ($returnType instanceof NullableType) {
             $returnType = $returnType->type;
+        }
+
+        // `T|null` carries the same information as `?T`; take the sole class member, if there is one.
+        if ($returnType instanceof UnionType) {
+            $names = array_values(array_filter($returnType->types, static fn (Node $type): bool => $type instanceof Name));
+            $returnType = count($names) === 1 ? $names[0] : null;
         }
 
         if (! $returnType instanceof Name) {

@@ -37,6 +37,12 @@ final class RouteBindingTarget
         // A binding declared in a provider's inherited boot() (in a base-class file) is found.
         assertType(Locale::class, $request->route('inherited'));
 
+        // A bind with a `T|null` union return type is narrowed to the sole class member.
+        assertType(Playlist::class, $request->route('union_playlist'));
+
+        // A binding whose parameter name is a class constant (RouteParams::SUBTITLE) is resolved.
+        assertType(Subtitle::class, $request->route('subtitle'));
+
         // No argument returns the Route object — left untouched.
         assertType(Route::class, $request->route());
 

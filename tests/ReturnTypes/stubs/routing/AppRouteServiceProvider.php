@@ -11,6 +11,13 @@ final class Locale {}
 
 final class Playlist {}
 
+final class Subtitle {}
+
+final class RouteParams
+{
+    public const string SUBTITLE = 'subtitle';
+}
+
 final class AppRouteServiceProvider extends ServiceProvider
 {
     public function boot(): void
@@ -26,6 +33,12 @@ final class AppRouteServiceProvider extends ServiceProvider
 
         // Route::bind closure with a nullable return-type hint — narrowed to the non-null model.
         Route::bind('playlist', fn (string $value): ?Playlist => $value === '' ? null : new Playlist());
+
+        // Route::bind closure with a union return-type hint — narrowed to the sole class member.
+        Route::bind('union_playlist', fn (string $value): Playlist|null => $value === '' ? null : new Playlist());
+
+        // Route::model with a class-constant parameter name (RouteParams::SUBTITLE === 'subtitle').
+        Route::model(RouteParams::SUBTITLE, Subtitle::class);
 
         // Route::bind closure without a return-type hint — skipped (binding type unprovable).
         Route::bind('dynamic', fn (string $value) => $value);
