@@ -2,6 +2,28 @@
 
 All notable changes to `hihaho/phpstan-rules` will be documented in this file.
 
+## v3.13.0 - 2026-06-22
+
+<!-- verified-sha: 2eb0b0a9cf1b43558266fa005ec7f524913a97d9 -->
+### Added
+
+**`static`/`$this`/`self` return markers for `stubbedMethods`.** A stubbed method's return type can now be `static`, `$this`, or `self`, which bind to the receiver instead of being parsed as a PHPDoc type string. This makes stubbed **fluent** methods — a `$this`-returning macro, a chainable Nova field method — keep their chain typed instead of widening to a bare string:
+
+```neon
+parameters:
+    stubbedMethods:
+        Laravel\Nova\Fields\Number:
+            onlyOnExport: '$this'   # Number::make(…)->onlyOnExport()->sortable() stays typed
+
+```
+`static`/`$this` follow the receiver (late static binding) and `self` is the configured class; any other value is parsed by the PHPDoc type-string resolver exactly as before. Method matching stays exact-class, so existing `stubbedMethods` behaviour is unchanged. This closes the gap where self-returning framework methods couldn't be expressed as a fixed type string and had to stay baselined.
+
+### Notes
+
+Backward compatible — only the three marker strings change how they resolve; every other configured return type behaves as before, and the parameter is still empty by default. Update in place.
+
+**Full Changelog**: https://github.com/hihaho/phpstan-rules/compare/v3.12.0...v3.13.0
+
 ## v3.12.0 - 2026-06-22
 
 <!-- verified-sha: 33f1f027b1c3ec89e734692357591b5d4ef1a63f -->
@@ -16,6 +38,7 @@ parameters:
     routeFiles:
         - routes/web.php
         - routes/api.php
+
 
 ```
 For each `Route::<verb>('uri/{param}', Action)` — an invokable `Controller::class` or a
@@ -78,12 +101,14 @@ parameters:
 
 
 
+
 ```
 ```php
 public function handle(Request $request): void
 {
     $video = $request->route('video_id'); // Video — no assert() needed
 }
+
 
 
 
@@ -115,6 +140,7 @@ public function scopeWithPublishedPosts(Builder $query): void
     // $q is Builder<Post> — Post::PUBLISHED resolves instead of erroring against base Model.
     $query->whereHas('posts', fn (Builder $q) => $q->where(Post::STATUS, Post::PUBLISHED));
 }
+
 
 
 
@@ -152,6 +178,7 @@ public function ids(Collection $users): array
 
 
 
+
 ```
 The extension is registered automatically — no configuration. Two guards keep it sound: detection is syntactic (the receiver must be a direct `->values()` call, so a chain split across variables is left alone rather than guessed), and the receiver must be a `Support\Collection`/`LazyCollection` or subclass — so Eloquent collections benefit while a bare `Enumerable` or a custom implementation with unknown key semantics is never narrowed. Only `values()` is handled; `flatten()`, `collapse()`, and `flatMap()` are deliberately excluded because Laravel doesn't reliably type them as lists.
 
@@ -178,6 +205,7 @@ parameters:
             validPassword: string
         Illuminate\Testing\TestResponse:
             assertSeeLivewire: Illuminate\Testing\TestResponse
+
 
 
 
@@ -259,6 +287,7 @@ parameters:
             - Database\Factories
             - Tests
         outputPath: named-arguments-manifest.json
+
 
 
 
