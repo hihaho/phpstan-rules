@@ -40,6 +40,9 @@ final class AppRouteServiceProvider extends ServiceProvider
         // Route::model with a class-constant parameter name (RouteParams::SUBTITLE === 'subtitle').
         Route::model(RouteParams::SUBTITLE, Subtitle::class);
 
+        // Route::bind closure with a built-in (non-class) return type — skipped (not a bound model).
+        Route::bind('idp_name', fn (string $value): string => $value);
+
         // Route::bind closure without a return-type hint — skipped (binding type unprovable).
         Route::bind('dynamic', fn (string $value) => $value);
     }

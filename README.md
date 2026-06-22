@@ -327,6 +327,13 @@ replaces. That over-claims by dropping `null` when the current route lacks the p
 reached only via routes that define the parameter and keep an explicit null check where a request may
 legitimately lack it.
 
+> **Adopting this is a one-time assert-removal sweep.** Once `route('x')` is typed as the bound
+> model, any existing `assert($x instanceof Model)` or `instanceof` guard after it becomes
+> "always true" — PHPStan reports it as a redundant condition. (This is an expression-type resolver,
+> so `treatPhpDocTypesAsCertain: false` does not soften it.) Removing those now-redundant asserts is
+> the point of the feature; expect a one-off cleanup when you first enable `routeBindingProviders`.
+> Keep only the guards on routes that may legitimately lack the parameter (the non-null caveat above).
+
 ## Parameter closure type extensions
 
 ### Relation-existence closure builder typing
@@ -353,6 +360,23 @@ It is registered automatically — no configuration. The closure parameter needs
 (`HasBuilder`/`newEloquentBuilder()`) keeps that builder type. It fails safe: when the model or
 relation can't be proven (dynamic relation name, unknown relation), the default typing stands, so a
 genuinely wrong column on the correct related model still fails.
+
+> **Use `void` closures, not closures that return the builder.** Eloquent's `Builder<TModel>` is
+> invariant, and Laravel types the callback's return as `mixed` (it's ignored at runtime — the
+> closure constrains the query in place). Once the parameter is narrowed to the related model, a
+> closure that *returns* the builder — e.g. `fn ($q) => $q->where(...)` or `return $q->where(...)` —
+> reports `return.type: should return Builder<Model> but returns Builder<RelatedModel>`. Write the
+> callback as a `void` block instead; the return value serves no purpose:
+>
+> ```php
+> // Triggers a return.type error (returns the narrowed builder):
+> $query->whereHas('posts', fn (Builder $q) => $q->where(Post::STATUS, Post::PUBLISHED));
+>
+> // Clean — the closure constrains in place and returns nothing:
+> $query->whereHas('posts', function (Builder $q): void {
+>     $q->where(Post::STATUS, Post::PUBLISHED);
+> });
+> ```
 
 ## Testing
 
