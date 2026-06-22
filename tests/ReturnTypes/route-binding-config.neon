@@ -1,0 +1,7 @@
+includes:
+    - ../../extension.neon
+
+parameters:
+    routeBindingProviders:
+        - Hihaho\PhpstanRules\Tests\ReturnTypes\stubs\routing\AppRouteServiceProvider
+        - Hihaho\PhpstanRules\Tests\ReturnTypes\stubs\routing\InheritingRouteServiceProvider
