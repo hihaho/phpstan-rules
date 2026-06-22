@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Override;
 use PhpParser\Node;
+use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\ArrowFunction;
 use PhpParser\Node\Expr\ClassConstFetch;
 use PhpParser\Node\Expr\Closure;
@@ -17,12 +18,13 @@ use PhpParser\Node\NullableType;
 use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\UnionType;
 use PhpParser\NodeFinder;
+use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitor\NameResolver;
 use PHPStan\Analyser\Scope;
 use PHPStan\Parser\Parser;
 use PHPStan\Parser\ParserErrorsException;
-use PHPStan\Reflection\MethodReflection;
 use PHPStan\Reflection\ReflectionProvider;
-use PHPStan\Type\DynamicMethodReturnTypeExtension;
+use PHPStan\Type\ExpressionTypeResolverExtension;
 use PHPStan\Type\ObjectType;
 use PHPStan\Type\Type;
 
@@ -37,10 +39,15 @@ use PHPStan\Type\Type;
  * configured provider classes and returns the bound model type, so the assert becomes unnecessary
  * while a wrong model assignment still fails.
  *
- * The binding map is parsed once from each provider's source — via the same name-resolving analysis
- * parser the package's other reflection uses, so class names in the providers resolve to their FQCN —
- * and memoized for the analysis run. It is configured per project through the `routeBindingProviders`
- * parameter; with none configured it resolves nothing and the default `object|string|null` stands.
+ * The binding map is parsed once from each provider's source — with the simple direct parser plus a
+ * name-resolution pass, so class names resolve to their FQCN — and memoized for the analysis run. It
+ * is configured per project through the `routeBindingProviders` parameter; with none configured it
+ * resolves nothing and the default `object|string|null` stands.
+ *
+ * This is an `ExpressionTypeResolverExtension`, not a `DynamicMethodReturnTypeExtension`, on purpose:
+ * PHPStan unions the results of all dynamic method-return extensions, and larastan ships one for
+ * `Request::route()` that returns a broad `object|string|null`, which would absorb the narrow model
+ * type. An expression-type resolver is consulted first and short-circuits, so the bound model wins.
  *
  * Scope and soundness:
  *  - Only a single constant-string argument is narrowed. `route()` with no argument (returns the Route
@@ -59,7 +66,7 @@ use PHPStan\Type\Type;
  *    feature exists to remove those asserts); apply it to code reached only via routes that define
  *    the parameter, and keep an explicit null check where a request may legitimately lack it.
  */
-final class RouteBindingReturnTypeExtension implements DynamicMethodReturnTypeExtension
+final class RouteBindingReturnTypeExtension implements ExpressionTypeResolverExtension
 {
     /**
      * Lazily-built, memoized map of route-parameter name => bound model type. Null until built.
@@ -78,25 +85,21 @@ final class RouteBindingReturnTypeExtension implements DynamicMethodReturnTypeEx
     ) {}
 
     #[Override]
-    public function getClass(): string
+    public function getType(Expr $expr, Scope $scope): ?Type
     {
-        return Request::class;
-    }
+        if (! $expr instanceof MethodCall || ! $expr->name instanceof Identifier || $expr->name->toLowerString() !== 'route') {
+            return null;
+        }
 
-    #[Override]
-    public function isMethodSupported(MethodReflection $methodReflection): bool
-    {
-        return $methodReflection->getName() === 'route';
-    }
-
-    #[Override]
-    public function getTypeFromMethodCall(MethodReflection $methodReflection, MethodCall $methodCall, Scope $scope): ?Type
-    {
-        $args = $methodCall->getArgs();
+        $args = $expr->getArgs();
 
         // Narrow only the single-argument form. With a default (`route('x', $default)`) Laravel
         // returns that default when the parameter is missing, so the bound model is not guaranteed.
         if (! isset($args[0]) || isset($args[1])) {
+            return null;
+        }
+
+        if (! (new ObjectType(Request::class))->isSuperTypeOf($scope->getType($expr->var))->yes()) {
             return null;
         }
 
@@ -157,6 +160,14 @@ final class RouteBindingReturnTypeExtension implements DynamicMethodReturnTypeEx
         } catch (ParserErrorsException) {
             return [];
         }
+
+        // Resolve names to their FQCN. The injected parser is the simple direct parser, which does
+        // not run name resolution itself — and crucially is not the default analysis parser, whose
+        // facade static calls are not reliably exposed once larastan is loaded.
+        $traverser = new NodeTraverser();
+        $traverser->addVisitor(new NameResolver());
+
+        $statements = $traverser->traverse($statements);
 
         $bindings = [];
 
