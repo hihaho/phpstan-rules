@@ -44,6 +44,9 @@ use PHPStan\Type\Type;
  * is configured per project through the `routeBindingProviders` parameter; with none configured it
  * resolves nothing and the default `object|string|null` stands.
  *
+ * Parameters not declared in a provider fall through to {@see ImplicitRouteBindingResolver}, which
+ * resolves Laravel's implicit (controller type-hint) bindings from the configured `routeFiles`.
+ *
  * This is an `ExpressionTypeResolverExtension`, not a `DynamicMethodReturnTypeExtension`, on purpose:
  * PHPStan unions the results of all dynamic method-return extensions, and larastan ships one for
  * `Request::route()` that returns a broad `object|string|null`, which would absorb the narrow model
@@ -82,6 +85,7 @@ final class RouteBindingReturnTypeExtension implements ExpressionTypeResolverExt
         private readonly array $routeBindingProviders,
         private readonly Parser $parser,
         private readonly ReflectionProvider $reflectionProvider,
+        private readonly ImplicitRouteBindingResolver $implicitResolver,
     ) {}
 
     #[Override]
@@ -109,7 +113,13 @@ final class RouteBindingReturnTypeExtension implements ExpressionTypeResolverExt
             return null;
         }
 
-        return $this->bindings($scope)[$parameterNames[0]->getValue()] ?? null;
+        $parameter = $parameterNames[0]->getValue();
+
+        // Explicit Route::model()/Route::bind() bindings win; implicit (controller type-hint) bindings
+        // are the fallback for parameters not declared in a provider.
+        return $this->bindings($scope)[$parameter]
+            ?? $this->implicitResolver->bindings($scope)[$parameter]
+            ?? null;
     }
 
     /**

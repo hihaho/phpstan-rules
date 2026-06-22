@@ -327,6 +327,25 @@ replaces. That over-claims by dropping `null` when the current route lacks the p
 reached only via routes that define the parameter and keep an explicit null check where a request may
 legitimately lack it.
 
+**Implicit bindings.** Parameters bound implicitly (by the controller's type-hint, with no
+`Route::model()` declaration) are resolved as a fallback by listing your route files in `routeFiles`:
+
+```neon
+parameters:
+    routeFiles:
+        - routes/web.php
+        - routes/api.php
+```
+
+It reads each `Route::<verb>('uri/{param}', Action)` — an invokable `Controller::class` or a
+`[Controller::class, 'method']` — and types `route('param')` as the action parameter Laravel would
+bind to it (matched by name or `Str::snake()`, exactly as the framework does), unioned across every
+route that declares the parameter. Explicit provider bindings win over implicit ones. It is fail-safe:
+closures, group-level controllers, `Route::resource`, non-model type-hints, and unreadable files are
+skipped, leaving the default type — it never mis-types. Paths are resolved from the working directory
+PHPStan runs in (your project root), so project-relative paths like `routes/web.php` work; the
+extension parses the files statically — it does not boot your application.
+
 > **Adopting this is a one-time assert-removal sweep.** Once `route('x')` is typed as the bound
 > model, any existing `assert($x instanceof Model)` or `instanceof` guard after it becomes
 > "always true" — PHPStan reports it as a redundant condition. (This is an expression-type resolver,

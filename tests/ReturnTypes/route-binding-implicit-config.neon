@@ -1,0 +1,9 @@
+includes:
+    - ../../vendor/larastan/larastan/extension.neon
+    - ../../extension.neon
+
+parameters:
+    # Plain relative path — resolved against the process working directory (the package root when the
+    # test suite runs). Real consumers point this at their own route files, e.g. routes/web.php.
+    routeFiles:
+        - tests/ReturnTypes/stubs/routing/implicit/routes.php

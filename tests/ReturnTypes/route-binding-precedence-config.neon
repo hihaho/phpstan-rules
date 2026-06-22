@@ -1,0 +1,9 @@
+includes:
+    - ../../vendor/larastan/larastan/extension.neon
+    - ../../extension.neon
+
+parameters:
+    routeBindingProviders:
+        - Hihaho\PhpstanRules\Tests\ReturnTypes\stubs\routing\implicit\PrecedenceRouteServiceProvider
+    routeFiles:
+        - tests/ReturnTypes/stubs/routing/implicit/routes.php
