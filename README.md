@@ -291,6 +291,42 @@ It is registered automatically — no configuration. Two guards keep it sound: d
 rather than guessed), and the receiver must be a `Support\Collection`/`LazyCollection` (or subclass)
 — a bare `Enumerable` or a custom implementation with unknown key semantics is never narrowed.
 
+### Route-model binding typing
+
+`RouteBindingReturnTypeExtension` types `$this->route('x')` / `$request->route('x')` as the model
+bound to route parameter `x`, reading the actual bindings from your route-service providers. Laravel
+types `route()` as `object|string|null`, so resolving a bound model normally needs an
+`assert($model instanceof Video)` after every call — and the parameter name doesn't reveal the model
+(`video_id` → `Video`). This reads `Route::model('x', M::class)` and `Route::bind('x', fn (): M => …)`
+from the configured providers and returns the bound type, so the assert is no longer needed while a
+wrong assignment still fails.
+
+Configure the providers to read via the `routeBindingProviders` parameter — it's empty by default, so
+nothing is narrowed until you list them:
+
+```neon
+parameters:
+    routeBindingProviders:
+        - App\Providers\RouteServiceProvider
+```
+
+```php
+public function handle(Request $request): void
+{
+    $video = $request->route('video_id'); // Video — no assert() needed
+}
+```
+
+Scope: only a single constant-string argument is narrowed (`route()` with no argument, a default
+argument, a dynamic name, or an unknown parameter keeps its default type); only the instance method
+is covered (the `Request::` facade's static form is out of scope); `Route::bind()` closures without a
+return-type hint, and `Route::model()` bindings with a missing-model callback, are skipped. A bound
+parameter is typed as the **non-null** model — matching the intent of the `assert()` calls it
+replaces. That over-claims by dropping `null` when the current route lacks the parameter (an optional
+`{param?}` segment, or shared middleware/helpers reached from routes without it), so use it for code
+reached only via routes that define the parameter and keep an explicit null check where a request may
+legitimately lack it.
+
 ## Parameter closure type extensions
 
 ### Relation-existence closure builder typing

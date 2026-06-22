@@ -18,7 +18,8 @@
             "tests/Rules/Debug/stubs/",
             "tests/Rules/Validation/stubs/",
             "tests/Rules/Conventions/stubs/",
-            "tests/ParameterClosureTypes/stubs/"
+            "tests/ParameterClosureTypes/stubs/",
+            "tests/ReturnTypes/stubs/routing/"
         ],
         "exclude-from-classmap": [
             "tests/Rules/stubs/facade-alias-in-view.blade.php"
@@ -38,6 +39,7 @@
         "php": "^8.3",
         "phpstan/phpstan": "^2.1.8",
         "illuminate/database": "^12.0||^13.0",
+        "illuminate/http": "^12.0||^13.0",
         "illuminate/support": "^12.0||^13.0"
     },
     "require-dev": {
