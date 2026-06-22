@@ -2,6 +2,34 @@
 
 All notable changes to `hihaho/phpstan-rules` will be documented in this file.
 
+## v3.10.0 - 2026-06-22
+
+<!-- verified-sha: f9fed69a36a3123273885f216301843ee9061287 -->
+### Added
+
+**Relation-existence closure builder typing.** A new `RelationExistenceClosureBuilderParameterExtension` types the closure passed to Eloquent's relationship-existence methods — `whereHas`, `orWhereHas`, `whereDoesntHave`, `orWhereDoesntHave`, `has`, `orHas`, `doesntHave`, `orDoesntHave` — as the *related* model's builder. Laravel types the callback as `Closure(Builder<TRelatedModel>)` but binds `TRelatedModel` from the `Relation<…>|string $relation` parameter, so when the relation is passed as a string (the normal case) PHPStan can't bind it and falls back to `Builder<Model>`. Under `checkModelProperties` that made every `->where(RelatedModel::SOME_COLUMN)` inside the closure fail on perfectly valid columns, forcing a baseline entry or a per-site annotation.
+
+```php
+/** @param Builder<User> $query */
+public function scopeWithPublishedPosts(Builder $query): void
+{
+    // $q is Builder<Post> — Post::PUBLISHED resolves instead of erroring against base Model.
+    $query->whereHas('posts', fn (Builder $q) => $q->where(Post::STATUS, Post::PUBLISHED));
+}
+
+```
+The extension is registered automatically — no configuration, and the closure needs no annotation: a bare `Builder` hint is narrowed in place and arrow functions are preserved. It also handles dotted nested relations (`'posts.comments'` → `Builder<Comment>`), calls on a relation (`$user->posts()->whereHas(...)`), custom builder subclasses, named arguments, and related models with a custom builder (Laravel's `HasBuilder` trait or an overridden `newEloquentBuilder()`) — those keep their builder type so relation-specific builder methods inside the closure still resolve.
+
+It fails safe: when the model or relation can't be proven (a dynamic relation name, an unknown relation), the default typing stands. The extension only ever narrows a previously-broader type — a genuinely wrong column on the correct related model still fails.
+
+### Notes
+
+This release adds `illuminate/database` to the package's runtime requirements — the extension uses Eloquent's builder and relation types directly. Every Laravel project already has it, so installs are unaffected in practice.
+
+Backward compatible in the analysis sense — the extension only narrows a previously-broader type. Because the narrower type is more precise, projects using `checkModelProperties` may see previously-hidden type errors surface inside relation closures; these are real findings, not regressions. Update in place.
+
+**Full Changelog**: https://github.com/hihaho/phpstan-rules/compare/v3.9.0...v3.10.0
+
 ## v3.9.0 - 2026-06-21
 
 <!-- verified-sha: 3bc5796dd436e9f4124dc471e677db14292ebd23 -->
@@ -15,6 +43,7 @@ public function ids(Collection $users): array
 {
     return $users->map(fn (User $user): int => $user->id)->values()->all(); // list<int>, no array_values()
 }
+
 
 ```
 The extension is registered automatically — no configuration. Two guards keep it sound: detection is syntactic (the receiver must be a direct `->values()` call, so a chain split across variables is left alone rather than guessed), and the receiver must be a `Support\Collection`/`LazyCollection` or subclass — so Eloquent collections benefit while a bare `Enumerable` or a custom implementation with unknown key semantics is never narrowed. Only `values()` is handled; `flatten()`, `collapse()`, and `flatMap()` are deliberately excluded because Laravel doesn't reliably type them as lists.
@@ -42,6 +71,7 @@ parameters:
             validPassword: string
         Illuminate\Testing\TestResponse:
             assertSeeLivewire: Illuminate\Testing\TestResponse
+
 
 
 ```
@@ -118,6 +148,7 @@ parameters:
             - Database\Factories
             - Tests
         outputPath: named-arguments-manifest.json
+
 
 
 
