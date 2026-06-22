@@ -79,11 +79,21 @@ final class RelationExistenceClosureTarget
         // Arrow functions are preserved and narrowed the same way.
         $query->whereHas('bars', fn (Builder $q) => assertType('Illuminate\Database\Eloquent\Builder<Hihaho\PhpstanRules\Tests\ParameterClosureTypes\stubs\Bar>', $q));
 
-        // orWhereHas and whereDoesntHave use the same callback param.
+        // The whole relationship-existence family shares the same callback param. `doesntHave` and
+        // `has` take the callback in a later position (after $boolean/$operator) — resolved by name.
         $query->orWhereHas('bars', function (Builder $q): void {
             assertType('Illuminate\Database\Eloquent\Builder<Hihaho\PhpstanRules\Tests\ParameterClosureTypes\stubs\Bar>', $q);
         });
         $query->whereDoesntHave('bars', function (Builder $q): void {
+            assertType('Illuminate\Database\Eloquent\Builder<Hihaho\PhpstanRules\Tests\ParameterClosureTypes\stubs\Bar>', $q);
+        });
+        $query->orWhereDoesntHave('bars', function (Builder $q): void {
+            assertType('Illuminate\Database\Eloquent\Builder<Hihaho\PhpstanRules\Tests\ParameterClosureTypes\stubs\Bar>', $q);
+        });
+        $query->doesntHave('bars', 'and', function (Builder $q): void {
+            assertType('Illuminate\Database\Eloquent\Builder<Hihaho\PhpstanRules\Tests\ParameterClosureTypes\stubs\Bar>', $q);
+        });
+        $query->has('bars', '>=', 1, 'and', function (Builder $q): void {
             assertType('Illuminate\Database\Eloquent\Builder<Hihaho\PhpstanRules\Tests\ParameterClosureTypes\stubs\Bar>', $q);
         });
 

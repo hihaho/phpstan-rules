@@ -24,6 +24,9 @@ final class RouteBindingTarget
         // A bind without a return-type hint is not narrowed — default type stands.
         assertType('object|string|null', $request->route('dynamic'));
 
+        // A bind whose closure returns a built-in type (not a class) is not narrowed.
+        assertType('object|string|null', $request->route('idp_name'));
+
         // An unknown parameter is not narrowed.
         assertType('object|string|null', $request->route('unknown'));
 
