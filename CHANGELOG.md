@@ -2,6 +2,24 @@
 
 All notable changes to `hihaho/phpstan-rules` will be documented in this file.
 
+## v3.11.1 - 2026-06-22
+
+<!-- verified-sha: e06e0f460b4dcc529057b151f0f462ba397e5e49 -->
+### Fixed
+
+**Route-model binding typing now works under larastan.** In v3.11.0 the `RouteBindingReturnTypeExtension` found no bindings in a larastan-enabled project — that is, every real Laravel application — so `$request->route('x')` stayed `object|string|null` even with `routeBindingProviders` configured. Two causes, both masked because the extension's own tests didn't run with larastan installed:
+
+- larastan ships its own `Request::route()` return-type extension that returns a broad `object|string|null`, and PHPStan unions the results of all dynamic method-return extensions — so the broad type absorbed the bound model. The extension is now an expression-type resolver, which PHPStan consults first and short-circuits, so the bound model wins.
+- The default analysis parser does not reliably expose facade static calls once larastan is loaded. Provider sources are now parsed with the simple direct parser plus an explicit name-resolution pass.
+
+A regression test that runs with larastan loaded now guards both, so this can't regress silently. There is no change to the public configuration or behavior — `routeBindingProviders` works exactly as documented.
+
+### Notes
+
+If you adopted v3.11.0 and saw `route()` calls stay `object|string|null` under larastan, upgrade to v3.11.1 — no configuration change is needed.
+
+**Full Changelog**: https://github.com/hihaho/phpstan-rules/compare/v3.11.0...v3.11.1
+
 ## v3.11.0 - 2026-06-22
 
 <!-- verified-sha: 41c9213cb43cf8faeb79abea414c37f8de23ad24 -->
@@ -16,12 +34,14 @@ parameters:
     routeBindingProviders:
         - App\Providers\RouteServiceProvider
 
+
 ```
 ```php
 public function handle(Request $request): void
 {
     $video = $request->route('video_id'); // Video — no assert() needed
 }
+
 
 ```
 The closure parameter needs no annotation. The extension covers the relationship-existence call forms (`Route::model` and `Route::bind`), nullable (`?M`) and `M|null` union bind return types, class-constant parameter names (`Route::model(RouteParams::VIDEO, …)`, including typed constants), and providers whose `boot()` is inherited from a base class. It is conservative where the bound type isn't guaranteed: `route()` with no argument (returns the `Route` object), a default argument, a dynamic name, or an unknown parameter keeps its default type; `Route::bind()` closures without a return-type hint and `Route::model()` bindings with a missing-model callback are skipped.
@@ -50,6 +70,7 @@ public function scopeWithPublishedPosts(Builder $query): void
     // $q is Builder<Post> — Post::PUBLISHED resolves instead of erroring against base Model.
     $query->whereHas('posts', fn (Builder $q) => $q->where(Post::STATUS, Post::PUBLISHED));
 }
+
 
 
 ```
@@ -81,6 +102,7 @@ public function ids(Collection $users): array
 
 
 
+
 ```
 The extension is registered automatically — no configuration. Two guards keep it sound: detection is syntactic (the receiver must be a direct `->values()` call, so a chain split across variables is left alone rather than guessed), and the receiver must be a `Support\Collection`/`LazyCollection` or subclass — so Eloquent collections benefit while a bare `Enumerable` or a custom implementation with unknown key semantics is never narrowed. Only `values()` is handled; `flatten()`, `collapse()`, and `flatMap()` are deliberately excluded because Laravel doesn't reliably type them as lists.
 
@@ -107,6 +129,7 @@ parameters:
             validPassword: string
         Illuminate\Testing\TestResponse:
             assertSeeLivewire: Illuminate\Testing\TestResponse
+
 
 
 
@@ -185,6 +208,7 @@ parameters:
             - Database\Factories
             - Tests
         outputPath: named-arguments-manifest.json
+
 
 
 
