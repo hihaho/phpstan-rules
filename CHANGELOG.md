@@ -2,6 +2,36 @@
 
 All notable changes to `hihaho/phpstan-rules` will be documented in this file.
 
+## v3.14.0 - 2026-07-07
+
+<!-- verified-sha: 4c9bc898792c20b79bcdb7ef2e18043bf18fcd20 -->
+### Added
+
+**`NoEloquentWithPropertyRule` — flag a model-level `$with`.** Declaring a non-empty `$with` on an Eloquent `Model` eager-loads its relations on **every** query for that model — globally and invisibly, whether or not the caller needs them — which quietly inflates the query count across every endpoint that touches the model. The rule reports such declarations so relations get loaded explicitly at the call site instead:
+
+```php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+final class Interaction extends Model
+{
+    protected $with = ['chapters'];  // reported — eager-loads on every query
+}
+
+// Load where actually needed:
+Interaction::query()->with('chapters')->get();
+$interaction->loadMissing('chapters');
+
+```
+An explicit empty `$with = []` (which restates Eloquent's own default and eager-loads nothing) is not flagged, and a `$with` property on any non-`Model` class is ignored. Detection keys off the declaring class being a `Model` subclass, so intermediate/abstract base models are covered transitively. Identifier: `hihaho.conventions.noEloquentWithProperty`.
+
+### Notes
+
+Backward compatible — the rule is additive and reports only on Eloquent models that declare a non-empty `$with`. Adopting projects with existing `$with` usage can baseline the identifier and migrate to call-site eager loading incrementally.
+
+**Full Changelog**: https://github.com/hihaho/phpstan-rules/compare/v3.13.0...v3.14.0
+
 ## v3.13.0 - 2026-06-22
 
 <!-- verified-sha: 2eb0b0a9cf1b43558266fa005ec7f524913a97d9 -->
@@ -14,6 +44,7 @@ parameters:
     stubbedMethods:
         Laravel\Nova\Fields\Number:
             onlyOnExport: '$this'   # Number::make(…)->onlyOnExport()->sortable() stays typed
+
 
 ```
 `static`/`$this` follow the receiver (late static binding) and `self` is the configured class; any other value is parsed by the PHPDoc type-string resolver exactly as before. Method matching stays exact-class, so existing `stubbedMethods` behaviour is unchanged. This closes the gap where self-returning framework methods couldn't be expressed as a fixed type string and had to stay baselined.
@@ -38,6 +69,7 @@ parameters:
     routeFiles:
         - routes/web.php
         - routes/api.php
+
 
 
 ```
@@ -102,12 +134,14 @@ parameters:
 
 
 
+
 ```
 ```php
 public function handle(Request $request): void
 {
     $video = $request->route('video_id'); // Video — no assert() needed
 }
+
 
 
 
@@ -140,6 +174,7 @@ public function scopeWithPublishedPosts(Builder $query): void
     // $q is Builder<Post> — Post::PUBLISHED resolves instead of erroring against base Model.
     $query->whereHas('posts', fn (Builder $q) => $q->where(Post::STATUS, Post::PUBLISHED));
 }
+
 
 
 
@@ -179,6 +214,7 @@ public function ids(Collection $users): array
 
 
 
+
 ```
 The extension is registered automatically — no configuration. Two guards keep it sound: detection is syntactic (the receiver must be a direct `->values()` call, so a chain split across variables is left alone rather than guessed), and the receiver must be a `Support\Collection`/`LazyCollection` or subclass — so Eloquent collections benefit while a bare `Enumerable` or a custom implementation with unknown key semantics is never narrowed. Only `values()` is handled; `flatten()`, `collapse()`, and `flatMap()` are deliberately excluded because Laravel doesn't reliably type them as lists.
 
@@ -205,6 +241,7 @@ parameters:
             validPassword: string
         Illuminate\Testing\TestResponse:
             assertSeeLivewire: Illuminate\Testing\TestResponse
+
 
 
 
@@ -287,6 +324,7 @@ parameters:
             - Database\Factories
             - Tests
         outputPath: named-arguments-manifest.json
+
 
 
 
