@@ -215,6 +215,32 @@ parameters:
 
 Param names aren't semver-stable in vendor code, so only first-party callees are flagged.
 
+### No Eloquent `$with` property
+
+Flag a non-empty `$with` property declared on an Eloquent `Model`. A model's `$with` eager-loads its relations on **every** query for that model — globally and invisibly, whether or not the caller needs them — which quietly inflates the query count across every endpoint that touches the model. Load relations explicitly at the call site instead.
+
+| Rule                          | Targets                                   | Identifier                                 |
+|-------------------------------|-------------------------------------------|--------------------------------------------|
+| `NoEloquentWithPropertyRule`  | `protected $with = [...]` on a `Model`    | `hihaho.conventions.noEloquentWithProperty`|
+
+```php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+final class Interaction extends Model
+{
+    protected $with = ['chapters'];  // reported — eager-loads on every query
+    protected $with = [];            // fine — explicit empty default is a no-op
+}
+
+// Load where actually needed:
+Interaction::query()->with('chapters')->get();
+$interaction->loadMissing('chapters');
+```
+
+An explicit empty `$with = []` (which restates Eloquent's own default and eager-loads nothing) is not flagged. The rule keys off the declaring class being a `Model` subclass, so a `$with` property on any other class is ignored.
+
 #### Named-argument manifest (opt-in producer)
 
 rector-rules' `NamedArgumentFromManifestRector` names these flags at call sites whose receiver only resolves under larastan — the sites bare-PHPStan auto-fixers can't reach. It is inert without a JSON manifest, which this package can produce: include the opt-in extension and run analysis in your larastan-equipped project.

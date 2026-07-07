@@ -81,7 +81,8 @@ parameters:
             - Database\Factories
             - Tests
 
-rules: []
+rules:
+    - Hihaho\PhpstanRules\Rules\Conventions\NoEloquentWithPropertyRule
 
 services:
     -
