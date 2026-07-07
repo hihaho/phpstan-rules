@@ -1,12 +1,10 @@
 name: Auto-fix
 
-# Triggered on branch pushes, not pull_request. Only collaborators with write
-# access can push a branch to this repo, so the code Rector/Pint execute is
-# never untrusted fork code — forks push to their own fork, which cannot fire
-# this workflow. This also sidesteps CodeQL's untrusted-checkout rule entirely:
-# `push` is not an untrusted trigger, and the default checkout below carries no
-# head-ref `ref:` argument, so it is not a "PR HEAD checkout" the rule flags.
-# The default branch is excluded so auto-fixes never commit straight to main.
+# Runs on branch pushes, not pull_request. Only write-access collaborators can
+# push branches here (forks push to their own fork, which can't fire this), so
+# Rector/Pint never execute untrusted code. `push` plus a default checkout with
+# no PR-head `ref:` also keeps this off CodeQL's untrusted-checkout rule. main is
+# excluded so auto-fixes never land straight on the default branch.
 on:
   push:
     branches-ignore:
@@ -33,11 +31,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
         with:
-          # No head-ref `ref:` argument: the default checkout of the pushed
-          # branch keeps this off CodeQL's untrusted-checkout radar. Credentials
-          # are still withheld from the working tree so the branch's Rector/Pint
-          # config can't piggy-back on the token; the auto-commit step re-attaches
-          # push credentials only after that code has run.
+          # No head-ref `ref:` here — a PR-head checkout is exactly what CodeQL's
+          # untrusted-checkout rule flags. persist-credentials: false keeps the
+          # token out of the working tree while Rector/Pint run; the commit step
+          # re-attaches it afterward.
           persist-credentials: false
 
       - name: Setup PHP
