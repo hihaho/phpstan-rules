@@ -2,6 +2,42 @@
 
 All notable changes to `hihaho/phpstan-rules` will be documented in this file.
 
+## v3.15.0 - 2026-07-28
+
+<!-- verified-sha: 4fafc86cb9e719d86102a0c9504ec09351481e55 -->
+### Added
+
+**`TraitRequiresInterfaceRule` — require the interface that goes with a trait.** PHP cannot make a trait require an interface, so a trait and the contract it is meant to satisfy drift apart silently: a class picks up the trait's methods and nothing breaks at runtime, but every tool that identifies such classes **by interface** — other rules, dynamic return type extensions, translation scanners — quietly skips it. The rule reports a class or enum that uses a configured trait without implementing the paired interface:
+
+```neon
+parameters:
+    traitRequiresInterface:
+        App\Enums\Concerns\HasLocalization: App\Enums\Contracts\LocalizedEnumContract
+        App\Enums\Concerns\SideMenu: App\Enums\Contracts\SideMenuContract
+
+```
+```php
+enum PortalPdfState: string          // reported — has localizationKey(), invisible to the contract
+{
+    use HasLocalization;
+}
+
+enum ActionType: int implements BaseActionType   // fine — BaseActionType extends the contract
+{
+    use HasLocalization;
+}
+
+```
+Both sides resolve through reflection rather than the text of the `implements` clause, so an interface inherited through an intermediate interface or a parent class counts as implemented, and a trait reached through another trait or a parent class counts as used. Traits and interfaces are never flagged themselves. Names match case-insensitively, as PHP does. Identifier: `hihaho.conventions.traitRequiresInterface`.
+
+A configured name that does not exist, or is not of the expected kind (trait on the left, interface on the right), aborts the analysis instead of matching nothing — a typo in the config cannot turn the rule into a silent no-op.
+
+### Notes
+
+Backward compatible. `traitRequiresInterface` is empty by default, so the rule reports nothing until a project configures its own pairs.
+
+**Full Changelog**: https://github.com/hihaho/phpstan-rules/compare/v3.14.0...v3.15.0
+
 ## v3.14.0 - 2026-07-07
 
 <!-- verified-sha: 4c9bc898792c20b79bcdb7ef2e18043bf18fcd20 -->
@@ -22,6 +58,7 @@ final class Interaction extends Model
 // Load where actually needed:
 Interaction::query()->with('chapters')->get();
 $interaction->loadMissing('chapters');
+
 
 ```
 An explicit empty `$with = []` (which restates Eloquent's own default and eager-loads nothing) is not flagged, and a `$with` property on any non-`Model` class is ignored. Detection keys off the declaring class being a `Model` subclass, so intermediate/abstract base models are covered transitively. Identifier: `hihaho.conventions.noEloquentWithProperty`.
@@ -44,6 +81,7 @@ parameters:
     stubbedMethods:
         Laravel\Nova\Fields\Number:
             onlyOnExport: '$this'   # Number::make(…)->onlyOnExport()->sortable() stays typed
+
 
 
 ```
@@ -69,6 +107,7 @@ parameters:
     routeFiles:
         - routes/web.php
         - routes/api.php
+
 
 
 
@@ -135,12 +174,14 @@ parameters:
 
 
 
+
 ```
 ```php
 public function handle(Request $request): void
 {
     $video = $request->route('video_id'); // Video — no assert() needed
 }
+
 
 
 
@@ -174,6 +215,7 @@ public function scopeWithPublishedPosts(Builder $query): void
     // $q is Builder<Post> — Post::PUBLISHED resolves instead of erroring against base Model.
     $query->whereHas('posts', fn (Builder $q) => $q->where(Post::STATUS, Post::PUBLISHED));
 }
+
 
 
 
@@ -215,6 +257,7 @@ public function ids(Collection $users): array
 
 
 
+
 ```
 The extension is registered automatically — no configuration. Two guards keep it sound: detection is syntactic (the receiver must be a direct `->values()` call, so a chain split across variables is left alone rather than guessed), and the receiver must be a `Support\Collection`/`LazyCollection` or subclass — so Eloquent collections benefit while a bare `Enumerable` or a custom implementation with unknown key semantics is never narrowed. Only `values()` is handled; `flatten()`, `collapse()`, and `flatMap()` are deliberately excluded because Laravel doesn't reliably type them as lists.
 
@@ -241,6 +284,7 @@ parameters:
             validPassword: string
         Illuminate\Testing\TestResponse:
             assertSeeLivewire: Illuminate\Testing\TestResponse
+
 
 
 
@@ -324,6 +368,7 @@ parameters:
             - Database\Factories
             - Tests
         outputPath: named-arguments-manifest.json
+
 
 
 
