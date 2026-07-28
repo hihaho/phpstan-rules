@@ -262,6 +262,39 @@ parameters:
 
 `outputPath` may be nested (e.g. `.config/named-arguments-manifest.json`); the parent directory is created if it does not exist.
 
+### Trait requires interface
+
+Flag a class or enum that uses a configured trait but does not implement the interface that trait is meant to satisfy. PHP cannot make a trait require an interface, so the two drift apart silently: the class picks up the trait's methods and nothing breaks at runtime, but every tool that identifies such classes **by interface** — other rules, dynamic return type extensions, translation scanners — quietly skips it.
+
+| Rule                          | Targets                                              | Identifier                                 |
+|-------------------------------|------------------------------------------------------|--------------------------------------------|
+| `TraitRequiresInterfaceRule`  | class/enum using trait `T` without implementing `I`  | `hihaho.conventions.traitRequiresInterface`|
+
+It checks nothing by default — each project declares its own pairs via the `traitRequiresInterface` parameter, a map of `trait => interface`:
+
+```neon
+parameters:
+    traitRequiresInterface:
+        App\Enums\Concerns\HasLocalization: App\Enums\Contracts\LocalizedEnumContract
+        App\Enums\Concerns\SideMenu: App\Enums\Contracts\SideMenuContract
+```
+
+```php
+enum PortalPdfState: string          // reported — has localizationKey(), invisible to the contract
+{
+    use HasLocalization;
+}
+
+enum ActionType: int implements BaseActionType   // fine — BaseActionType extends the contract
+{
+    use HasLocalization;
+}
+```
+
+The check runs on reflection, not on the text of the `implements` clause, so an interface inherited through an intermediate interface or a parent class counts as implemented, and a trait reached through another trait or through a parent class counts as used. Traits and interfaces are never flagged themselves: a trait cannot implement an interface, and an interface has no `implements` clause to fix — that includes a trait (`SideMenu` above) that uses a configured trait.
+
+A configured name that does not exist, or that is not of the expected kind (trait on the left, interface on the right), aborts the analysis with an `InvalidArgumentException` rather than matching nothing — a typo in the config must not turn the rule into a silent no-op.
+
 ## Reflection extensions
 
 ### Stubbed methods
