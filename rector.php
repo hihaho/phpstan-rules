@@ -8,6 +8,7 @@ use Rector\DeadCode\Rector\ClassMethod\RemoveUselessParamTagRector;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUselessReturnTagRector;
 use Rector\Php81\Rector\FuncCall\NullToStrictStringFuncCallArgRector;
 use Rector\Php83\Rector\ClassMethod\AddOverrideAttributeToOverriddenMethodsRector;
+use Rector\PHPUnit\CodeQuality\Rector\Class_\AddSeeTestAnnotationRector;
 use Rector\Privatization\Rector\ClassMethod\PrivatizeFinalClassMethodRector;
 use Rector\TypeDeclaration\Rector\ArrowFunction\AddArrowFunctionReturnTypeRector;
 
@@ -24,6 +25,9 @@ return RectorConfig::configure()
         __DIR__ . '/tests/ReturnTypes/stubs',
         __DIR__ . '/tests/ParameterClosureTypes/stubs',
         AddArrowFunctionReturnTypeRector::class,
+        // Rector writes the FQCN, Pint's fully_qualified_strict_types shortens it back, and the next
+        // Rector run appends a duplicate — the two tools never converge on a @see annotation.
+        AddSeeTestAnnotationRector::class,
         EncapsedStringsToSprintfRector::class,
         ExplicitBoolCompareRector::class,
         InlineArrayReturnAssignRector::class,

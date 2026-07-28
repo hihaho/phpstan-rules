@@ -27,7 +27,7 @@ use PHPStan\Rules\RuleErrorBuilder;
  * @implements Rule<InClassNode>
  * @see TraitRequiresInterfaceRuleTest
  */
-final class TraitRequiresInterfaceRule implements Rule
+final readonly class TraitRequiresInterfaceRule implements Rule
 {
     /**
      * Canonically-cased pairs, so a configured name that differs in case from
@@ -35,14 +35,14 @@ final class TraitRequiresInterfaceRule implements Rule
      *
      * @var array<string, string>
      */
-    private readonly array $pairs;
+    private array $pairs;
 
     /**
      * @param  array<string, string>  $traitRequiresInterface  trait FQCN => interface FQCN the using class must implement
      */
     public function __construct(
         array $traitRequiresInterface,
-        private readonly ReflectionProvider $reflectionProvider,
+        private ReflectionProvider $reflectionProvider,
     ) {
         $this->pairs = $this->resolvePairs($traitRequiresInterface);
     }
