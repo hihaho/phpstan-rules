@@ -15,55 +15,73 @@
             "scope": "project"
         },
         ".claude/skills/backend-quality/SKILL.md": {
-            "sha256": "1691dcfcdeb6bc80b55cd3238783dd9e250830733a0357a8d2420e5f063ddf10",
+            "sha256": "663e9fc93ba48ca629cc34585e96634c40dbfe82d5922d4b82ea255b831e23d1",
             "category": "skill",
             "provenance": "engine",
             "scope": "project"
         },
         ".claude/skills/bug-fixing/SKILL.md": {
-            "sha256": "ea1f93067f11809ecf188c00960eb0e9654c5f94373514e2c7f2be4cfdb67d29",
+            "sha256": "c2437dff0b126af8c10f99c5afd7c77228df64e53f7fc1bf598f428ae0f8cd3e",
+            "category": "skill",
+            "provenance": "engine",
+            "scope": "project"
+        },
+        ".claude/skills/clarify/SKILL.md": {
+            "sha256": "605e19917543bee93c22b404cde9debfb5208dbac0e382576c301f1f3342cd2e",
+            "category": "skill",
+            "provenance": "engine",
+            "scope": "project"
+        },
+        ".claude/skills/clean-specs/SKILL.md": {
+            "sha256": "c9a397208ea2c8bcde7f83bf2b46d71d71ace78d56d9aeb84d43e6fb73171b2d",
             "category": "skill",
             "provenance": "engine",
             "scope": "project"
         },
         ".claude/skills/code-review/SKILL.md": {
-            "sha256": "adf87487ab69fcf4059a15f016e80db7a84de4e27d87bf1c6e55985c9b0f6237",
+            "sha256": "1a0c62bdd4f1a9e86781f137c0e8846d1e7ca07b1764b552cbf50b0e912c8e32",
             "category": "skill",
             "provenance": "engine",
             "scope": "project"
         },
         ".claude/skills/codex-review/SKILL.md": {
-            "sha256": "d91511f93f22e9a2098876c4c6bcd8b78c0e7d0b78d110b67e73ef163415b8b5",
+            "sha256": "9489ac4bb80aae453ffff0d408d8d5ce0167987a9076814fcc183c77791678da",
+            "category": "skill",
+            "provenance": "engine",
+            "scope": "project"
+        },
+        ".claude/skills/codex-review/scripts/run-codex-review.mjs": {
+            "sha256": "c9a09fb4d9e03431e9882b0335e01e6e130aa3d08ac388d5733c71f076b38cfd",
             "category": "skill",
             "provenance": "engine",
             "scope": "project"
         },
         ".claude/skills/evaluate/SKILL.md": {
-            "sha256": "a596167fd5382a7d7434fec8a8ce0e46ed617a3f84ada3ee50ebc086d834f876",
+            "sha256": "5abba41ec9a24852d3d2a544cdf373e7a285ec9d52e9eaea8f51e6478a1fef9b",
             "category": "skill",
             "provenance": "engine",
             "scope": "project"
         },
         ".claude/skills/final-verification-review/SKILL.md": {
-            "sha256": "7ea42d9af89eb5359be63135755ba427c167e1c64101af2a18346650f258794c",
+            "sha256": "021a59520a41dd0ac4fbd0e71ec6413aad17df70dbea0f4fdd04ed2c2883413d",
             "category": "skill",
             "provenance": "engine",
             "scope": "project"
         },
         ".claude/skills/humanizer/SKILL.md": {
-            "sha256": "d1eeae4bb9551354d6ebc8cc4e5162922a0009e0e6e7de82db6d06fa799f908a",
+            "sha256": "f31a791ff1fe8f454dff156d95b45c93c18d98bb47e26daa95994f21f0c47115",
             "category": "skill",
             "provenance": "engine",
             "scope": "project"
         },
         ".claude/skills/implement-spec/SKILL.md": {
-            "sha256": "9f61c4a934b7c32a6e9adb6cb55768992c146534e4ba77ca9bfff403db9c38f8",
+            "sha256": "5628e7d7c7ce2e429d75dfff92d44cea4c8c06f989438a8b0c25f9f51b5f46d1",
             "category": "skill",
             "provenance": "engine",
             "scope": "project"
         },
         ".claude/skills/interview/SKILL.md": {
-            "sha256": "551d564150e28ea125edbd5313eb67c3db04093b352812c492677def8c72a4af",
+            "sha256": "619d110c77fbee632755788318162b57aef730dd7e342f2d630b93e8a8b7c14a",
             "category": "skill",
             "provenance": "engine",
             "scope": "project"
@@ -80,44 +98,92 @@
             "provenance": "engine",
             "scope": "project"
         },
+        ".claude/skills/phpstan-developer/references/collectors.md": {
+            "sha256": "b1fc03d22248538a4eaac3cefbe061df1df444bcd7c8e8cbe3dca85f9bd7b41f",
+            "category": "skill",
+            "provenance": "engine",
+            "scope": "project"
+        },
+        ".claude/skills/phpstan-developer/references/extensions.md": {
+            "sha256": "6076016027e48b1ce133698f0b624e9de0067b4ec2a7394b9b7908c669961eec",
+            "category": "skill",
+            "provenance": "engine",
+            "scope": "project"
+        },
+        ".claude/skills/phpstan-developer/references/scope-api.md": {
+            "sha256": "d78d8355b0abfa92dbab5b0655747dfde4ce3a2b64735c7df64b184ac2e29c22",
+            "category": "skill",
+            "provenance": "engine",
+            "scope": "project"
+        },
+        ".claude/skills/phpstan-developer/references/testing.md": {
+            "sha256": "47fb3f2b9e9e6720f4dcccfcbd878322472a5f6f0ff68c3fb6e0d15e6f56e609",
+            "category": "skill",
+            "provenance": "engine",
+            "scope": "project"
+        },
+        ".claude/skills/phpstan-developer/references/trinary-logic.md": {
+            "sha256": "d73e69a3acad890fb2f58ee7fe17bf13b6076e2c99f9c0a1067cd2902b585c00",
+            "category": "skill",
+            "provenance": "engine",
+            "scope": "project"
+        },
+        ".claude/skills/phpstan-developer/references/virtual-nodes.md": {
+            "sha256": "b87bdd2afc766affbbd4e7e8f6e225a75303755c811855f4cd2ccc749d2bab57",
+            "category": "skill",
+            "provenance": "engine",
+            "scope": "project"
+        },
         ".claude/skills/pr-review-feedback/SKILL.md": {
-            "sha256": "394d905106277b6a8b4944033e7ac97dea0fe9967ab5fdd4779c94afd3524d28",
+            "sha256": "69846baaa7b46c042f474d248991d2837e59b977f42663438d8ce5e7d931177d",
             "category": "skill",
             "provenance": "engine",
             "scope": "project"
         },
         ".claude/skills/pre-release/SKILL.md": {
-            "sha256": "306db65876fffbcf0c9acaa819c961f656c57c0f36d956e356a91c3d5551e959",
+            "sha256": "a82393e0035a3cebc6317bb6aec7a1bcc3e373d1bb0f5f8935e34e8bfc20e6f7",
+            "category": "skill",
+            "provenance": "engine",
+            "scope": "project"
+        },
+        ".claude/skills/promptimize/SKILL.md": {
+            "sha256": "c3185608cc8321eab831c49cb20ed8a26c8c68d112185019b1b3beb83a1ea652",
             "category": "skill",
             "provenance": "engine",
             "scope": "project"
         },
         ".claude/skills/pull-requests/SKILL.md": {
-            "sha256": "d9a1b7bd01828fd2100641a5f4f127e12feb7cc34216ab5516a9d1519d74ae72",
+            "sha256": "fa92540e683f613aa0507d81dc9b3ad0a7da6d1857506bf7ebaaaae04c420698",
             "category": "skill",
             "provenance": "engine",
             "scope": "project"
         },
         ".claude/skills/readme/SKILL.md": {
-            "sha256": "dbd321587fdeabcc0cfb485155cecb6904a3c17f89b181f9f0c13939a4d0774f",
+            "sha256": "0435d7b457a8389544813b2ce3d3d162846ae84c18bd9392aab963d56e6edcbe",
             "category": "skill",
             "provenance": "engine",
             "scope": "project"
         },
         ".claude/skills/release-notes/SKILL.md": {
-            "sha256": "cb72ad4dbaedc7b3e26eaa1da9cc013faf3cc7c4c11fbee73b4abfda98060d4a",
+            "sha256": "76df96ee9effe87236e6ea1049da2fc9a55e5ddce727c864faef8586b12c0f9a",
             "category": "skill",
             "provenance": "engine",
             "scope": "project"
         },
         ".claude/skills/resolve-conflicts/SKILL.md": {
-            "sha256": "37b394d59bfd985cb4da98c27cb8366e3e180f10ea1693c4645350aa1f4567a6",
+            "sha256": "3f6cc91e7d4314054bf170a7c4dff5d0665de74f959a5910a7b1d9c7f543cc23",
+            "category": "skill",
+            "provenance": "engine",
+            "scope": "project"
+        },
+        ".claude/skills/resolve-conflicts/scripts/dangling-symbols.sh": {
+            "sha256": "2aad0175928e18ec38b6457582819d0e1c14c423d04c459e678e14e76571ec19",
             "category": "skill",
             "provenance": "engine",
             "scope": "project"
         },
         ".claude/skills/test-writing/SKILL.md": {
-            "sha256": "bf9f730133d62b4bb6dcc41cb8ef75cff7bfcb1df09d1bf4d9225663381472fb",
+            "sha256": "be7ddb701f3bb3b12e2240f603c77ddeae3a6f29cfa686cef399587535605bdf",
             "category": "skill",
             "provenance": "engine",
             "scope": "project"
@@ -129,19 +195,19 @@
             "scope": "project"
         },
         ".claude/skills/ux-review/SKILL.md": {
-            "sha256": "6a530cfaa0bf096897a9746f44a50eea4279243655567a9aeb68f368f584a265",
+            "sha256": "17988520ca9db6c23f1e1e8b1ec9e62cc85781ac48c48ed45c829827642a9af3",
             "category": "skill",
             "provenance": "engine",
             "scope": "project"
         },
         ".claude/skills/write-spec/SKILL.md": {
-            "sha256": "947ed7746bd730bb30e8260dab71b5c59636940b2c520039b6fdce8c4515893f",
+            "sha256": "c1cc58319fb677164857464510fab0f36a2dc1dda6f834cc379c6161c2d08abe",
             "category": "skill",
             "provenance": "engine",
             "scope": "project"
         },
         "CLAUDE.md": {
-            "sha256": "e9878d50b7f8369cbd067c3bc99d862ce1ffcbfc2594dfcb196a7a74eb6a4b4e",
+            "sha256": "3fbda2349d0a146776ec9e8b9278d40a23b43b3f6fc00be1bafa340a5c097c3b",
             "category": "guidance",
             "provenance": "engine",
             "scope": "project"
