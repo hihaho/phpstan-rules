@@ -6,15 +6,20 @@ use SanderMuller\BoostCore\Enums\Tag;
 use SanderMuller\BoostCore\Skills\Remote\RemoteSkillSource;
 
 return BoostConfig::configure()
-    ->withAgents([Agent::CLAUDE_CODE])
+    ->withAgents([
+        Agent::CLAUDE_CODE,
+        Agent::CODEX,
+    ])
     ->withAllowedVendors([
         'sandermuller/package-boost-php',
+        'sandermuller/boost-core',
         'sandermuller/boost-skills',
     ])
     ->withTags([
         Tag::Php,
         Tag::Github,
         'release-automation',
+        'voide',
     ])
     ->withRemoteSkills([
         RemoteSkillSource::githubPath('peterfox/agent-skills', 'main', [

@@ -1,143 +1,93 @@
-# PHPStan Rules Package — Agent Context
+# PHPStan Rules Package
 
-This is `hihaho/phpstan-rules`, a PHPStan extension package. **Not** a Laravel application.
+This is `hihaho/phpstan-rules`, a PHPStan extension package that enforces hihaho's Laravel coding conventions through static analysis. This is **not** a Laravel application — it is a standalone Composer package.
 
-## Key Facts
+## Project Structure
 
-- Rules live in `src/Rules/`, tests in `tests/Rules/`, stubs in `tests/Rules/stubs/`
-- Rules implement PHPStan's `Rule<T>` interface and are registered in `extension.neon`
-- Tests extend `PHPStan\Testing\RuleTestCase`
-- PHP ^8.3, PHPStan ^2.1, PHPUnit ^11.5
+```
+src/
+├── Rules/             # PHPStan rules (one class per rule)
+│   └── Debug/         # Debug statement detection rules
+├── Traits/            # Shared traits (ChecksNamespace)
+tests/
+├── Rules/             # Tests for each rule (PHPStan RuleTestCase)
+│   └── stubs/         # Test fixture PHP/Blade files
+extension.neon         # PHPStan extension registration
+phpstan.neon.dist      # PHPStan analysis configuration
+pint.json              # Laravel Pint code style config
+```
 
-## Commands
+Class-naming and routing conventions are enforced by the sister package
+[hihaho/rector-rules](https://github.com/hihaho/rector-rules), which
+auto-fixes them rather than just reporting.
+
+## Dependencies
+
+- **PHP**: ^8.3
+- **PHPStan**: ^2.1
+- **Laravel Support** (illuminate/support): ^12.0||^13.0
+- **Testing**: PHPUnit ^12.5
+- **Code Style**: Laravel Pint ^1.21
+
+## Development Commands
 
 ```bash
-composer test                # Run tests
-composer fix-cs              # Run Pint formatter
+composer test                # Run PHPUnit tests
+composer fix-cs              # Run Laravel Pint formatter (alias: composer format)
 composer phpstan             # Run PHPStan analysis
+composer phpstan-clear-cache # Clear PHPStan cache
 composer rector              # Run Rector transformations
 composer qa                  # Run format, rector, phpstan, test
 ```
 
-## Conventions
+## Repository
 
-- `declare(strict_types=1)` in all PHP files
-- `private` visibility by default instead of `protected`
-- Curly braces for all control structures
-- Space after unary not: `if (! $foo)`
-- Omit docblocks when fully type-hinted
-- 100% type coverage, PHPStan level max
+- **Owner**: `hihaho`
+- **Repository**: `phpstan-rules`
+- **Default branch**: `main`
 
-<package-boost-guidelines>
-# Package Boost Guidelines
+---
 
-These guidelines replace Laravel Boost's default foundation for
-repositories that are **Laravel packages**, not applications. The
-framing, tooling, and trade-offs differ — follow this version when
-working inside a package codebase.
+## PHP Conventions
 
-## Foundational Context
+- Always use `declare(strict_types=1);`
+- Use `private` visibility by default for methods, properties, and constants
+- Always use curly braces for control structures, even for single-line bodies
+- Use PHP 8 constructor property promotion
+- Always use explicit return type declarations
+- Use appropriate PHP type hints for all method parameters
+- Add a space after the unary not operator: `if (! $foo)`
+- Omit docblocks when methods are fully type-hinted
+- Prefer string interpolation over `sprintf` and concatenation
+- Never use `empty()` — use explicit checks instead
+- Prefer PHPDoc blocks over inline comments
 
-This codebase is a **Laravel package** distributed via Composer, not a
-Laravel application. Key consequences:
+---
 
-- There is no `artisan`, no `app/`, no `bootstrap/`, no `routes/`, no
-  `.env`, and no database by default. A Testbench-provided Laravel
-  application is spun up only at test time.
-- The primary artefact is the package's public API (service provider,
-  facades, classes) — everything else is scaffolding.
-- Downstream apps consume this package. Every public change is a
-  user-facing API change governed by semver.
-- `composer.json` is the source of truth for supported PHP and
-  Laravel versions. Check `require.php` and `require.illuminate/*`
-  before using version-specific features.
+## Testing
 
-## Use `vendor/bin/testbench`, not `php artisan`
+- Tests use PHPStan's `RuleTestCase` base class
+- Each rule has a corresponding test in `tests/Rules/`
+- Test stubs (fixture PHP/Blade files) live alongside the tests in `stubs/` subdirectories
+- Run all tests: `composer test`
+- Run specific test: `vendor/bin/phpunit --filter=TestClassName`
+- Every change must have test coverage — write or update tests, then run them
 
-Running artisan commands directly against the package fails — there is
-no host application. Use Testbench's binary:
+## Creating a New Rule
 
-| Instead of | Use |
-|---|---|
-| `php artisan test` | The package's configured test runner (`vendor/bin/pest` or `vendor/bin/phpunit`) |
-| `php artisan tinker` | `vendor/bin/testbench tinker` |
-| `php artisan make:*` | Create files manually under `src/` |
-| `php artisan vendor:publish` | `vendor/bin/testbench vendor:publish` |
+1. Create the rule class in `src/Rules/` implementing PHPStan's `Rule<T>` interface
+2. Register it in `extension.neon` — under `rules:` if the rule has no constructor dependencies, or under `services:` with the `phpstan.rules.rule` tag when it needs DI (e.g. `ReflectionProvider`)
+3. Create test stub files in `tests/Rules/stubs/` (or a sibling `stubs/` directory next to the test)
+4. Create a test extending `PHPStan\Testing\RuleTestCase` in `tests/Rules/`
+5. Use the `ChecksNamespace` trait if the rule needs to filter by namespace prefix
+6. Run `composer fix-cs` and `composer phpstan` before finalizing
 
-### Commands that require `laravel/boost`
+## Quality Standards
 
-These only apply when the package has `laravel/boost` as a dev
-dependency. Skip if Boost isn't installed — `package-boost:sync`
-prints a warning and moves on.
-
-| Instead of | Use |
-|---|---|
-| `php artisan boost:install` | `vendor/bin/testbench boost:install` |
-| `php artisan boost:mcp` | `vendor/bin/testbench boost:mcp` |
-
-Register the package's service provider in `testbench.yaml` under
-`providers:` so Testbench boots it. Published files land in
-`workbench/` by default, not `config/` or `resources/` of a host app.
-
-## Source Layout
-
-- `src/` — package source, PSR-4 autoloaded per `composer.json`
-- `tests/` — Pest or PHPUnit suite, base case `Orchestra\Testbench\TestCase`
-- `config/` — publishable defaults (the file shipped with the package)
-- `resources/` — views, translations, Boost skills / guidelines
-- `database/migrations`, `database/factories` — only if the package
-  ships them
-- `workbench/` — developer-only Testbench scaffolding; never shipped
-
-Check sibling files before inventing structure. Do not introduce new
-top-level directories without a clear reason.
-
-## Cross-Version Compatibility
-
-Supporting multiple Laravel / PHP majors is routine for packages.
-Activate `cross-version-laravel-support` **before** writing the
-code; activate `ci-matrix-troubleshooting` **after** a matrix cell
-has failed.
-
-## Conventions
-
-- Match existing code style, naming, and structural patterns — check
-  sibling files before writing new ones.
-- Use descriptive names (`resolvePublishDestination`, not `resolve()`).
-- Reuse existing helpers before adding new ones.
-- Do not add dependencies without approval; every new `require` is a
-  constraint downstream consumers inherit.
-
-## Tests Are the Specification
-
-The package has no running application to click through. Tests are how
-behaviour is pinned down.
-
-- Write tests alongside any behavioural change. Feature tests through
-  Testbench are preferred over ad-hoc tinker scripts.
-- Do not create "verification scripts" when a test can prove the same
-  thing.
-- Run the project's configured test runner (`vendor/bin/pest` or
-  `vendor/bin/phpunit`) before claiming a change is done.
-
-## Public API Discipline
-
-- Every `public`, `protected`, or exported symbol is part of the
-  package's surface. Breaking changes require a major version bump.
-- Prefer `final` classes and `private`/`@internal` markers for anything
-  not intended for extension.
-- Keep config keys, published asset paths, and service container
-  bindings stable across patch and minor versions.
-
-## Documentation Files
-
-Only create or edit documentation (README, CHANGELOG, docs/) when
-explicitly requested or when a behaviour change requires it.
-
-## Replies
-
-Be concise. Focus on what changed and why. Skip restating what the
-diff already shows.
+- PHPStan level: `max`
+- Type coverage: 100% (return, param, property, declare)
+- Cognitive complexity: class max 35 (allows combined rules), function max 10
+- Code style: Laravel Pint with `laravel` preset
 
 ---
 
@@ -145,28 +95,24 @@ diff already shows.
 
 ## CHANGELOG.md is updated automatically — do NOT edit by hand for releases
 
-`CHANGELOG.md` is kept in sync with GitHub releases by `.github/workflows/update-changelog.yml`. When a release is published (not just drafted), the workflow uses `stefanzweifel/changelog-updater-action` to prepend the release body to `CHANGELOG.md` and commits the update back to `main`.
+`CHANGELOG.md` is kept in sync with GitHub releases by `.github/workflows/update-changelog.yml`. When a release is published (not just drafted), the workflow uses `stefanzweifel/changelog-updater-action` to prepend the release body to `CHANGELOG.md` and opens a PR back to the release's target branch.
 
 This means:
 
 - **Do not** add changelog entries manually when preparing a release. The release body (drafted in `internal/release-notes-<version>.md` and pasted into the GitHub release) becomes the changelog entry automatically.
-- **Do not** include a changelog diff in the release PR — the post-release commit comes from CI.
+- **Do not** include a changelog diff in the release PR — the post-release PR comes from CI.
 - If the changelog needs a fix *after* a release, edit `CHANGELOG.md` directly and commit — but this is unusual and only for typos or formatting issues in the auto-generated entry.
-
-## Benchmark table in release body is updated automatically
-
-`.github/workflows/release-benchmark.yml` appends the latest benchmark table between the `<!-- benchmark-start -->` / `<!-- benchmark-end -->` markers in the release body after publish. Do not paste benchmark numbers manually into the release body with those markers — write the narrative above and let CI fill in the table.
 
 ## Release workflow (summary)
 
 1. Draft release notes in `internal/release-notes-<version>.md`
 2. Commit and push code + notes file to `main`
 3. Tag and create the GitHub release with the release-notes file as the body
-4. CI automatically:
-   - Appends the benchmark table to the release body
-   - Prepends the release body to `CHANGELOG.md` and commits it back to `main`
+4. CI automatically prepends the release body to `CHANGELOG.md` and opens a PR to merge it
 
 No manual `CHANGELOG.md` edits are part of the release PR.
+
+---
 
 ## Verification Before Completion
 
@@ -195,28 +141,179 @@ These are slow checks — only run them once at the very end:
 |-------------------|-----------------------------------------------------------------|
 | Rector ran clean  | `vendor/bin/rector process` showing 0 changes                   |
 | PHPStan clean     | `vendor/bin/phpstan analyse --memory-limit=2G` showing 0 errors |
-| Full suite passes | `vendor/bin/pest` output showing 0 failures                     |
+| Full suite passes | `vendor/bin/phpunit` output showing 0 failures                  |
 | Feature complete  | All above checks pass                                           |
 
 ### Always Capture Command Output
 
-Append `|| true` to all verification commands (tests, linting, type checks) so the output is always captured, even on failure. Without it, a non-zero exit code can hide the output, forcing an expensive second run just to read the errors.
+Append `|| true` to all verification commands so the output is always visible, even on failure. Without it, a non-zero exit code can hide the output.
 
 ```bash
-# CORRECT — output always visible
-vendor/bin/pest --filter=testName || true
+vendor/bin/phpunit --filter=TestName || true
 vendor/bin/pint --dirty --format agent || true
-
-# WRONG — output lost on failure, wastes time re-running
-vendor/bin/pest --filter=testName
 ```
 
 ### Never Use Without Evidence
 
-- "should work now"
-- "that should fix it"
-- "looks correct"
-- "I'm confident this works"
+- "should work now" / "that should fix it" / "looks correct"
 
-These phrases indicate missing verification. Run the command first, then report what actually happened.
-</package-boost-guidelines>
+These phrases indicate missing verification. Run the command first.
+
+---
+
+## AskUserQuestion Phrasing
+
+When writing an `AskUserQuestion` question, option labels, or option descriptions, **avoid first- and second-person pronouns** — `I`, `me`, `my`, `we`, `our`, `you`, `your`. In that tool the user is reading a question *from* the assistant and answering it, so the roles are inverted and these pronouns are ambiguous: the reader cannot tell whether `I`/`my` means the assistant or themselves, nor whether `you`/`your` means them or the assistant.
+
+Name the actor explicitly instead — "the assistant" (these guidelines are shared across agents, so avoid hard-coding a product name like Claude or Copilot) and "the user" (or a concrete role) for the person answering — or rephrase to drop the pronoun entirely.
+
+```text
+❌ "Which approach do you want me to take?"
+❌ "Should I keep the existing tests you wrote?"
+
+✅ "Which approach should the assistant take?"
+✅ "Keep the existing tests, or replace them?"   (pronoun dropped)
+✅ "Should the assistant keep the tests already in the repo?"
+```
+
+This applies to every part of the question payload: the `question` text, each option `label`, and each option `description`.
+
+---
+
+## Fixing PHPStan Errors
+
+When fixing a PHPStan error, first decide whether it represents a runtime bug a test could catch — and if so, write that test before the fix.
+
+### Process
+
+1. **Assess testability** — does the error represent a runtime bug a test could reproduce (a wrong argument type, a missing method, an incorrect return type used downstream)?
+2. **Write the test first** — if a test can catch it, write a failing test that reproduces the error before applying the fix.
+3. **Fix the code** — apply the fix so both the PHPStan error and the new test pass.
+4. **Verify both** — confirm PHPStan reports no error and the test passes.
+
+### When to Write a Test
+
+Write a test when the PHPStan error indicates a fault that would surface at runtime:
+
+- A method call on a value of the wrong type
+- Missing or incorrect arguments to a function or method
+- A return-type mismatch that would break callers
+- Accessing a property or method that does not exist
+- Any type error that would manifest as a runtime exception
+
+### When to Skip the Test
+
+Skip the test when the error is purely static and cannot cause a runtime failure:
+
+- Missing return-type declarations
+- PHPDoc mismatches with no runtime impact
+- Unused variables or imports
+- Generic-type parameter issues
+
+---
+
+## Signed Commits
+
+Applies **only when the repository has commit signing enabled** (e.g. `git config commit.gpgsign` is `true`, or a `user.signingkey` / `gpg.format` is set). If signing is not enabled, this guideline does not apply — commit normally.
+
+### Never fall back to an unsigned commit
+
+When signing is enabled, every commit must be signed. If the signing backend or agent (1Password, `gpg-agent`, `ssh-agent`, a hardware key, etc.) is unavailable, locked, or not responding:
+
+- **Stop and surface the failure** to the user with the exact error.
+- **Do not** retry with `--no-gpg-sign`, unset `commit.gpgsign`, or otherwise produce an unsigned commit to "get past" the problem.
+
+A missing signature is a blocker to resolve (unlock the agent, re-authenticate 1Password, plug in the key), not a step to skip. Let the user fix the signing setup, then commit signed.
+
+---
+
+# Package Boost Guidelines
+
+These guidelines replace Laravel Boost's default foundation for
+repositories that ship as Composer packages — Laravel-targeted or
+framework-agnostic. The framing, tooling, and trade-offs differ from
+application development; follow this version when working inside a
+package codebase.
+
+## Foundational Context
+
+This codebase is a **Composer package**, not an application. The rules
+below hold regardless of which framework (if any) the package targets.
+
+- There is no `app/`, `bootstrap/`, `routes/`, `.env`, or database by
+  default. Tooling that assumes an application context (e.g. running
+  `php artisan` against the package itself) does not apply.
+- The primary artefact is the package's public API — entry-point
+  classes, service providers, exposed contracts. Everything else is
+  scaffolding.
+- Downstream consumers depend on this package via Composer. Every
+  public change is a user-facing API change governed by semver.
+- `composer.json` is the source of truth for supported PHP versions
+  and any framework constraints. Check `require.php` (and any
+  `require.<framework>/*` entries) before using version-specific
+  features.
+
+## Source Layout
+
+- `src/` — package source, PSR-4 autoloaded per `composer.json`
+- `tests/` — Pest or PHPUnit suite
+- `config/` — publishable defaults shipped with the package, when
+  applicable
+- `resources/` — views, translations, Boost skills / guidelines, when
+  applicable
+- `database/migrations`, `database/factories` — only if the package
+  ships them
+- `workbench/` — developer-only Testbench scaffolding when Testbench
+  is in use; never shipped
+
+Check sibling files before inventing structure. Do not introduce new
+top-level directories without a clear reason.
+
+## Tests Are the Specification
+
+The package has no running application to click through. Tests are how
+behaviour is pinned down.
+
+- Write tests alongside any behavioural change.
+- Do not create "verification scripts" when a test can prove the same
+  thing.
+- Run the project's configured test runner (`vendor/bin/pest` or
+  `vendor/bin/phpunit`) before claiming a change is done.
+
+## Public API Discipline
+
+- Every `public`, `protected`, or exported symbol is part of the
+  package's surface. Breaking changes require a major version bump.
+- Prefer `final` classes and `private`/`@internal` markers for
+  anything not intended for extension.
+- Keep config keys, published asset paths, and service container
+  bindings stable across patch and minor versions.
+
+## Conventions
+
+- Match existing code style, naming, and structural patterns — check
+  sibling files before writing new ones.
+- Use descriptive names (`resolvePublishDestination`, not `resolve()`).
+- Reuse existing helpers before adding new ones.
+- Do not add dependencies without approval; every new `require` is a
+  constraint downstream consumers inherit.
+
+## Extending boost-core
+
+If your package authors a custom `FileEmitter` (to write a file like
+`.mcp.json` into the host during `boost sync`), declare the
+`boost-extension` tag in your `boost.php` `withTags([...])`. That pulls
+the `writing-file-emitter` skill — gated off by default so consumers
+who do not extend the engine don't carry it, which is why an
+emitter-authoring package has to opt in explicitly. The same tag pulls
+`skill-authoring` for writing boost-family skills.
+
+## Documentation Files
+
+Only create or edit documentation (README, CHANGELOG, docs/) when
+explicitly requested or when a behaviour change requires it.
+
+## Replies
+
+Be concise. Focus on what changed and why. Skip restating what the
+diff already shows.
