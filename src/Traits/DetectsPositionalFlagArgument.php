@@ -47,7 +47,7 @@ trait DetectsPositionalFlagArgument
      */
     private function flagSiteForMethodCall(MethodCall $node, Scope $scope, array $firstPartyNamespaces): ?array
     {
-        if (! $node->name instanceof Identifier) {
+        if (! $node->name instanceof Identifier || $this->isVirtualNullsafeCall($node)) {
             return null;
         }
 
@@ -65,6 +65,20 @@ trait DetectsPositionalFlagArgument
         }
 
         return $this->instanceCallFlagSite($node->var, $node->name->name, $node->getArgs(), $scope, $firstPartyNamespaces);
+    }
+
+    /**
+     * PHPStan dispatches a synthetic `MethodCall` for the non-null branch of
+     * `$obj?->m(...)`, so skipping it here is what keeps the flag error from
+     * being reported twice alongside the NullsafeMethodCall rule.
+     *
+     * It belongs in this trait, not in the rules: the other `MethodCall` checks
+     * (debug, unsafe request data, form-request fields) have no nullsafe twin
+     * and get their `?->` coverage from exactly this synthetic node.
+     */
+    private function isVirtualNullsafeCall(MethodCall $node): bool
+    {
+        return $node->getAttribute('virtualNullsafeMethodCall') === true;
     }
 
     /**

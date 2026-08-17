@@ -460,6 +460,26 @@ final class CombinedMethodCallRuleTest extends RuleTestCase
         $this->analyse([__DIR__ . '/Conventions/stubs/InheritedVendorMethodStub.php'], []);
     }
 
+    /**
+     * PHPStan's synthetic node for the non-null branch would otherwise duplicate
+     * what PositionalFlagArgumentNullsafeMethodCallRule reports for this site —
+     * these two are the registered pair, so this is the production doubling.
+     */
+    #[Test]
+    public function does_not_flag_a_nullsafe_call_left_to_the_nullsafe_rule(): void
+    {
+        $this->analyse([__DIR__ . '/Conventions/stubs/NullsafeFlagCallStub.php'], []);
+    }
+
+    /** A plain `->` call after a nullsafe hop is not synthetic, and no nullsafe rule covers it. */
+    #[Test]
+    public function still_flags_a_plain_call_after_a_nullsafe_hop(): void
+    {
+        $this->analyse([__DIR__ . '/Conventions/stubs/NullsafeChainFlagCallStub.php'], [
+            [$this->flagMessage('active'), 21, $this->flagTip()],
+        ]);
+    }
+
     #[Test]
     public function positional_flag_uses_correct_error_identifier(): void
     {
