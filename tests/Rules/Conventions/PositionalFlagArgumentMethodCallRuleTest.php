@@ -80,6 +80,24 @@ final class PositionalFlagArgumentMethodCallRuleTest extends RuleTestCase
         ]);
     }
 
+    /**
+     * An intersection receiver flags when exactly one member declares the
+     * method, and when multiple declarers agree on the flag parameter's name
+     * (once, not per member). It stays silent when the declarers disagree on
+     * the name, or when one of them is vendor-declared. A union receiver
+     * resolves the same way; a member that lacks the method entirely is
+     * PHPStan's own undefined-method error to report, not ambiguity.
+     */
+    #[Test]
+    public function resolves_intersection_receivers_by_declarer_agreement(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/IntersectionFlagCallStub.php'], [
+            [$this->message('active'), 43, $this->tip()],
+            [$this->message('short'), 48, $this->tip()],
+            [$this->message('short'), 63, $this->tip()],
+        ]);
+    }
+
     #[Test]
     public function error_uses_correct_identifier(): void
     {

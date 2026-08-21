@@ -12,6 +12,7 @@ use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
 use PHPStan\Analyser\Scope;
+use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\ExtendedMethodReflection;
 use PHPStan\Reflection\ParametersAcceptorSelector;
 use PHPStan\Reflection\ReflectionProvider;
@@ -100,14 +101,43 @@ trait DetectsPositionalFlagArgument
 
         $classReflections = TypeCombinator::removeNull($scope->getType($receiver))->getObjectClassReflections();
 
-        // Single concrete receiver only (matches the sister rector rule). A union
-        // receiver whose members name the flag parameter differently would make
-        // the suggested name ambiguous; cross-member agreement is later scope.
-        if (count($classReflections) !== 1 || ! $classReflections[0]->hasMethod($methodName)) {
-            return null;
+        return $this->agreedFlagSite($classReflections, $methodName, $args, $flagIndex, $scope, $firstPartyNamespaces);
+    }
+
+    /**
+     * Resolves the flag record across every receiver member that declares the
+     * method — an intersection (or union) receiver yields one reflection per
+     * member. Declines when no member declares it, when any declarer would
+     * decline on its own (vendor declaring class, variadic parameter), or when
+     * two declarers disagree on the flag parameter's name — only that
+     * disagreement makes the suggested name ambiguous. This is deliberately
+     * broader than the sister rector rule, which still declines on any
+     * multi-member receiver: reporting beats silently auto-fixing here.
+     *
+     * @param  list<ClassReflection>  $classReflections
+     * @param  array<Arg>  $args
+     * @param  list<string>  $firstPartyNamespaces
+     * @return array{method: string, argIndex: int, paramName: string, value: string}|null
+     */
+    private function agreedFlagSite(array $classReflections, string $methodName, array $args, int $flagIndex, Scope $scope, array $firstPartyNamespaces): ?array
+    {
+        $site = null;
+
+        foreach ($classReflections as $classReflection) {
+            if (! $classReflection->hasMethod($methodName)) {
+                continue;
+            }
+
+            $record = $this->flagRecord($classReflection->getMethod($methodName, $scope), $methodName, $args, $flagIndex, $scope, $firstPartyNamespaces);
+
+            if ($record === null || ($site !== null && $record['paramName'] !== $site['paramName'])) {
+                return null;
+            }
+
+            $site = $record;
         }
 
-        return $this->flagRecord($classReflections[0]->getMethod($methodName, $scope), $methodName, $args, $flagIndex, $scope, $firstPartyNamespaces);
+        return $site;
     }
 
     /**
