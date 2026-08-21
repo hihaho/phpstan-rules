@@ -2,6 +2,15 @@
 
 All notable changes to `hihaho/phpstan-rules` will be documented in this file.
 
+## v3.15.2 - 2026-08-21
+
+<!-- verified-sha: 2db1d510d0dd3fbd6a96748102d0bbc6dfb66761 -->
+### Fixed
+
+- The positional-flag rules (`PositionalFlagArgument*`, the Combined rules, and the named-argument manifest collector) no longer stay silent when the receiver resolves to an intersection or union type. Previously any multi-member receiver was skipped outright, hiding real violations; now the rules resolve the method across every member that declares it and only decline on genuine ambiguity — no declarer, a vendor-declared or variadic declarer, or declarers that disagree on the flag parameter's name. Surfaced by a differential comparison against real-world usage.
+
+**Full Changelog**: https://github.com/hihaho/phpstan-rules/compare/v3.15.1...v3.15.2
+
 ## v3.15.1 - 2026-08-17
 
 <!-- verified-sha: aa1305be8ce56072d58f858b6c3a4d8db1b73a22 -->
@@ -31,6 +40,7 @@ parameters:
         App\Enums\Concerns\SideMenu: App\Enums\Contracts\SideMenuContract
 
 
+
 ```
 ```php
 enum PortalPdfState: string          // reported — has localizationKey(), invisible to the contract
@@ -42,6 +52,7 @@ enum ActionType: int implements BaseActionType   // fine — BaseActionType exte
 {
     use HasLocalization;
 }
+
 
 
 ```
@@ -78,6 +89,7 @@ $interaction->loadMissing('chapters');
 
 
 
+
 ```
 An explicit empty `$with = []` (which restates Eloquent's own default and eager-loads nothing) is not flagged, and a `$with` property on any non-`Model` class is ignored. Detection keys off the declaring class being a `Model` subclass, so intermediate/abstract base models are covered transitively. Identifier: `hihaho.conventions.noEloquentWithProperty`.
 
@@ -99,6 +111,7 @@ parameters:
     stubbedMethods:
         Laravel\Nova\Fields\Number:
             onlyOnExport: '$this'   # Number::make(…)->onlyOnExport()->sortable() stays typed
+
 
 
 
@@ -126,6 +139,7 @@ parameters:
     routeFiles:
         - routes/web.php
         - routes/api.php
+
 
 
 
@@ -196,12 +210,14 @@ parameters:
 
 
 
+
 ```
 ```php
 public function handle(Request $request): void
 {
     $video = $request->route('video_id'); // Video — no assert() needed
 }
+
 
 
 
@@ -237,6 +253,7 @@ public function scopeWithPublishedPosts(Builder $query): void
     // $q is Builder<Post> — Post::PUBLISHED resolves instead of erroring against base Model.
     $query->whereHas('posts', fn (Builder $q) => $q->where(Post::STATUS, Post::PUBLISHED));
 }
+
 
 
 
@@ -282,6 +299,7 @@ public function ids(Collection $users): array
 
 
 
+
 ```
 The extension is registered automatically — no configuration. Two guards keep it sound: detection is syntactic (the receiver must be a direct `->values()` call, so a chain split across variables is left alone rather than guessed), and the receiver must be a `Support\Collection`/`LazyCollection` or subclass — so Eloquent collections benefit while a bare `Enumerable` or a custom implementation with unknown key semantics is never narrowed. Only `values()` is handled; `flatten()`, `collapse()`, and `flatMap()` are deliberately excluded because Laravel doesn't reliably type them as lists.
 
@@ -308,6 +326,7 @@ parameters:
             validPassword: string
         Illuminate\Testing\TestResponse:
             assertSeeLivewire: Illuminate\Testing\TestResponse
+
 
 
 
@@ -393,6 +412,7 @@ parameters:
             - Database\Factories
             - Tests
         outputPath: named-arguments-manifest.json
+
 
 
 
