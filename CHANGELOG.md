@@ -2,6 +2,38 @@
 
 All notable changes to `hihaho/phpstan-rules` will be documented in this file.
 
+## v3.17.0 - 2026-09-03
+
+<!-- verified-sha: d03e47eb469a15667f5e96ca71f113f593b61263 -->
+### Fixed
+
+**`SlowMigrationDdlRule` missed migrations that pass their definition through a helper.** A migration that guards each statement so a run killed by the deploy hook can resume tends to factor the guard into a private method, which leaves `Schema::table()` holding a parameter rather than a literal closure:
+
+```php
+$this->addIndex(self::LEARNER_ID_INDEX, fn (Blueprint $table) => $table->index('external_learner_id', self::LEARNER_ID_INDEX));
+
+private function addIndex(string $index, Closure $definition): void
+{
+    if (Schema::hasIndex($this->table, $index)) {
+        return;
+    }
+
+    Schema::table($this->table, $definition);
+}
+
+```
+3.16.0 walked literal closures only, so it reported nothing here — including index builds on an outlier table, the shape the rule exists to catch. The parameter is now traced back to the helper's own call sites, matching named arguments by name and positional ones by position, so two helpers altering two tables stay apart.
+
+### Added
+
+**`hihaho.database.uncheckableSchemaChange`.** A `Schema::table()` on an outlier whose definition still cannot be read — built elsewhere, or handed in from outside the class — is reported rather than passed over, on the same reasoning as `hihaho.database.unresolvableAlterTarget`. A rule that cannot check something must not look like a rule that checked it and found nothing.
+
+### Notes
+
+Backward compatible; `outlierTables` is still empty by default. Projects already on 3.16.0 should expect more findings on migrations that use helper methods — those operations were previously invisible, not absent.
+
+**Full Changelog**: https://github.com/hihaho/phpstan-rules/compare/v3.16.0...v3.17.0
+
 ## v3.16.0 - 2026-09-03
 
 <!-- verified-sha: 3980f3881a9b2b938526c80072a862fbc9f10e7a -->
@@ -25,6 +57,7 @@ parameters:
     outlierTables:
         - video_sessions
 
+
 ```
 ```php
 Schema::table($this->table, function (Blueprint $table): void {
@@ -32,6 +65,7 @@ Schema::table($this->table, function (Blueprint $table): void {
     $table->string('external_learner_id', 255); // reported — no ->instant()
     $table->string('locale', 8)->instant();     // fine — MySQL rejects what it cannot apply instantly
 });
+
 
 ```
 Laravel's `ColumnDefinition::instant()` compiles to `algorithm=instant`, so asserting it makes MySQL refuse an operation it cannot apply instantly instead of silently rebuilding the table. Index and foreign-key work belongs in a job run outside the deploy.
@@ -88,6 +122,7 @@ parameters:
 
 
 
+
 ```
 ```php
 enum PortalPdfState: string          // reported — has localizationKey(), invisible to the contract
@@ -99,6 +134,7 @@ enum ActionType: int implements BaseActionType   // fine — BaseActionType exte
 {
     use HasLocalization;
 }
+
 
 
 
@@ -139,6 +175,7 @@ $interaction->loadMissing('chapters');
 
 
 
+
 ```
 An explicit empty `$with = []` (which restates Eloquent's own default and eager-loads nothing) is not flagged, and a `$with` property on any non-`Model` class is ignored. Detection keys off the declaring class being a `Model` subclass, so intermediate/abstract base models are covered transitively. Identifier: `hihaho.conventions.noEloquentWithProperty`.
 
@@ -160,6 +197,7 @@ parameters:
     stubbedMethods:
         Laravel\Nova\Fields\Number:
             onlyOnExport: '$this'   # Number::make(…)->onlyOnExport()->sortable() stays typed
+
 
 
 
@@ -189,6 +227,7 @@ parameters:
     routeFiles:
         - routes/web.php
         - routes/api.php
+
 
 
 
@@ -263,12 +302,14 @@ parameters:
 
 
 
+
 ```
 ```php
 public function handle(Request $request): void
 {
     $video = $request->route('video_id'); // Video — no assert() needed
 }
+
 
 
 
@@ -306,6 +347,7 @@ public function scopeWithPublishedPosts(Builder $query): void
     // $q is Builder<Post> — Post::PUBLISHED resolves instead of erroring against base Model.
     $query->whereHas('posts', fn (Builder $q) => $q->where(Post::STATUS, Post::PUBLISHED));
 }
+
 
 
 
@@ -355,6 +397,7 @@ public function ids(Collection $users): array
 
 
 
+
 ```
 The extension is registered automatically — no configuration. Two guards keep it sound: detection is syntactic (the receiver must be a direct `->values()` call, so a chain split across variables is left alone rather than guessed), and the receiver must be a `Support\Collection`/`LazyCollection` or subclass — so Eloquent collections benefit while a bare `Enumerable` or a custom implementation with unknown key semantics is never narrowed. Only `values()` is handled; `flatten()`, `collapse()`, and `flatMap()` are deliberately excluded because Laravel doesn't reliably type them as lists.
 
@@ -381,6 +424,7 @@ parameters:
             validPassword: string
         Illuminate\Testing\TestResponse:
             assertSeeLivewire: Illuminate\Testing\TestResponse
+
 
 
 
@@ -468,6 +512,7 @@ parameters:
             - Database\Factories
             - Tests
         outputPath: named-arguments-manifest.json
+
 
 
 
