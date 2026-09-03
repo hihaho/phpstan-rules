@@ -344,9 +344,7 @@ Laravel's `ColumnDefinition::instant()` compiles to `algorithm=instant`, so asse
 
 `timestamps()`, `softDeletes()` and the `morphs()` family return `void` and so cannot carry `->instant()` at all. There is no safe way to write them against a table this size, so they are reported unconditionally: add the columns individually with the assertion.
 
-Chains are read from anywhere in the closure, not only from top-level statements, so `$column = $table->string('x');` and a chain inside a conditional are both checked.
-
-The closure itself may also be indirected. A migration that guards each statement so a run killed by a deploy timeout can resume tends to factor the guard into a helper, which leaves the `Schema::table()` call holding a variable:
+Chains are read from anywhere in the closure, and a closure that reaches `Schema::table()` through a helper parameter is traced back to the helper's call sites, so the guarded shape a resumable migration uses is checked too:
 
 ```php
 $this->addIndex(self::LEARNER_ID_INDEX, fn (Blueprint $table) => $table->index('external_learner_id', self::LEARNER_ID_INDEX));
@@ -357,11 +355,11 @@ private function addIndex(string $index, Closure $definition): void
         return;
     }
 
-    Schema::table($this->table, $definition);
+    Schema::table($this->table, $definition);   // reported at the arrow function above
 }
 ```
 
-There is no closure at the call site to read, so the Blueprint-typed closures declared in the class are read instead — a closure written at a `Schema::` call of its own stays attributed to that call. When the class declares none at all, the call is reported as uncheckable rather than passed over.
+A definition that still cannot be read — built elsewhere, or handed in from outside the class — is reported as uncheckable rather than passed over.
 
 A raw statement is keyed on the table it ALTERs, not on any mention of the name, so `ALTER TABLE lti_grades ... REFERENCES video_sessions` is fine.
 
