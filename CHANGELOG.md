@@ -2,6 +2,52 @@
 
 All notable changes to `hihaho/phpstan-rules` will be documented in this file.
 
+## v3.16.0 - 2026-09-03
+
+<!-- verified-sha: 3980f3881a9b2b938526c80072a862fbc9f10e7a -->
+### Added
+
+**`SlowMigrationDdlRule` — block DDL a migration cannot run instantly on a very large table.** On a table of tens of millions of rows, `ADD INDEX` and `ADD FOREIGN KEY` run under `ALGORITHM=COPY`: MySQL rebuilds the table and holds an exclusive metadata lock for the duration, queueing every write behind it. Inside a deploy hook with a timeout and automatic retries, one deploy stacks several of those rebuilds on the busiest table in the system.
+
+The rule reports these shapes on the tables a project declares as outliers, under five identifiers:
+
+| Shape | Identifier |
+|---|---|
+| `->index()`/`->unique()`/`->fullText()`/`->spatialIndex()`/`->foreign()`/`->constrained()`/`->after()`/`->change()` | `hihaho.database.slowMigrationDdl` |
+| `timestamps()`/`softDeletes()`/`morphs()` and their variants, which return `void` and cannot assert the algorithm | `hihaho.database.slowMigrationDdl` |
+| a column add or `dropColumn()` without `->instant()` | `hihaho.database.migrationColumnWithoutInstant` |
+| a raw `ALTER TABLE` without `ALGORITHM=INSTANT` | `hihaho.database.rawAlterWithoutInstant` |
+| a raw `ALTER TABLE` whose target cannot be read statically | `hihaho.database.unresolvableAlterTarget` |
+| `Schema::rename()`/`drop()`/`dropIfExists()` | `hihaho.database.outlierTableDestructiveSchemaCall` |
+
+```neon
+parameters:
+    outlierTables:
+        - video_sessions
+
+```
+```php
+Schema::table($this->table, function (Blueprint $table): void {
+    $table->index('external_learner_id');       // reported — rebuilds the table
+    $table->string('external_learner_id', 255); // reported — no ->instant()
+    $table->string('locale', 8)->instant();     // fine — MySQL rejects what it cannot apply instantly
+});
+
+```
+Laravel's `ColumnDefinition::instant()` compiles to `algorithm=instant`, so asserting it makes MySQL refuse an operation it cannot apply instantly instead of silently rebuilding the table. Index and foreign-key work belongs in a job run outside the deploy.
+
+Only creation calls are flagged. `dropIndex()` and `dropForeign()` are left alone, because flagging them pushes authors to write migrations that cannot roll back. A new table may point a foreign key **at** an outlier — the new table is empty, so it costs nothing — and a raw statement is keyed on the table it alters, not on any mention of the name.
+
+An `ALTER TABLE` whose target cannot be resolved to a literal is reported under its own identifier rather than passed over: the rule cannot tell whether it touches an outlier, and "cannot tell" must not render as "safe".
+
+The table name is read off the migration's own class declaration rather than through the type engine. A typed `private string $table = 'video_sessions'` infers as `string` and an interpolated statement as `non-falsy-string`, so both literals the check depends on are gone by the time types are resolved; property and class-constant defaults are read from the AST instead, and interpolated statements are flattened with those values substituted.
+
+### Notes
+
+Backward compatible. `outlierTables` is empty by default, so the rule reports nothing until a project measures its own row counts and lists its tables. Migrations are usually outside a project's analysed `paths`; the rule reports nothing on them until `database/migrations` is added.
+
+**Full Changelog**: https://github.com/hihaho/phpstan-rules/compare/v3.15.2...v3.16.0
+
 ## v3.15.2 - 2026-08-21
 
 <!-- verified-sha: 2db1d510d0dd3fbd6a96748102d0bbc6dfb66761 -->
@@ -41,6 +87,7 @@ parameters:
 
 
 
+
 ```
 ```php
 enum PortalPdfState: string          // reported — has localizationKey(), invisible to the contract
@@ -52,6 +99,7 @@ enum ActionType: int implements BaseActionType   // fine — BaseActionType exte
 {
     use HasLocalization;
 }
+
 
 
 
@@ -90,6 +138,7 @@ $interaction->loadMissing('chapters');
 
 
 
+
 ```
 An explicit empty `$with = []` (which restates Eloquent's own default and eager-loads nothing) is not flagged, and a `$with` property on any non-`Model` class is ignored. Detection keys off the declaring class being a `Model` subclass, so intermediate/abstract base models are covered transitively. Identifier: `hihaho.conventions.noEloquentWithProperty`.
 
@@ -111,6 +160,7 @@ parameters:
     stubbedMethods:
         Laravel\Nova\Fields\Number:
             onlyOnExport: '$this'   # Number::make(…)->onlyOnExport()->sortable() stays typed
+
 
 
 
@@ -139,6 +189,7 @@ parameters:
     routeFiles:
         - routes/web.php
         - routes/api.php
+
 
 
 
@@ -211,12 +262,14 @@ parameters:
 
 
 
+
 ```
 ```php
 public function handle(Request $request): void
 {
     $video = $request->route('video_id'); // Video — no assert() needed
 }
+
 
 
 
@@ -253,6 +306,7 @@ public function scopeWithPublishedPosts(Builder $query): void
     // $q is Builder<Post> — Post::PUBLISHED resolves instead of erroring against base Model.
     $query->whereHas('posts', fn (Builder $q) => $q->where(Post::STATUS, Post::PUBLISHED));
 }
+
 
 
 
@@ -300,6 +354,7 @@ public function ids(Collection $users): array
 
 
 
+
 ```
 The extension is registered automatically — no configuration. Two guards keep it sound: detection is syntactic (the receiver must be a direct `->values()` call, so a chain split across variables is left alone rather than guessed), and the receiver must be a `Support\Collection`/`LazyCollection` or subclass — so Eloquent collections benefit while a bare `Enumerable` or a custom implementation with unknown key semantics is never narrowed. Only `values()` is handled; `flatten()`, `collapse()`, and `flatMap()` are deliberately excluded because Laravel doesn't reliably type them as lists.
 
@@ -326,6 +381,7 @@ parameters:
             validPassword: string
         Illuminate\Testing\TestResponse:
             assertSeeLivewire: Illuminate\Testing\TestResponse
+
 
 
 
@@ -412,6 +468,7 @@ parameters:
             - Database\Factories
             - Tests
         outputPath: named-arguments-manifest.json
+
 
 
 
