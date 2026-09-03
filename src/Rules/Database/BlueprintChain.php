@@ -10,6 +10,8 @@ use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Identifier;
+use PhpParser\Node\Name;
+use PhpParser\Node\Stmt\Class_;
 use PhpParser\NodeFinder;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Type\ObjectType;
@@ -64,6 +66,46 @@ final readonly class BlueprintChain
         }
 
         return $chains;
+    }
+
+    /**
+     * Every Blueprint-typed closure declared anywhere in the class, wherever it is
+     * eventually handed to `Schema::table()`. A migration that guards each statement
+     * so a run killed by the deploy timeout can resume tends to factor the guard into
+     * a helper:
+     *
+     *     $this->addIndex(self::LEARNER_ID_INDEX, fn (Blueprint $table) => $table->index(...));
+     *
+     *     private function addIndex(string $index, Closure $definition): void
+     *     {
+     *         Schema::table($this->table, $definition);
+     *     }
+     *
+     * There is no literal closure at the `Schema::table()` call to read, so the
+     * closures are collected from the class instead. In a self-contained migration a
+     * Blueprint parameter has exactly one purpose, which makes the type hint a
+     * reliable marker.
+     *
+     * @return list<Closure|ArrowFunction>
+     */
+    public function blueprintClosures(Class_ $class): array
+    {
+        $finder = new NodeFinder();
+
+        /** @var list<Closure|ArrowFunction> $functions */
+        $functions = [
+            ...$finder->findInstanceOf($class, Closure::class),
+            ...$finder->findInstanceOf($class, ArrowFunction::class),
+        ];
+
+        return array_values(array_filter(
+            $functions,
+            static function (Closure|ArrowFunction $function): bool {
+                $type = $function->params[0]->type ?? null;
+
+                return $type instanceof Name && $type->getLast() === 'Blueprint';
+            },
+        ));
     }
 
     private function isRootedIn(MethodCall $call, string $variable): bool

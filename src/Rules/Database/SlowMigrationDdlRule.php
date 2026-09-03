@@ -111,6 +111,7 @@ final readonly class SlowMigrationDdlRule implements Rule
         private array $outlierTables,
         private BlueprintChain $chain,
         private RawAlterScanner $scanner,
+        private BlueprintDefinitionResolver $definitions,
     ) {}
 
     #[Override]
@@ -187,7 +188,7 @@ final readonly class SlowMigrationDdlRule implements Rule
             }
 
             if ($method === 'table') {
-                $errors = [...$errors, ...$this->inspectBlueprintClosure($call, $table)];
+                $errors = [...$errors, ...$this->inspectBlueprintClosure($class, $call, $table)];
             }
         }
 
@@ -197,17 +198,35 @@ final readonly class SlowMigrationDdlRule implements Rule
     /**
      * @return list<array{int, IdentifierRuleError}>
      */
-    private function inspectBlueprintClosure(StaticCall $call, string $table): array
+    private function inspectBlueprintClosure(Class_ $class, StaticCall $call, string $table): array
     {
-        $closure = $call->args[1] ?? null;
+        $closures = $this->definitions->forCall($class, $call);
 
-        if (! $closure instanceof Arg || ! $closure->value instanceof Closure && ! $closure->value instanceof ArrowFunction) {
-            return [];
+        if ($closures === []) {
+            return [$this->finding(
+                "Schema::table() on `{$table}` whose definition cannot be read statically, so the operations it runs cannot be checked. Pass the closure at the call site.",
+                'hihaho.database.uncheckableSchemaChange',
+                $call->getStartLine(),
+            )];
         }
 
         $errors = [];
 
-        foreach ($this->chain->rootedChains($closure->value) as $statement) {
+        foreach ($closures as $closure) {
+            $errors = [...$errors, ...$this->inspectDefinition($closure, $table)];
+        }
+
+        return $errors;
+    }
+
+    /**
+     * @return list<array{int, IdentifierRuleError}>
+     */
+    private function inspectDefinition(Closure|ArrowFunction $closure, string $table): array
+    {
+        $errors = [];
+
+        foreach ($this->chain->rootedChains($closure) as $statement) {
             $finding = $this->inspectBlueprintStatement($statement, $table);
 
             if ($finding !== null) {

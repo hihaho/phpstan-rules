@@ -306,6 +306,7 @@ Flag DDL a Laravel migration cannot run instantly against a table too large to r
 |                          | `timestamps()`/`softDeletes()`/`morphs()` on an outlier     | `hihaho.database.slowMigrationDdl`                    |
 |                          | raw `ALTER TABLE` without `ALGORITHM=INSTANT`              | `hihaho.database.rawAlterWithoutInstant`              |
 |                          | raw `ALTER TABLE` whose target cannot be read statically   | `hihaho.database.unresolvableAlterTarget`             |
+|                          | `Schema::table()` whose closure cannot be read statically  | `hihaho.database.uncheckableSchemaChange`             |
 |                          | `Schema::rename()`/`drop()`/`dropIfExists()` on an outlier | `hihaho.database.outlierTableDestructiveSchemaCall`   |
 
 It checks nothing by default — each project measures its own row counts and lists the tables:
@@ -344,6 +345,23 @@ Laravel's `ColumnDefinition::instant()` compiles to `algorithm=instant`, so asse
 `timestamps()`, `softDeletes()` and the `morphs()` family return `void` and so cannot carry `->instant()` at all. There is no safe way to write them against a table this size, so they are reported unconditionally: add the columns individually with the assertion.
 
 Chains are read from anywhere in the closure, not only from top-level statements, so `$column = $table->string('x');` and a chain inside a conditional are both checked.
+
+The closure itself may also be indirected. A migration that guards each statement so a run killed by a deploy timeout can resume tends to factor the guard into a helper, which leaves the `Schema::table()` call holding a variable:
+
+```php
+$this->addIndex(self::LEARNER_ID_INDEX, fn (Blueprint $table) => $table->index('external_learner_id', self::LEARNER_ID_INDEX));
+
+private function addIndex(string $index, Closure $definition): void
+{
+    if (Schema::hasIndex($this->table, $index)) {
+        return;
+    }
+
+    Schema::table($this->table, $definition);
+}
+```
+
+There is no closure at the call site to read, so the Blueprint-typed closures declared in the class are read instead — a closure written at a `Schema::` call of its own stays attributed to that call. When the class declares none at all, the call is reported as uncheckable rather than passed over.
 
 A raw statement is keyed on the table it ALTERs, not on any mention of the name, so `ALTER TABLE lti_grades ... REFERENCES video_sessions` is fine.
 

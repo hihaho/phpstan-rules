@@ -149,6 +149,8 @@ services:
         arguments:
             reflectionProvider: @reflectionProvider
     -
+        class: Hihaho\PhpstanRules\Rules\Database\BlueprintDefinitionResolver
+    -
         class: Hihaho\PhpstanRules\Rules\Database\RawAlterScanner
         arguments:
             outlierTables: %outlierTables%
@@ -158,6 +160,7 @@ services:
             outlierTables: %outlierTables%
             chain: @Hihaho\PhpstanRules\Rules\Database\BlueprintChain
             scanner: @Hihaho\PhpstanRules\Rules\Database\RawAlterScanner
+            definitions: @Hihaho\PhpstanRules\Rules\Database\BlueprintDefinitionResolver
         tags:
             - phpstan.rules.rule
     -

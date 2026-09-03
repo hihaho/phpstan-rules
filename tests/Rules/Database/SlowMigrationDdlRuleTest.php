@@ -3,6 +3,7 @@
 namespace Hihaho\PhpstanRules\Tests\Rules\Database;
 
 use Hihaho\PhpstanRules\Rules\Database\BlueprintChain;
+use Hihaho\PhpstanRules\Rules\Database\BlueprintDefinitionResolver;
 use Hihaho\PhpstanRules\Rules\Database\RawAlterScanner;
 use Hihaho\PhpstanRules\Rules\Database\SlowMigrationDdlRule;
 use Override;
@@ -28,10 +29,13 @@ final class SlowMigrationDdlRuleTest extends RuleTestCase
     #[Override]
     protected function getRule(): Rule
     {
+        $chain = new BlueprintChain(self::createReflectionProvider());
+
         return new SlowMigrationDdlRule(
             self::OUTLIER_TABLES,
-            new BlueprintChain(self::createReflectionProvider()),
+            $chain,
             new RawAlterScanner(self::OUTLIER_TABLES),
+            new BlueprintDefinitionResolver(),
         );
     }
 
@@ -191,6 +195,57 @@ final class SlowMigrationDdlRuleTest extends RuleTestCase
     {
         $this->analyse([__DIR__ . '/stubs/drop-outlier.php'], [
             ['Schema::dropIfExists() on `video_session_questions` rebuilds or destroys a table too large to alter inside a deploy.', 9, self::TIP],
+        ]);
+    }
+
+    /**
+     * The shape the incident remediation itself uses: every statement is guarded so a
+     * run killed by the deploy timeout can resume, and the guard is factored into a
+     * private helper — which leaves the `Schema::table()` call holding a variable
+     * rather than a literal closure.
+     */
+    #[Test]
+    public function flags_definitions_reaching_schema_table_through_a_helper(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/guard-helper-closure.php'], [
+            ['Column work on `video_sessions` without ->instant(). Unasserted, MySQL is free to rebuild the table instead of failing fast.', 15, self::TIP],
+            ['->index() on `video_sessions` rebuilds the table under ALGORITHM=COPY and holds an exclusive metadata lock for the duration.', 16, self::TIP],
+        ]);
+    }
+
+    #[Test]
+    public function attributes_a_closure_written_at_its_own_call_to_that_call_only(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/helper-and-own-call-site.php'], [
+            ['->index() on `video_sessions` rebuilds the table under ALGORITHM=COPY and holds an exclusive metadata lock for the duration.', 17, self::TIP],
+        ]);
+    }
+
+    /**
+     * Each helper's definitions are traced back to its own call sites, so work on an
+     * ordinary table is not attributed to the outlier the neighbouring helper alters.
+     */
+    #[Test]
+    public function keeps_two_helpers_altering_two_tables_apart(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/two-helpers-two-tables.php'], [
+            ['->index() on `video_sessions` rebuilds the table under ALGORITHM=COPY and holds an exclusive metadata lock for the duration.', 15, self::TIP],
+        ]);
+    }
+
+    #[Test]
+    public function traces_a_definition_passed_as_a_named_argument(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/named-argument-helper.php'], [
+            ['->index() on `video_sessions` rebuilds the table under ALGORITHM=COPY and holds an exclusive metadata lock for the duration.', 13, self::TIP],
+        ]);
+    }
+
+    #[Test]
+    public function reports_a_schema_table_definition_that_cannot_be_read(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/unreadable-definition.php'], [
+            ['Schema::table() on `video_sessions` whose definition cannot be read statically, so the operations it runs cannot be checked. Pass the closure at the call site.', 11, self::TIP],
         ]);
     }
 
