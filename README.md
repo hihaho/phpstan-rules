@@ -295,6 +295,64 @@ The check runs on reflection, not on the text of the `implements` clause, so an 
 
 A configured name that does not exist, or that is not of the expected kind (trait on the left, interface on the right), aborts the analysis with an `InvalidArgumentException` rather than matching nothing — a typo in the config must not turn the rule into a silent no-op.
 
+### Slow migration DDL on outlier tables
+
+Flag DDL a Laravel migration cannot run instantly against a table too large to rebuild inside a deploy. On a table of tens of millions of rows an `ADD INDEX` or `ADD FOREIGN KEY` runs under `ALGORITHM=COPY`: MySQL rebuilds the table and holds an exclusive metadata lock for the duration, queueing every write behind it. Inside a deploy hook with a timeout and automatic retries, one deploy stacks several of those on the hottest table in the system.
+
+| Rule                     | Targets                                                   | Identifier                                            |
+|--------------------------|-----------------------------------------------------------|-------------------------------------------------------|
+| `SlowMigrationDdlRule`   | `->index()`/`->foreign()`/`->after()`/… on an outlier      | `hihaho.database.slowMigrationDdl`                    |
+|                          | column add or `dropColumn()` without `->instant()`         | `hihaho.database.migrationColumnWithoutInstant`       |
+|                          | `timestamps()`/`softDeletes()`/`morphs()` on an outlier     | `hihaho.database.slowMigrationDdl`                    |
+|                          | raw `ALTER TABLE` without `ALGORITHM=INSTANT`              | `hihaho.database.rawAlterWithoutInstant`              |
+|                          | raw `ALTER TABLE` whose target cannot be read statically   | `hihaho.database.unresolvableAlterTarget`             |
+|                          | `Schema::rename()`/`drop()`/`dropIfExists()` on an outlier | `hihaho.database.outlierTableDestructiveSchemaCall`   |
+
+It checks nothing by default — each project measures its own row counts and lists the tables:
+
+```neon
+parameters:
+    outlierTables:
+        - video_sessions
+        - video_session_questions
+        - video_session_answers
+```
+
+Migrations are usually outside a project's analysed `paths`; the rule reports nothing until `database/migrations` is added.
+
+```php
+return new class extends Migration
+{
+    private string $table = 'video_sessions';
+
+    public function up(): void
+    {
+        Schema::table($this->table, function (Blueprint $table): void {
+            $table->index('external_learner_id');          // reported — rebuilds the table
+            $table->string('external_learner_id', 255);    // reported — no ->instant()
+            $table->string('locale', 8)->instant();        // fine — MySQL rejects what it cannot apply instantly
+        });
+
+        DB::statement("ALTER TABLE `{$this->table}` ADD COLUMN `foo` BIGINT NULL");                    // reported
+        DB::statement("ALTER TABLE `{$this->table}` ADD COLUMN `bar` BIGINT NULL, ALGORITHM=INSTANT"); // fine
+    }
+};
+```
+
+Laravel's `ColumnDefinition::instant()` compiles to `algorithm=instant`, so asserting it makes MySQL reject an operation it cannot apply instantly instead of silently rebuilding the table. Index and foreign-key work belongs in a queued job run outside the deploy.
+
+`timestamps()`, `softDeletes()` and the `morphs()` family return `void` and so cannot carry `->instant()` at all. There is no safe way to write them against a table this size, so they are reported unconditionally: add the columns individually with the assertion.
+
+Chains are read from anywhere in the closure, not only from top-level statements, so `$column = $table->string('x');` and a chain inside a conditional are both checked.
+
+A raw statement is keyed on the table it ALTERs, not on any mention of the name, so `ALTER TABLE lti_grades ... REFERENCES video_sessions` is fine.
+
+The whole migration class is inspected, `down()` included: a rollback that recreates a column or drops the table itself does the same work to the same table, and MySQL does not care which method ran it. Only creation calls are flagged. `dropIndex()`/`dropForeign()` live in `down()`, which a deploy never runs, and flagging them would push authors to write migrations that cannot roll back. A new table may point a foreign key **at** an outlier — the new table is empty, so it costs nothing.
+
+An `ALTER TABLE` whose target cannot be read statically — a name that comes from a constructor argument, a config value or a variable defined elsewhere — is reported under its own identifier rather than passed over. Silence and "checked, safe" must not look the same. Naming the table with a literal, or asserting `ALGORITHM=INSTANT`, clears it.
+
+Because a typed property (`private string $table = 'video_sessions'`) infers as `string` and an interpolated statement as `non-falsy-string`, the rule reads the literal off the migration's own class declaration instead of the type engine. A table name it cannot resolve statically is not reported.
+
 ## Reflection extensions
 
 ### Stubbed methods

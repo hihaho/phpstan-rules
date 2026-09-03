@@ -1,0 +1,202 @@
+<?php declare(strict_types=1);
+
+namespace Hihaho\PhpstanRules\Tests\Rules\Database;
+
+use Hihaho\PhpstanRules\Rules\Database\BlueprintChain;
+use Hihaho\PhpstanRules\Rules\Database\RawAlterScanner;
+use Hihaho\PhpstanRules\Rules\Database\SlowMigrationDdlRule;
+use Override;
+use PHPStan\Rules\Rule;
+use PHPStan\Testing\RuleTestCase;
+use PHPUnit\Framework\Attributes\Test;
+
+/**
+ * The cases below are ported from `tools/verify/migration-safety.test.sh` in
+ * hihaho/hihaho, the shell gate this rule replaces. They are that gate's accumulated
+ * bug history — both incident shapes, the interpolated raw ALTER, the class-constant
+ * table name, lowercase SQL and the multi-line chains — not a wishlist.
+ *
+ * @extends RuleTestCase<SlowMigrationDdlRule>
+ */
+final class SlowMigrationDdlRuleTest extends RuleTestCase
+{
+    /** @var list<string> */
+    private const array OUTLIER_TABLES = ['video_sessions', 'video_session_questions', 'video_session_answers'];
+
+    private const string TIP = 'Assert the algorithm on column work ($table->string(\'foo\')->instant()), or move index and foreign-key work to a queued job. Reference: .ai/docs/database-scale-and-ddl.md, incident HPB-5876.';
+
+    #[Override]
+    protected function getRule(): Rule
+    {
+        return new SlowMigrationDdlRule(
+            self::OUTLIER_TABLES,
+            new BlueprintChain(self::createReflectionProvider()),
+            new RawAlterScanner(self::OUTLIER_TABLES),
+        );
+    }
+
+    #[Test]
+    public function flags_a_foreign_key_added_to_an_outlier_table(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/incident-foreign-key.php'], [
+            ['->constrained() on `video_sessions` rebuilds the table under ALGORITHM=COPY and holds an exclusive metadata lock for the duration.', 13, self::TIP],
+        ]);
+    }
+
+    #[Test]
+    public function flags_an_index_built_on_an_outlier_table(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/incident-index.php'], [
+            ['->index() on `video_sessions` rebuilds the table under ALGORITHM=COPY and holds an exclusive metadata lock for the duration.', 13, self::TIP],
+        ]);
+    }
+
+    #[Test]
+    public function flags_a_column_added_without_instant(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/column-unasserted.php'], [
+            ['Column work on `video_sessions` without ->instant(). Unasserted, MySQL is free to rebuild the table instead of failing fast.', 13, self::TIP],
+        ]);
+    }
+
+    #[Test]
+    public function allows_column_work_that_asserts_instant(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/column-instant.php'], []);
+    }
+
+    #[Test]
+    public function allows_a_new_table_to_reference_an_outlier_table(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/create-referencing-outlier.php'], []);
+    }
+
+    #[Test]
+    public function allows_slow_ddl_on_an_ordinary_table(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/ordinary-table.php'], []);
+    }
+
+    #[Test]
+    public function flags_a_raw_alter_on_an_outlier_table(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/raw-alter.php'], [
+            ['Raw ALTER TABLE on `video_sessions` without ALGORITHM=INSTANT. MySQL picks COPY and rebuilds the table.', 9, self::TIP],
+        ]);
+    }
+
+    #[Test]
+    public function allows_a_raw_alter_that_asserts_instant(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/raw-alter-instant.php'], []);
+    }
+
+    #[Test]
+    public function flags_a_raw_alter_asserting_only_inplace(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/raw-alter-inplace.php'], [
+            ['Raw ALTER TABLE on `video_sessions` without ALGORITHM=INSTANT. MySQL picks COPY and rebuilds the table.', 9, self::TIP],
+        ]);
+    }
+
+    #[Test]
+    public function flags_a_rename_of_an_outlier_table(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/rename-outlier.php'], [
+            ['Schema::rename() on `video_sessions` rebuilds or destroys a table too large to alter inside a deploy.', 9, self::TIP],
+        ]);
+    }
+
+    #[Test]
+    public function flags_a_raw_alter_whose_table_name_is_interpolated(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/raw-alter-interpolated.php'], [
+            ['Raw ALTER TABLE on `video_sessions` without ALGORITHM=INSTANT. MySQL picks COPY and rebuilds the table.', 11, self::TIP],
+        ]);
+    }
+
+    #[Test]
+    public function flags_slow_ddl_when_the_table_is_named_by_a_class_constant(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/const-table.php'], [
+            ['->index() on `video_sessions` rebuilds the table under ALGORITHM=COPY and holds an exclusive metadata lock for the duration.', 13, self::TIP],
+        ]);
+    }
+
+    #[Test]
+    public function flags_a_lowercase_raw_alter(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/raw-alter-lowercase.php'], [
+            ['Raw ALTER TABLE on `video_sessions` without ALGORITHM=INSTANT. MySQL picks COPY and rebuilds the table.', 9, self::TIP],
+        ]);
+    }
+
+    #[Test]
+    public function allows_a_multi_line_chain_carrying_instant(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/multiline-instant.php'], []);
+    }
+
+    #[Test]
+    public function flags_a_multi_line_chain_missing_instant(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/multiline-unasserted.php'], [
+            ['Column work on `video_sessions` without ->instant(). Unasserted, MySQL is free to rebuild the table instead of failing fast.', 13, self::TIP],
+        ]);
+    }
+
+    #[Test]
+    public function allows_a_raw_alter_that_only_references_an_outlier_table(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/raw-alter-referencing-outlier.php'], []);
+    }
+
+    #[Test]
+    public function flags_column_helpers_that_cannot_assert_instant(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/unassertable-column-helpers.php'], [
+            ['->timestamps() on `video_sessions` returns void and cannot assert ->instant(), so MySQL is free to rebuild the table. Add the columns individually with the assertion.', 13, self::TIP],
+            ['->softDeletes() on `video_sessions` returns void and cannot assert ->instant(), so MySQL is free to rebuild the table. Add the columns individually with the assertion.', 14, self::TIP],
+            ['->nullableMorphs() on `video_sessions` returns void and cannot assert ->instant(), so MySQL is free to rebuild the table. Add the columns individually with the assertion.', 15, self::TIP],
+        ]);
+    }
+
+    #[Test]
+    public function flags_chains_assigned_to_a_variable_and_nested_in_a_conditional(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/assigned-and-nested-chains.php'], [
+            ['Column work on `video_sessions` without ->instant(). Unasserted, MySQL is free to rebuild the table instead of failing fast.', 15, self::TIP],
+            ['->index() on `video_sessions` rebuilds the table under ALGORITHM=COPY and holds an exclusive metadata lock for the duration.', 19, self::TIP],
+        ]);
+    }
+
+    #[Test]
+    public function reports_a_raw_alter_whose_target_cannot_be_read(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/unresolvable-alter-target.php'], [
+            ['Raw ALTER TABLE whose target table cannot be read statically, so this migration cannot be checked against the outlier tables. Name the table with a literal, or assert ALGORITHM=INSTANT.', 13, self::TIP],
+        ]);
+    }
+
+    #[Test]
+    public function flags_slow_ddl_inside_an_arrow_function_closure(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/arrow-function-closure.php'], [
+            ['->index() on `video_session_answers` rebuilds the table under ALGORITHM=COPY and holds an exclusive metadata lock for the duration.', 10, self::TIP],
+        ]);
+    }
+
+    #[Test]
+    public function flags_a_drop_of_an_outlier_table(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/drop-outlier.php'], [
+            ['Schema::dropIfExists() on `video_session_questions` rebuilds or destroys a table too large to alter inside a deploy.', 9, self::TIP],
+        ]);
+    }
+
+    #[Test]
+    public function ignores_a_class_that_is_not_a_migration(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/not-a-migration.php'], []);
+    }
+}

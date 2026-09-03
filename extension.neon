@@ -14,6 +14,7 @@ parametersSchema:
     routeBindingProviders: listOf(string())
     routeFiles: listOf(string())
     traitRequiresInterface: arrayOf(string())
+    outlierTables: listOf(string())
 
 parameters:
     # class name => (method name => return type string). Resolves runtime-only instance methods
@@ -32,6 +33,11 @@ parameters:
     # trait FQCN => interface FQCN every class using that trait must implement. PHP cannot express
     # this requirement itself. Empty by default — each consuming project configures its own pairs.
     traitRequiresInterface: []
+
+    # Tables whose row count makes any rebuilding DDL a production incident. Migrations touching
+    # them may only do work MySQL is told to do instantly. Empty by default — each project
+    # measures its own row counts before deciding.
+    outlierTables: []
 
     noUnsafeRequestData:
         unsafeMethods:
@@ -136,6 +142,22 @@ services:
         arguments:
             traitRequiresInterface: %traitRequiresInterface%
             reflectionProvider: @reflectionProvider
+        tags:
+            - phpstan.rules.rule
+    -
+        class: Hihaho\PhpstanRules\Rules\Database\BlueprintChain
+        arguments:
+            reflectionProvider: @reflectionProvider
+    -
+        class: Hihaho\PhpstanRules\Rules\Database\RawAlterScanner
+        arguments:
+            outlierTables: %outlierTables%
+    -
+        class: Hihaho\PhpstanRules\Rules\Database\SlowMigrationDdlRule
+        arguments:
+            outlierTables: %outlierTables%
+            chain: @Hihaho\PhpstanRules\Rules\Database\BlueprintChain
+            scanner: @Hihaho\PhpstanRules\Rules\Database\RawAlterScanner
         tags:
             - phpstan.rules.rule
     -
