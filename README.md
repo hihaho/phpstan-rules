@@ -309,7 +309,7 @@ Flag DDL a Laravel migration cannot run instantly against a table too large to r
 |                          | `Schema::table()` whose definition cannot be read          | `hihaho.database.uncheckableSchemaChange`             |
 |                          | `Schema::rename()`/`drop()`/`dropIfExists()` on an outlier | `hihaho.database.outlierTableDestructiveSchemaCall`   |
 
-It checks nothing by default — each project measures its own row counts and lists the tables:
+It checks nothing by default. Each project measures its own row counts and lists the tables:
 
 ```neon
 parameters:
@@ -342,7 +342,7 @@ return new class extends Migration
 
 Laravel's `ColumnDefinition::instant()` compiles to `algorithm=instant`, so asserting it makes MySQL reject an operation it cannot apply instantly instead of silently rebuilding the table. Index and foreign-key work belongs in a queued job run outside the deploy.
 
-`timestamps()`, `softDeletes()` and the `morphs()` family return `void` and so cannot carry `->instant()` at all. There is no safe way to write them against a table this size, so they are reported unconditionally: add the columns individually with the assertion.
+`timestamps()`, `softDeletes()` and the `morphs()` family return `void`, so they cannot carry `->instant()` at all and are reported whenever they touch an outlier. Add the columns individually with the assertion instead.
 
 Chains are read from anywhere in the closure, and the table and the definition are both traced when a helper supplies them. A resumable migration usually guards each statement and hands the work to a private method, so neither is written at the call:
 
@@ -361,13 +361,13 @@ private function addColumn(string $table, string $column, Closure $definition): 
 
 Each call site is read as its own invocation, pairing the table it passes with the definition it passes, so a helper used for an outlier and for an ordinary table reports only the first. Definitions held in an array the migration loops over are read the same way, provided one array literal fills the property and nothing else in the class touches it.
 
-Anything less determinate — a definition built elsewhere, an array written twice or mutated through a call, a helper with no call site to read — is reported as uncheckable rather than passed over.
+Anything less determinate reports `uncheckableSchemaChange`: a definition built elsewhere, an array written twice or mutated through a call, a helper nothing in the class calls. Write the closure at the call site to clear it. An array that is statically empty reports nothing, since the loop runs nothing.
 
 A raw statement is keyed on the table it ALTERs, not on any mention of the name, so `ALTER TABLE lti_grades ... REFERENCES video_sessions` is fine.
 
-The whole migration class is inspected, `down()` included: a rollback that recreates a column or drops the table itself does the same work to the same table, and MySQL does not care which method ran it. Only creation calls are flagged. `dropIndex()`/`dropForeign()` live in `down()`, which a deploy never runs, and flagging them would push authors to write migrations that cannot roll back. A new table may point a foreign key **at** an outlier — the new table is empty, so it costs nothing.
+The whole migration class is inspected, `down()` included, since a rollback that recreates a column does the same work to the same table. Only creation calls are flagged. `dropIndex()`/`dropForeign()` live in `down()`, which a deploy never runs, and flagging them would push authors to write migrations that cannot roll back. A new table may point a foreign key at an outlier: the new table is empty, so it costs nothing.
 
-An `ALTER TABLE` whose target cannot be read statically — a name that comes from a constructor argument, a config value or a variable defined elsewhere — is reported under its own identifier rather than passed over. Silence and "checked, safe" must not look the same. Naming the table with a literal, or asserting `ALGORITHM=INSTANT`, clears it.
+An `ALTER TABLE` whose target cannot be read statically (a name from a constructor argument, a config value, or a variable defined elsewhere) reports `unresolvableAlterTarget`. Name the table with a literal, or assert `ALGORITHM=INSTANT`, to clear it.
 
 Because a typed property (`private string $table = 'video_sessions'`) infers as `string` and an interpolated statement as `non-falsy-string`, the rule reads the literal off the migration's own class declaration instead of the type engine. A table name it cannot resolve statically is not reported.
 
