@@ -2,6 +2,23 @@
 
 All notable changes to `hihaho/phpstan-rules` will be documented in this file.
 
+## v3.18.1 - 2026-09-04
+
+<!-- verified-sha: c3c07a38116ca9bfc7f492e9ddc5462d849b8759 -->
+### Fixed
+
+**A migration that read its definition map twice lost it.** Resolution was abandoned whenever the property was mentioned again, so a `down()` iterating `array_reverse(array_keys($this->columns))` to drop the columns in reverse — the natural way to write a reversible guarded migration — made the `up()` loop unreadable and reported `hihaho.database.uncheckableSchemaChange` on code the rule could read perfectly well.
+
+Reading an array cannot change it, since PHP hands out a copy. Only aliasing or writing through it can, and those are now what disqualify the property: a reference bind, a by-reference `foreach`, `unset()`, `++`/`--`, a by-reference return, and an argument the callee takes by reference. That last one comes from PHPStan's reflection rather than a list kept by hand, so `array_push()` and `sort()` disqualify the property while `count()` and `array_keys()` leave it readable. A call this cannot resolve counts as by reference.
+
+An element of the array counts as the array throughout: replacing one entry replaces a definition the literal still shows. That covers a reference bind to an element, an element passed to a by-reference parameter, and a write through nested dimensions, which the previous check missed because it stripped only one level.
+
+### Notes
+
+Migrations that read their definition map outside the loop were reported as uncheckable in 3.18.0 and are analysed normally now, so expect real findings in their place. Nothing that was reported for a substantive reason stops being reported.
+
+**Full Changelog**: https://github.com/hihaho/phpstan-rules/compare/v3.18.0...v3.18.1
+
 ## v3.18.0 - 2026-09-04
 
 <!-- verified-sha: dc2019fedd3b667c63fbfdd8d4bdc40704af5bc7 -->
@@ -21,6 +38,7 @@ private function addColumn(string $table, string $column, Closure $definition): 
     Schema::table($table, $definition);
 }
 
+
 ```
 A column added to a 74.6M-row table without `->instant()` passed in silence. The call is now read as the invocations it performs: each call site pairs the table it passes with the definition it passes, so the outlier is reported and an ordinary table in the same helper is not. A parameter a call site omits resolves through its default.
 
@@ -36,6 +54,7 @@ foreach ($this->columns as $column => $definition) {
 
     Schema::table($this->table, $definition);
 }
+
 
 ```
 The list is read when one array literal fills the property and nothing else in the class touches it. A property written twice, extended with `+=`, passed to something that mutates it, or holding an entry that is not a closure written there reports `hihaho.database.uncheckableSchemaChange` instead. So does a loop that reassigns its own value variable, and a helper nothing in the class calls. Nested loops reusing a variable name resolve to the innermost binding. An array that is statically empty reports nothing, since the loop runs nothing.
@@ -66,6 +85,7 @@ private function addIndex(string $index, Closure $definition): void
 
     Schema::table($this->table, $definition);
 }
+
 
 
 ```
@@ -106,6 +126,7 @@ parameters:
 
 
 
+
 ```
 ```php
 Schema::table($this->table, function (Blueprint $table): void {
@@ -113,6 +134,7 @@ Schema::table($this->table, function (Blueprint $table): void {
     $table->string('external_learner_id', 255); // reported — no ->instant()
     $table->string('locale', 8)->instant();     // fine — MySQL rejects what it cannot apply instantly
 });
+
 
 
 
@@ -173,6 +195,7 @@ parameters:
 
 
 
+
 ```
 ```php
 enum PortalPdfState: string          // reported — has localizationKey(), invisible to the contract
@@ -184,6 +207,7 @@ enum ActionType: int implements BaseActionType   // fine — BaseActionType exte
 {
     use HasLocalization;
 }
+
 
 
 
@@ -228,6 +252,7 @@ $interaction->loadMissing('chapters');
 
 
 
+
 ```
 An explicit empty `$with = []` (which restates Eloquent's own default and eager-loads nothing) is not flagged, and a `$with` property on any non-`Model` class is ignored. Detection keys off the declaring class being a `Model` subclass, so intermediate/abstract base models are covered transitively. Identifier: `hihaho.conventions.noEloquentWithProperty`.
 
@@ -249,6 +274,7 @@ parameters:
     stubbedMethods:
         Laravel\Nova\Fields\Number:
             onlyOnExport: '$this'   # Number::make(…)->onlyOnExport()->sortable() stays typed
+
 
 
 
@@ -280,6 +306,7 @@ parameters:
     routeFiles:
         - routes/web.php
         - routes/api.php
+
 
 
 
@@ -358,12 +385,14 @@ parameters:
 
 
 
+
 ```
 ```php
 public function handle(Request $request): void
 {
     $video = $request->route('video_id'); // Video — no assert() needed
 }
+
 
 
 
@@ -403,6 +432,7 @@ public function scopeWithPublishedPosts(Builder $query): void
     // $q is Builder<Post> — Post::PUBLISHED resolves instead of erroring against base Model.
     $query->whereHas('posts', fn (Builder $q) => $q->where(Post::STATUS, Post::PUBLISHED));
 }
+
 
 
 
@@ -456,6 +486,7 @@ public function ids(Collection $users): array
 
 
 
+
 ```
 The extension is registered automatically — no configuration. Two guards keep it sound: detection is syntactic (the receiver must be a direct `->values()` call, so a chain split across variables is left alone rather than guessed), and the receiver must be a `Support\Collection`/`LazyCollection` or subclass — so Eloquent collections benefit while a bare `Enumerable` or a custom implementation with unknown key semantics is never narrowed. Only `values()` is handled; `flatten()`, `collapse()`, and `flatMap()` are deliberately excluded because Laravel doesn't reliably type them as lists.
 
@@ -482,6 +513,7 @@ parameters:
             validPassword: string
         Illuminate\Testing\TestResponse:
             assertSeeLivewire: Illuminate\Testing\TestResponse
+
 
 
 
@@ -571,6 +603,7 @@ parameters:
             - Database\Factories
             - Tests
         outputPath: named-arguments-manifest.json
+
 
 
 
