@@ -359,9 +359,11 @@ private function addColumn(string $table, string $column, Closure $definition): 
 }
 ```
 
-Each call site is read as its own invocation, pairing the table it passes with the definition it passes, so a helper used for an outlier and for an ordinary table reports only the first. Definitions held in an array the migration loops over are read the same way, provided one array literal fills the property and nothing in the class can change it afterwards. Reading it elsewhere is fine: `count()`, or the `array_keys()` a `down()` uses to drop the columns in reverse, hands out a copy.
+Each call site is read as its own invocation, pairing the table it passes with the definition it passes. A helper used for an outlier and for an ordinary table reports only the first.
 
-Anything less determinate reports `uncheckableSchemaChange`: a definition built elsewhere, an array written twice, aliased by reference, or passed to a parameter the callee takes by reference, or a helper nothing in the class calls. Write the closure at the call site to clear it. An array that is statically empty reports nothing, since the loop runs nothing.
+Definitions held in an array the migration loops over are read the same way. One literal has to fill the property, and nothing in the class may change it afterwards. Reading it elsewhere does not count: `count($this->columns)`, and the `array_keys()` a `down()` uses to drop the columns in reverse, both get a copy.
+
+Everything else reports `uncheckableSchemaChange`: a definition built elsewhere, an array written twice or aliased by reference, an argument the callee takes by reference, a helper nothing in the class calls. Write the closure at the call site to clear it. A statically empty array reports nothing, since the loop runs nothing.
 
 A raw statement is keyed on the table it ALTERs, not on any mention of the name, so `ALTER TABLE lti_grades ... REFERENCES video_sessions` is fine.
 
