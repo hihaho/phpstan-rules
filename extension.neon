@@ -149,7 +149,18 @@ services:
         arguments:
             reflectionProvider: @reflectionProvider
     -
+        class: Hihaho\PhpstanRules\Rules\Database\PropertyArraySource
+    -
+        class: Hihaho\PhpstanRules\Rules\Database\ArrayDefinitionReader
+        arguments:
+            source: @Hihaho\PhpstanRules\Rules\Database\PropertyArraySource
+    -
+        class: Hihaho\PhpstanRules\Rules\Database\HelperCallSites
+    -
         class: Hihaho\PhpstanRules\Rules\Database\BlueprintDefinitionResolver
+        arguments:
+            arrays: @Hihaho\PhpstanRules\Rules\Database\ArrayDefinitionReader
+            helpers: @Hihaho\PhpstanRules\Rules\Database\HelperCallSites
     -
         class: Hihaho\PhpstanRules\Rules\Database\RawAlterScanner
         arguments:

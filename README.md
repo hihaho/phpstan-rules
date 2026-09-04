@@ -306,7 +306,7 @@ Flag DDL a Laravel migration cannot run instantly against a table too large to r
 |                          | `timestamps()`/`softDeletes()`/`morphs()` on an outlier     | `hihaho.database.slowMigrationDdl`                    |
 |                          | raw `ALTER TABLE` without `ALGORITHM=INSTANT`              | `hihaho.database.rawAlterWithoutInstant`              |
 |                          | raw `ALTER TABLE` whose target cannot be read statically   | `hihaho.database.unresolvableAlterTarget`             |
-|                          | `Schema::table()` whose closure cannot be read statically  | `hihaho.database.uncheckableSchemaChange`             |
+|                          | `Schema::table()` whose definition cannot be read          | `hihaho.database.uncheckableSchemaChange`             |
 |                          | `Schema::rename()`/`drop()`/`dropIfExists()` on an outlier | `hihaho.database.outlierTableDestructiveSchemaCall`   |
 
 It checks nothing by default — each project measures its own row counts and lists the tables:
@@ -344,22 +344,24 @@ Laravel's `ColumnDefinition::instant()` compiles to `algorithm=instant`, so asse
 
 `timestamps()`, `softDeletes()` and the `morphs()` family return `void` and so cannot carry `->instant()` at all. There is no safe way to write them against a table this size, so they are reported unconditionally: add the columns individually with the assertion.
 
-Chains are read from anywhere in the closure, and a closure that reaches `Schema::table()` through a helper parameter is traced back to the helper's call sites, so the guarded shape a resumable migration uses is checked too:
+Chains are read from anywhere in the closure, and the table and the definition are both traced when a helper supplies them. A resumable migration usually guards each statement and hands the work to a private method, so neither is written at the call:
 
 ```php
-$this->addIndex(self::LEARNER_ID_INDEX, fn (Blueprint $table) => $table->index('external_learner_id', self::LEARNER_ID_INDEX));
+$this->addColumn('video_sessions', 'locale', fn (Blueprint $table) => $table->string('locale', 8));
 
-private function addIndex(string $index, Closure $definition): void
+private function addColumn(string $table, string $column, Closure $definition): void
 {
-    if (Schema::hasIndex($this->table, $index)) {
+    if (Schema::hasColumn($table, $column)) {
         return;
     }
 
-    Schema::table($this->table, $definition);   // reported at the arrow function above
+    Schema::table($table, $definition);   // reported at the call site above
 }
 ```
 
-A definition that still cannot be read — built elsewhere, or handed in from outside the class — is reported as uncheckable rather than passed over.
+Each call site is read as its own invocation, pairing the table it passes with the definition it passes, so a helper used for an outlier and for an ordinary table reports only the first. Definitions held in an array the migration loops over are read the same way, provided one array literal fills the property and nothing else in the class touches it.
+
+Anything less determinate — a definition built elsewhere, an array written twice or mutated through a call, a helper with no call site to read — is reported as uncheckable rather than passed over.
 
 A raw statement is keyed on the table it ALTERs, not on any mention of the name, so `ALTER TABLE lti_grades ... REFERENCES video_sessions` is fine.
 

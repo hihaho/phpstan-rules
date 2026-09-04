@@ -169,13 +169,19 @@ final readonly class SlowMigrationDdlRule implements Rule
                 continue;
             }
 
+            $method = $call->name->toString();
+
+            if ($method === 'table') {
+                $errors = [...$errors, ...$this->inspectSchemaTableCall($class, $call, $resolver)];
+
+                continue;
+            }
+
             $table = $this->resolveOutlierArgument($call, $resolver);
 
             if ($table === null) {
                 continue;
             }
-
-            $method = $call->name->toString();
 
             if (in_array($method, self::DESTRUCTIVE_SCHEMA_CALLS, true)) {
                 $errors[] = $this->finding(
@@ -183,12 +189,6 @@ final readonly class SlowMigrationDdlRule implements Rule
                     'hihaho.database.outlierTableDestructiveSchemaCall',
                     $call->getStartLine(),
                 );
-
-                continue;
-            }
-
-            if ($method === 'table') {
-                $errors = [...$errors, ...$this->inspectBlueprintClosure($class, $call, $table)];
             }
         }
 
@@ -196,13 +196,39 @@ final readonly class SlowMigrationDdlRule implements Rule
     }
 
     /**
+     * A call may stand for several invocations: a helper that takes the table, the
+     * definition, or both is read once per call site, so a helper used for two tables
+     * reports each against the table it was actually handed.
+     *
      * @return list<array{int, IdentifierRuleError}>
      */
-    private function inspectBlueprintClosure(Class_ $class, StaticCall $call, string $table): array
+    private function inspectSchemaTableCall(Class_ $class, StaticCall $call, MigrationTableNameResolver $resolver): array
     {
-        $closures = $this->definitions->forCall($class, $call);
+        $errors = [];
 
-        if ($closures === []) {
+        foreach ($this->definitions->invocations($class, $call) as [$tableExpr, $closures]) {
+            $table = $resolver->resolve($tableExpr);
+
+            if ($table === null || ! in_array($table, $this->outlierTables, true)) {
+                continue;
+            }
+
+            $errors = [...$errors, ...$this->inspectInvocation($call, $table, $closures)];
+        }
+
+        return $errors;
+    }
+
+    /**
+     * @param  list<Closure|ArrowFunction>|null  $closures  null when the definitions
+     *                                                      could not be read at all,
+     *                                                      as opposed to a list that
+     *                                                      is legitimately empty
+     * @return list<array{int, IdentifierRuleError}>
+     */
+    private function inspectInvocation(StaticCall $call, string $table, ?array $closures): array
+    {
+        if ($closures === null) {
             return [$this->finding(
                 "Schema::table() on `{$table}` whose definition cannot be read statically, so the operations it runs cannot be checked. Pass the closure at the call site.",
                 'hihaho.database.uncheckableSchemaChange',

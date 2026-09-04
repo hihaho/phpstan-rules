@@ -24,6 +24,8 @@ use PHPStan\Type\ObjectType;
  *     $table->string('foo', 255)
  *         ->nullable()
  *         ->instant();
+ *
+ * @internal collaborator of SlowMigrationDdlRule; not part of the package's API.
  */
 final readonly class BlueprintChain
 {

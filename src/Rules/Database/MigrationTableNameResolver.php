@@ -24,6 +24,8 @@ use PhpParser\Node\Stmt\Property;
  *
  * Migrations are self-contained by guideline (string literals, no model constants),
  * so the declaring class is the whole lookup scope.
+ *
+ * @internal collaborator of SlowMigrationDdlRule; not part of the package's API.
  */
 final class MigrationTableNameResolver
 {

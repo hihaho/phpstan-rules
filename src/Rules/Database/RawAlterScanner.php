@@ -17,6 +17,8 @@ use PhpParser\NodeFinder;
  * arguments — `DB::unprepared()`, a connection-scoped call and a statement assembled
  * into a variable all reach the same server, and enumerating the callers is how the
  * shell gate this replaces kept finding a new hole.
+ *
+ * @internal collaborator of SlowMigrationDdlRule; not part of the package's API.
  */
 final readonly class RawAlterScanner
 {

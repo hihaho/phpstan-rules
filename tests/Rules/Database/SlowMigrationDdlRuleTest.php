@@ -2,8 +2,11 @@
 
 namespace Hihaho\PhpstanRules\Tests\Rules\Database;
 
+use Hihaho\PhpstanRules\Rules\Database\ArrayDefinitionReader;
 use Hihaho\PhpstanRules\Rules\Database\BlueprintChain;
 use Hihaho\PhpstanRules\Rules\Database\BlueprintDefinitionResolver;
+use Hihaho\PhpstanRules\Rules\Database\HelperCallSites;
+use Hihaho\PhpstanRules\Rules\Database\PropertyArraySource;
 use Hihaho\PhpstanRules\Rules\Database\RawAlterScanner;
 use Hihaho\PhpstanRules\Rules\Database\SlowMigrationDdlRule;
 use Override;
@@ -35,7 +38,7 @@ final class SlowMigrationDdlRuleTest extends RuleTestCase
             self::OUTLIER_TABLES,
             $chain,
             new RawAlterScanner(self::OUTLIER_TABLES),
-            new BlueprintDefinitionResolver(),
+            new BlueprintDefinitionResolver(new ArrayDefinitionReader(new PropertyArraySource()), new HelperCallSites()),
         );
     }
 
@@ -246,6 +249,137 @@ final class SlowMigrationDdlRuleTest extends RuleTestCase
     {
         $this->analyse([__DIR__ . '/stubs/unreadable-definition.php'], [
             ['Schema::table() on `video_sessions` whose definition cannot be read statically, so the operations it runs cannot be checked. Pass the closure at the call site.', 11, self::TIP],
+        ]);
+    }
+
+    /**
+     * The silent case: with the table name a parameter too, nothing about the call
+     * says which table it alters. Each call site pairs its own table with its own
+     * definition, so the outlier is reported and the ordinary table is not.
+     */
+    #[Test]
+    public function pairs_a_parameterised_table_with_its_own_definition(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/parameterised-table-helper.php'], [
+            ['Column work on `video_sessions` without ->instant(). Unasserted, MySQL is free to rebuild the table instead of failing fast.', 12, self::TIP],
+        ]);
+    }
+
+    #[Test]
+    public function reads_definitions_held_in_an_array_property(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/array-property-definitions.php'], [
+            ['Column work on `video_sessions` without ->instant(). Unasserted, MySQL is free to rebuild the table instead of failing fast.', 18, self::TIP],
+        ]);
+    }
+
+    #[Test]
+    public function refuses_an_array_property_written_more_than_once(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/array-property-written-twice.php'], [
+            ['Schema::table() on `video_sessions` whose definition cannot be read statically, so the operations it runs cannot be checked. Pass the closure at the call site.', 26, self::TIP],
+        ]);
+    }
+
+    /**
+     * Only the table is a parameter here; the definition is written inside the helper
+     * and stays readable, once per call site.
+     */
+    #[Test]
+    public function reads_a_literal_definition_inside_a_parameterised_table_helper(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/parameterised-table-literal-definition.php'], [
+            ['Column work on `video_sessions` without ->instant(). Unasserted, MySQL is free to rebuild the table instead of failing fast.', 18, self::TIP],
+        ]);
+    }
+
+    /**
+     * One entry the reader cannot follow makes the whole list unresolved. Reading the
+     * rest and reporting on those would leave the skipped entry looking checked.
+     */
+    #[Test]
+    public function refuses_an_array_holding_an_entry_it_cannot_read(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/array-property-mixed-entries.php'], [
+            ['Schema::table() on `video_sessions` whose definition cannot be read statically, so the operations it runs cannot be checked. Pass the closure at the call site.', 25, self::TIP],
+        ]);
+    }
+
+    #[Test]
+    public function refuses_an_array_property_extended_by_a_compound_assignment(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/array-property-compound-write.php'], [
+            ['Schema::table() on `video_sessions` whose definition cannot be read statically, so the operations it runs cannot be checked. Pass the closure at the call site.', 26, self::TIP],
+        ]);
+    }
+
+    /**
+     * A statically empty map runs no iteration, so there is nothing to check — which
+     * is not the same answer as a map the rule could not read.
+     */
+    #[Test]
+    public function allows_a_definition_map_that_is_empty(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/empty-definition-map.php'], []);
+    }
+
+    #[Test]
+    public function reads_a_table_a_call_site_leaves_to_its_default(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/defaulted-table-parameter.php'], [
+            ['Column work on `video_sessions` without ->instant(). Unasserted, MySQL is free to rebuild the table instead of failing fast.', 17, self::TIP],
+        ]);
+    }
+
+    #[Test]
+    public function refuses_an_array_property_mutated_through_a_call(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/array-property-mutated-by-call.php'], [
+            ['Schema::table() on `video_sessions` whose definition cannot be read statically, so the operations it runs cannot be checked. Pass the closure at the call site.', 22, self::TIP],
+        ]);
+    }
+
+    /**
+     * A helper nothing in the class calls is understood no better than an untraced
+     * call, so it is reported rather than passed over for lack of a call site.
+     */
+    #[Test]
+    public function reports_a_helper_with_no_call_site_to_trace(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/untraceable-helper.php'], [
+            ['Schema::table() on `video_sessions` whose definition cannot be read statically, so the operations it runs cannot be checked. Pass the closure at the call site.', 11, self::TIP],
+        ]);
+    }
+
+    /**
+     * A lone compound write adds to whatever the property already held, which may come
+     * from somewhere this reader cannot see, so it is not the property's whole value.
+     */
+    #[Test]
+    public function refuses_a_property_filled_only_by_a_compound_write(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/array-property-only-compound-write.php'], [
+            ['Schema::table() on `video_sessions` whose definition cannot be read statically, so the operations it runs cannot be checked. Pass the closure at the call site.', 24, self::TIP],
+        ]);
+    }
+
+    #[Test]
+    public function refuses_a_loop_that_rebinds_its_own_value_variable(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/rebound-loop-variable.php'], [
+            ['Schema::table() on `video_sessions` whose definition cannot be read statically, so the operations it runs cannot be checked. Pass the closure at the call site.', 21, self::TIP],
+        ]);
+    }
+
+    /**
+     * Nested loops may reuse the value variable's name; the definitions come from the
+     * nearest binding, not the first one found.
+     */
+    #[Test]
+    public function reads_the_innermost_loop_binding_the_definition(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/nested-definition-loops.php'], [
+            ['Column work on `video_sessions` without ->instant(). Unasserted, MySQL is free to rebuild the table instead of failing fast.', 22, self::TIP],
         ]);
     }
 
