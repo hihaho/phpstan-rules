@@ -5,8 +5,10 @@ namespace Hihaho\PhpstanRules\Tests\Rules\Database;
 use Hihaho\PhpstanRules\Rules\Database\ArrayDefinitionReader;
 use Hihaho\PhpstanRules\Rules\Database\BlueprintChain;
 use Hihaho\PhpstanRules\Rules\Database\BlueprintDefinitionResolver;
+use Hihaho\PhpstanRules\Rules\Database\ByReferenceArguments;
 use Hihaho\PhpstanRules\Rules\Database\HelperCallSites;
 use Hihaho\PhpstanRules\Rules\Database\PropertyArraySource;
+use Hihaho\PhpstanRules\Rules\Database\PropertyMutations;
 use Hihaho\PhpstanRules\Rules\Database\RawAlterScanner;
 use Hihaho\PhpstanRules\Rules\Database\SlowMigrationDdlRule;
 use Override;
@@ -28,7 +30,7 @@ final class SlowMigrationDdlRuleInertTest extends RuleTestCase
     {
         $chain = new BlueprintChain(self::createReflectionProvider());
 
-        return new SlowMigrationDdlRule([], $chain, new RawAlterScanner([]), new BlueprintDefinitionResolver(new ArrayDefinitionReader(new PropertyArraySource()), new HelperCallSites()));
+        return new SlowMigrationDdlRule([], $chain, new RawAlterScanner([]), new BlueprintDefinitionResolver(new ArrayDefinitionReader(new PropertyArraySource(new PropertyMutations(new ByReferenceArguments(self::createReflectionProvider())))), new HelperCallSites()));
     }
 
     #[Test]

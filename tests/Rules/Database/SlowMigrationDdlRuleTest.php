@@ -5,8 +5,10 @@ namespace Hihaho\PhpstanRules\Tests\Rules\Database;
 use Hihaho\PhpstanRules\Rules\Database\ArrayDefinitionReader;
 use Hihaho\PhpstanRules\Rules\Database\BlueprintChain;
 use Hihaho\PhpstanRules\Rules\Database\BlueprintDefinitionResolver;
+use Hihaho\PhpstanRules\Rules\Database\ByReferenceArguments;
 use Hihaho\PhpstanRules\Rules\Database\HelperCallSites;
 use Hihaho\PhpstanRules\Rules\Database\PropertyArraySource;
+use Hihaho\PhpstanRules\Rules\Database\PropertyMutations;
 use Hihaho\PhpstanRules\Rules\Database\RawAlterScanner;
 use Hihaho\PhpstanRules\Rules\Database\SlowMigrationDdlRule;
 use Override;
@@ -38,7 +40,7 @@ final class SlowMigrationDdlRuleTest extends RuleTestCase
             self::OUTLIER_TABLES,
             $chain,
             new RawAlterScanner(self::OUTLIER_TABLES),
-            new BlueprintDefinitionResolver(new ArrayDefinitionReader(new PropertyArraySource()), new HelperCallSites()),
+            new BlueprintDefinitionResolver(new ArrayDefinitionReader(new PropertyArraySource(new PropertyMutations(new ByReferenceArguments(self::createReflectionProvider())))), new HelperCallSites()),
         );
     }
 
@@ -380,6 +382,66 @@ final class SlowMigrationDdlRuleTest extends RuleTestCase
     {
         $this->analyse([__DIR__ . '/stubs/nested-definition-loops.php'], [
             ['Column work on `video_sessions` without ->instant(). Unasserted, MySQL is free to rebuild the table instead of failing fast.', 22, self::TIP],
+        ]);
+    }
+
+    /**
+     * Reading the map elsewhere hands out a copy, so `down()` iterating its keys to
+     * drop the columns in reverse leaves the definitions readable.
+     */
+    #[Test]
+    public function reads_a_definition_map_the_class_also_reads_elsewhere(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/array-property-read-twice.php'], [
+            ['Column work on `video_sessions` without ->instant(). Unasserted, MySQL is free to rebuild the table instead of failing fast.', 17, self::TIP],
+        ]);
+    }
+
+    #[Test]
+    public function refuses_a_definition_map_handed_to_a_by_reference_parameter(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/array-property-passed-by-reference.php'], [
+            ['Schema::table() on `video_sessions` whose definition cannot be read statically, so the operations it runs cannot be checked. Pass the closure at the call site.', 26, self::TIP],
+        ]);
+    }
+
+    #[Test]
+    public function refuses_a_definition_map_iterated_by_reference(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/array-property-iterated-by-reference.php'], [
+            ['Schema::table() on `video_sessions` whose definition cannot be read statically, so the operations it runs cannot be checked. Pass the closure at the call site.', 28, self::TIP],
+        ]);
+    }
+
+    #[Test]
+    public function refuses_a_definition_map_whose_entry_is_aliased(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/array-property-element-aliased.php'], [
+            ['Schema::table() on `video_sessions` whose definition cannot be read statically, so the operations it runs cannot be checked. Pass the closure at the call site.', 27, self::TIP],
+        ]);
+    }
+
+    #[Test]
+    public function refuses_a_definition_map_handed_out_by_reference(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/array-property-returned-by-reference.php'], [
+            ['Schema::table() on `video_sessions` whose definition cannot be read statically, so the operations it runs cannot be checked. Pass the closure at the call site.', 24, self::TIP],
+        ]);
+    }
+
+    #[Test]
+    public function refuses_a_definition_map_whose_entry_goes_out_by_reference(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/array-property-element-by-reference.php'], [
+            ['Schema::table() on `video_sessions` whose definition cannot be read statically, so the operations it runs cannot be checked. Pass the closure at the call site.', 27, self::TIP],
+        ]);
+    }
+
+    #[Test]
+    public function refuses_a_property_written_through_nested_dimensions(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/array-property-nested-write.php'], [
+            ['Schema::table() on `video_sessions` whose definition cannot be read statically, so the operations it runs cannot be checked. Pass the closure at the call site.', 24, self::TIP],
         ]);
     }
 

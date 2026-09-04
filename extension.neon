@@ -149,7 +149,17 @@ services:
         arguments:
             reflectionProvider: @reflectionProvider
     -
+        class: Hihaho\PhpstanRules\Rules\Database\ByReferenceArguments
+        arguments:
+            reflectionProvider: @reflectionProvider
+    -
+        class: Hihaho\PhpstanRules\Rules\Database\PropertyMutations
+        arguments:
+            byReference: @Hihaho\PhpstanRules\Rules\Database\ByReferenceArguments
+    -
         class: Hihaho\PhpstanRules\Rules\Database\PropertyArraySource
+        arguments:
+            mutations: @Hihaho\PhpstanRules\Rules\Database\PropertyMutations
     -
         class: Hihaho\PhpstanRules\Rules\Database\ArrayDefinitionReader
         arguments:

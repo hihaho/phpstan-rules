@@ -17,15 +17,19 @@ use PhpParser\NodeFinder;
 /**
  * Resolves an expression to the array literal it provably holds.
  *
- * A property qualifies only when one literal fills it and nothing else in the class
- * touches it. Anything looser — a second write, a compound write, a mutating call, a
- * read this class does not model — means the array at the point of use is not
- * provably the literal, and the caller is told so rather than shown a partial answer.
+ * A property qualifies when exactly one literal fills it and nothing in the class can
+ * change it afterwards. A second write, a compound write, or anything that can mutate
+ * it through a reference disqualifies it: the array at the point of use would then not
+ * provably be the literal. Reading it elsewhere is fine, since a read hands out a copy.
  *
  * @internal collaborator of SlowMigrationDdlRule; not part of the package's API.
  */
-final class PropertyArraySource
+final readonly class PropertyArraySource
 {
+    public function __construct(
+        private PropertyMutations $mutations,
+    ) {}
+
     public function literalFor(Class_ $class, Expr $expr): ?Array_
     {
         if ($expr instanceof Array_) {
@@ -47,41 +51,7 @@ final class PropertyArraySource
             return null;
         }
 
-        return $this->escapes($class, $property, $expr) ? null : $sources[0];
-    }
-
-    /**
-     * True when the property is touched anywhere other than the loop that reads it and
-     * the single write that fills it — passed to `array_push()`, handed to something
-     * taking it by reference, or read in a way this reader does not model. The list at
-     * the loop is then not provably the literal, so it is not read at all.
-     */
-    private function escapes(Class_ $class, string $property, Expr $iterated): bool
-    {
-        foreach ((new NodeFinder())->findInstanceOf($class, PropertyFetch::class) as $fetch) {
-            if ($this->propertyName($fetch) !== $property || $fetch === $iterated) {
-                continue;
-            }
-
-            if (! $this->isWriteTarget($class, $fetch)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private function isWriteTarget(Class_ $class, PropertyFetch $fetch): bool
-    {
-        foreach ($this->writes($class) as $write) {
-            $target = $write->var instanceof ArrayDimFetch ? $write->var->var : $write->var;
-
-            if ($target === $fetch) {
-                return true;
-            }
-        }
-
-        return false;
+        return $this->mutations->canChange($class, $property) ? null : $sources[0];
     }
 
     /**
@@ -114,7 +84,11 @@ final class PropertyArraySource
         $values = [];
 
         foreach ($this->writes($class) as $write) {
-            $target = $write->var instanceof ArrayDimFetch ? $write->var->var : $write->var;
+            $target = $write->var;
+
+            while ($target instanceof ArrayDimFetch) {
+                $target = $target->var;
+            }
 
             if ($this->propertyName($target) !== $property) {
                 continue;
