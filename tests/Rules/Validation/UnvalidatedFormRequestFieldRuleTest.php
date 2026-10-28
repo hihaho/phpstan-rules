@@ -43,6 +43,18 @@ final class UnvalidatedFormRequestFieldRuleTest extends RuleTestCase
         ]);
     }
 
+    /**
+     * A `return` inside a closure rule does not decide what rules() yields, so the
+     * array stays readable and the unvalidated field is still reported.
+     */
+    #[Test]
+    public function reads_rules_whose_closure_rules_contain_returns(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/ClosureRuleFormRequestStub.php'], [
+            [sprintf(self::MESSAGE_PATTERN, 'referral', 'string'), 32, $this->tip('referral')],
+        ]);
+    }
+
     #[Test]
     public function flags_a_generic_get_reader_that_would_otherwise_bypass_both_rules(): void
     {
