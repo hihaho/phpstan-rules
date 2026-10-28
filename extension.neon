@@ -15,6 +15,11 @@ parametersSchema:
     routeFiles: listOf(string())
     traitRequiresInterface: arrayOf(string())
     outlierTables: listOf(string())
+    swallowedException: structure([
+        namespaces: listOf(string())
+        excludeNamespaces: listOf(string())
+        reportNarrowCatches: bool()
+    ])
 
 parameters:
     # class name => (method name => return type string). Resolves runtime-only instance methods
@@ -38,6 +43,14 @@ parameters:
     # them may only do work MySQL is told to do instantly. Empty by default — each project
     # measures its own row counts before deciding.
     outlierTables: []
+
+    # Namespaces whose catch blocks must rethrow, report or read what they catch. Empty by
+    # default — the rule is inert until a project opts in. reportNarrowCatches extends it from
+    # Throwable/Exception to every caught type, which is mostly deliberate and so off by default.
+    swallowedException:
+        namespaces: []
+        excludeNamespaces: []
+        reportNarrowCatches: false
 
     noUnsafeRequestData:
         unsafeMethods:
@@ -182,6 +195,23 @@ services:
             chain: @Hihaho\PhpstanRules\Rules\Database\BlueprintChain
             scanner: @Hihaho\PhpstanRules\Rules\Database\RawAlterScanner
             definitions: @Hihaho\PhpstanRules\Rules\Database\BlueprintDefinitionResolver
+        tags:
+            - phpstan.rules.rule
+    -
+        class: Hihaho\PhpstanRules\Rules\Exceptions\CatchBodyInspector
+    -
+        class: Hihaho\PhpstanRules\Rules\Exceptions\NestedCatchVisitor
+        arguments:
+            inspector: @Hihaho\PhpstanRules\Rules\Exceptions\CatchBodyInspector
+        tags:
+            - phpstan.parser.richParserNodeVisitor
+    -
+        class: Hihaho\PhpstanRules\Rules\Exceptions\SwallowedExceptionRule
+        arguments:
+            namespaces: %swallowedException.namespaces%
+            excludeNamespaces: %swallowedException.excludeNamespaces%
+            reportNarrowCatches: %swallowedException.reportNarrowCatches%
+            inspector: @Hihaho\PhpstanRules\Rules\Exceptions\CatchBodyInspector
         tags:
             - phpstan.rules.rule
     -

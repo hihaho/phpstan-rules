@@ -373,6 +373,63 @@ An `ALTER TABLE` whose target cannot be read statically (a name from a construct
 
 Because a typed property (`private string $table = 'video_sessions'`) infers as `string` and an interpolated statement as `non-falsy-string`, the rule reads the literal off the migration's own class declaration instead of the type engine. A table name it cannot resolve statically is not reported.
 
+### Swallowed exceptions
+
+Flag a `catch (Throwable)` or `catch (Exception)` that neither rethrows, reports, nor reads what it caught. Such a catch turns every failure in the `try` block into silent success: the job completes, the request returns 200, and nothing reaches the error tracker.
+
+| Rule                     | Targets                                         | Identifier                             |
+|--------------------------|-------------------------------------------------|----------------------------------------|
+| `SwallowedExceptionRule` | broad catch whose body never handles the throw  | `hihaho.exceptions.swallowedException` |
+
+It checks nothing by default. Each project lists the namespaces to check:
+
+```neon
+parameters:
+    swallowedException:
+        namespaces:
+            - App
+        excludeNamespaces:
+            - App\Dev
+        reportNarrowCatches: false   # true also checks catch (SomeSpecificException)
+```
+
+A catch counts as handled when its body contains any of:
+
+- a `throw`
+- `report()`, `report_if()`, `report_unless()`, `logger()`, `abort*()`, or any `Log::` call
+- `->fail()` or `->release()` on a job. `->failed()` does not count: calling the hook yourself still finishes the job as a success.
+- any read of the caught variable, such as `$this->notify($e)`, `return $e` or `fn () => $e->getMessage()`
+- `return Response::deny(...)` (`Illuminate\Auth\Access\Response`) or a call to a validation rule's `$fail` closure
+
+```php
+try {
+    $this->sync();
+} catch (Throwable) {          // reported
+    return 'default';
+}
+
+try {
+    $this->sync();
+} catch (Throwable $e) {       // fine — $e reaches a helper
+    $this->notifyFailure($e);
+}
+```
+
+Some catches are exempt because the return value carries the failure:
+
+- a method returning `bool` named `check*`, `can*`, `is*`, `has*`, `supports*`, `verify*`, `declares*`, `validate*` or `should*`
+- a method returning a nullable type named `try*`, `parse*`, `maybe*`, `find*`, `fetch*` or `resolve*`
+
+A catch nested inside a catch that already handles its exception is exempt too. A handled nested catch does not cover the outer one, though: once the fallback succeeds, the outer exception is gone.
+
+A comment in the body is not an exemption. Mark a deliberate swallow with an ignore that says why:
+
+```php
+} catch (Throwable) { // @phpstan-ignore hihaho.exceptions.swallowedException (best-effort cache warmup)
+```
+
+PHPStan only makes that reason mandatory through its global `reportIgnoresWithoutComments: true` setting, so set that in the project's `phpstan.neon`. The package does not set it, because it applies to every ignore in the project.
+
 ## Reflection extensions
 
 ### Stubbed methods
