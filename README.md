@@ -373,6 +373,51 @@ An `ALTER TABLE` whose target cannot be read statically (a name from a construct
 
 Because a typed property (`private string $table = 'video_sessions'`) infers as `string` and an interpolated statement as `non-falsy-string`, the rule reads the literal off the migration's own class declaration instead of the type engine. A table name it cannot resolve statically is not reported.
 
+### Unescaped values in raw-HTML sinks
+
+Flag a value that can carry markup when it reaches code that prints HTML without escaping it. spatie/laravel-html escapes attribute values and `->text()`, and nothing else. `html()->a($href, $contents)`, `->span($contents)`, `->div($contents)`, `->html($html)` and `->children($children)` all render their content raw. A Nova field marked `->asHtml()` prints its value raw too.
+
+| Rule                                    | Targets                                                         | Identifier                           |
+|-----------------------------------------|-----------------------------------------------------------------|--------------------------------------|
+| `CombinedMethodCallRule` / `CombinedStaticCallRule` | content argument of a spatie builder, element or `Html::` facade call | `hihaho.html.unescapedBuilderContent` |
+| `UnescapedHtmlFieldClosureRule` / `UnescapedHtmlFieldArrowFunctionRule` | return value of a `make()`, `displayUsing()` or `resolveUsing()` callback on an `->asHtml()` Nova field | `hihaho.html.unescapedHtmlField` |
+
+It checks nothing by default. Each project lists the namespaces to check:
+
+```neon
+parameters:
+    unescapedHtml:
+        namespaces:
+            - App
+        excludeNamespaces: []
+```
+
+Concatenations, interpolations, ternaries, `??` and `sprintf()` are split, and each part is judged on its own. A part is safe when it is:
+
+- a literal string, an int, a float, a bool, null or a backed enum
+- passed through `e()`, `htmlspecialchars()` or `htmlentities()`
+- an `Htmlable`, such as a builder chain ending in `->text()`, or that object's `->toHtml()`
+
+Anything else is reported, including a plain `string` variable.
+
+```php
+Text::make('Title')->displayUsing(fn (?string $title) => html()->a($url, $title)->toHtml())->asHtml();    // reported — a() renders $title raw
+Text::make('Title')->displayUsing(fn (?string $title) => html()->a($url)->text($title)->toHtml())->asHtml(); // fine
+
+Text::make('Name')->displayUsing(fn (string $name) => "<b>{$name}</b>")->asHtml();          // reported
+Text::make('Name')->displayUsing(fn (string $name) => '<b>' . e($name) . '</b>')->asHtml(); // fine
+```
+
+Each `return` in a closure is judged with the scope at that return. A closure that returns a literal placeholder early and an escaped value later is fine.
+
+A `children()` call with a mapper is not checked, because the mapper's own builder calls are. A bare `->asHtml()` field with no callback is not checked.
+
+Mark trusted markup with an ignore that says why. See [Swallowed exceptions](#swallowed-exceptions) for making the reason mandatory:
+
+```php
+$html->div($sanitised); // @phpstan-ignore hihaho.html.unescapedBuilderContent (purified on save)
+```
+
 ## Reflection extensions
 
 ### Stubbed methods

@@ -3,6 +3,7 @@
 namespace Hihaho\PhpstanRules\Rules;
 
 use Hihaho\PhpstanRules\Rules\Debug\BaseNoDebugRule;
+use Hihaho\PhpstanRules\Rules\Html\HtmlBuilderContentSink;
 use Hihaho\PhpstanRules\Traits\DetectsPositionalFlagArgument;
 use Hihaho\PhpstanRules\Traits\DetectsUnsafeRequestData;
 use Hihaho\PhpstanRules\Traits\ResolvesFormRequestRuleKeys;
@@ -18,7 +19,8 @@ use PHPStan\Rules\IdentifierRuleError;
  * Combined rule that handles all MethodCall checks in a single PHPStan dispatch,
  * eliminating the overhead of dispatching to separate rules for every method call.
  *
- * Merges: ChainedNoDebugInNamespaceRule + NoUnsafeRequestDataRule + UnvalidatedFormRequestFieldRule
+ * Merges: ChainedNoDebugInNamespaceRule + NoUnsafeRequestDataRule + UnvalidatedFormRequestFieldRule,
+ * plus the spatie/laravel-html content-argument check (HtmlBuilderContentSink).
  *
  * @extends BaseNoDebugRule<MethodCall>
  */
@@ -51,6 +53,7 @@ final readonly class CombinedMethodCallRule extends BaseNoDebugRule
         private array $excludeNamespaces,
         private Parser $parser,
         private array $firstPartyNamespaces,
+        private HtmlBuilderContentSink $htmlSink,
     ) {
         $this->unsafeMethodsLookup = array_fill_keys(array_map(strtolower(...), $unsafeMethods), true);
         $this->fieldAccessorsLookup = array_fill_keys(array_map(strtolower(...), $fieldAccessors), true);
@@ -84,6 +87,11 @@ final readonly class CombinedMethodCallRule extends BaseNoDebugRule
         }
 
         $methodName = $node->name->name;
+
+        $htmlError = $this->htmlSink->methodCallError($node, $methodName, $scope);
+        if ($htmlError instanceof IdentifierRuleError) {
+            $errors[] = $htmlError;
+        }
 
         if (! isset($this->quickRejectLookup[strtolower($methodName)])) {
             return $errors;

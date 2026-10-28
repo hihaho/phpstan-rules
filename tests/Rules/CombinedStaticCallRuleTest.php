@@ -4,6 +4,8 @@ namespace Hihaho\PhpstanRules\Tests\Rules;
 
 use App\Facades\Custom;
 use Hihaho\PhpstanRules\Rules\CombinedStaticCallRule;
+use Hihaho\PhpstanRules\Rules\Html\HtmlBuilderContentSink;
+use Hihaho\PhpstanRules\Rules\Html\HtmlSafetyJudge;
 use Illuminate\Support\Facades\Facade;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Route;
@@ -73,6 +75,7 @@ final class CombinedStaticCallRuleTest extends RuleTestCase
             namespaces: ['App'],
             excludeNamespaces: ['App\\Providers', 'App\\Http\\Responses'],
             firstPartyNamespaces: ['App', 'Database\\Factories', 'Tests'],
+            htmlSink: new HtmlBuilderContentSink([], [], new HtmlSafetyJudge()),
         );
     }
 
