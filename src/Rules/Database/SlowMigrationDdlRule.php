@@ -161,38 +161,40 @@ final readonly class SlowMigrationDdlRule implements Rule
         $errors = [];
 
         foreach ($this->findNodes($class, StaticCall::class) as $call) {
-            if (! $this->isFacadeCall($call, 'Schema')) {
-                continue;
-            }
-
-            if (! $call->name instanceof Identifier) {
+            if (! $this->isFacadeCall($call, 'Schema') || ! $call->name instanceof Identifier) {
                 continue;
             }
 
             $method = $call->name->toString();
 
-            if ($method === 'table') {
-                $errors = [...$errors, ...$this->inspectSchemaTableCall($class, $call, $resolver)];
-
-                continue;
-            }
-
-            $table = $this->resolveOutlierArgument($call, $resolver);
-
-            if ($table === null) {
-                continue;
-            }
-
-            if (in_array($method, self::DESTRUCTIVE_SCHEMA_CALLS, true)) {
-                $errors[] = $this->finding(
-                    "Schema::{$method}() on `{$table}` rebuilds or destroys a table too large to alter inside a deploy.",
-                    'hihaho.database.outlierTableDestructiveSchemaCall',
-                    $call->getStartLine(),
-                );
-            }
+            $errors = $method === 'table'
+                ? [...$errors, ...$this->inspectSchemaTableCall($class, $call, $resolver)]
+                : [...$errors, ...$this->inspectDestructiveSchemaCall($call, $method, $resolver)];
         }
 
         return $errors;
+    }
+
+    /**
+     * @return list<array{int, IdentifierRuleError}>
+     */
+    private function inspectDestructiveSchemaCall(StaticCall $call, string $method, MigrationTableNameResolver $resolver): array
+    {
+        if (! in_array($method, self::DESTRUCTIVE_SCHEMA_CALLS, true)) {
+            return [];
+        }
+
+        $table = $this->resolveOutlierArgument($call, $resolver);
+
+        if ($table === null) {
+            return [];
+        }
+
+        return [$this->finding(
+            "Schema::{$method}() on `{$table}` rebuilds or destroys a table too large to alter inside a deploy.",
+            'hihaho.database.outlierTableDestructiveSchemaCall',
+            $call->getStartLine(),
+        )];
     }
 
     /**

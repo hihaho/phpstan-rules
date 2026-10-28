@@ -2,6 +2,7 @@
 
 namespace Hihaho\PhpstanRules\Rules\Database;
 
+use PhpParser\Node;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\MethodCall;
@@ -10,7 +11,6 @@ use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
-use PhpParser\Node\VariadicPlaceholder;
 use PhpParser\NodeFinder;
 
 /**
@@ -81,8 +81,9 @@ final class HelperCallSites
      * A named argument is matched by name, since the AST holds arguments in call-site
      * order and a named call may reorder them. Positional arguments are counted among
      * themselves, so a named argument earlier in the list does not shift them.
+     * Placeholders (`...`, and `?` in a partial application) are skipped.
      *
-     * @param  array<Arg|VariadicPlaceholder>  $arguments
+     * @param  array<Node>  $arguments  Arg, VariadicPlaceholder, or ArgPlaceholder on newer php-parser releases
      */
     public function argumentFor(array $arguments, int $position, string $parameter): ?Expr
     {

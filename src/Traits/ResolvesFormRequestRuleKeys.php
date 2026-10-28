@@ -92,47 +92,43 @@ trait ResolvesFormRequestRuleKeys
             return null;
         }
 
-        if (! $node->var instanceof Variable || $node->var->name !== 'this') {
-            return null;
-        }
-
         if (! $this->namespaceStartsWithAny($scope, $namespaces) || $this->namespaceStartsWithAny($scope, $excludeNamespaces)) {
             return null;
         }
 
-        $args = $node->getArgs();
-
-        if ($args === []) {
-            return null;
-        }
-
-        $keyArg = $args[0]->value;
-
-        if (! $keyArg instanceof String_) {
-            return null;
-        }
-
+        $fieldKey = $this->literalKeyReadFromThis($node);
         $classReflection = $scope->getClassReflection();
 
-        if (! $classReflection instanceof ClassReflection) {
-            return null;
-        }
-
-        if (! $this->classIsFormRequest($classReflection->getName())) {
+        if ($fieldKey === null || ! $classReflection instanceof ClassReflection || ! $this->classIsFormRequest($classReflection->getName())) {
             return null;
         }
 
         $validatedRoots = $this->resolveValidatedRoots($parser, $classReflection, $scope);
 
-        if ($validatedRoots === null) {
+        if ($validatedRoots === null || isset($validatedRoots[$this->rootSegment($fieldKey)])) {
             return null;
         }
 
-        if (isset($validatedRoots[$this->rootSegment($keyArg->value)])) {
+        return $this->buildUnvalidatedFieldError($fieldKey, $methodName);
+    }
+
+    /**
+     * The literal key of a `$this->accessor('key')` call, or null for any other
+     * receiver or a key that is not a string literal.
+     */
+    private function literalKeyReadFromThis(MethodCall $node): ?string
+    {
+        if (! $node->var instanceof Variable || $node->var->name !== 'this') {
             return null;
         }
 
-        return $this->buildUnvalidatedFieldError($keyArg->value, $methodName);
+        $args = $node->getArgs();
+
+        if ($args === [] || ! $args[0]->value instanceof String_) {
+            return null;
+        }
+
+        return $args[0]->value->value;
     }
 
     private function buildUnvalidatedFieldError(string $fieldKey, string $methodName): IdentifierRuleError
@@ -181,6 +177,16 @@ trait ResolvesFormRequestRuleKeys
             return null;
         }
 
+        $returnArray = $this->rulesReturnArray($parser, $classReflection, $scope);
+
+        return $returnArray instanceof Array_ ? $this->rootSegmentsOf($returnArray) : null;
+    }
+
+    /**
+     * The array literal rules() returns directly, or null when it cannot be read.
+     */
+    private function rulesReturnArray(Parser $parser, ClassReflection $classReflection, Scope $scope): ?Array_
+    {
         // rules() may be inherited from a base class (or trait), so resolve where
         // it is actually declared and parse that file — not the call site's file,
         // which can be a trait method living elsewhere.
@@ -205,20 +211,20 @@ trait ResolvesFormRequestRuleKeys
 
         $returnArray = $this->directReturnArray($this->findMethod($classNode, 'rules'));
 
-        if (! $returnArray instanceof Array_) {
-            return null;
-        }
+        return $returnArray instanceof Array_ ? $returnArray : null;
+    }
 
+    /**
+     * @return array<string, true>|null
+     */
+    private function rootSegmentsOf(Array_ $returnArray): ?array
+    {
         $roots = [];
 
         foreach ($returnArray->items as $item) {
             // PhpParser v5: a spread is an ArrayItem with unpack === true and a
             // value-only entry has key === null; both make the set unresolvable.
-            if ($item->unpack || $item->key === null) {
-                return null;
-            }
-
-            if (! $item->key instanceof String_) {
+            if ($item->unpack || ! $item->key instanceof String_) {
                 return null;
             }
 
