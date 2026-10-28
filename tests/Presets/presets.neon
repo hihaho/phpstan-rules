@@ -1,0 +1,10 @@
+includes:
+    - ../../vendor/spaze/phpstan-disallowed-calls/extension.neon
+    - ../../presets/disallowed-str-limit.neon
+    - ../../presets/disallowed-file-responses.neon
+
+parameters:
+    # spaze resolves relative paths against filesRootDir, which a test container points into the
+    # PHPStan phar, so the fixture path is matched with a leading wildcard instead.
+    fileResponsePaths:
+        - "*/tests/Presets/stubs/Http/*"

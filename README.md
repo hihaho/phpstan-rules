@@ -373,6 +373,54 @@ An `ALTER TABLE` whose target cannot be read statically (a name from a construct
 
 Because a typed property (`private string $table = 'video_sessions'`) infers as `string` and an interpolated statement as `non-falsy-string`, the rule reads the literal off the migration's own class declaration instead of the type engine. A table name it cannot resolve statically is not reported.
 
+## Disallowed-call presets
+
+Opt-in configuration for [spaze/phpstan-disallowed-calls](https://github.com/spaze/phpstan-disallowed-calls). It is not loaded with the extension. Install spaze, then include the presets you want:
+
+```neon
+includes:
+    - vendor/hihaho/phpstan-rules/presets/disallowed-str-limit.neon
+    - vendor/hihaho/phpstan-rules/presets/disallowed-file-responses.neon
+```
+
+| Preset                           | Bans                                                                 | Identifier                       |
+|----------------------------------|----------------------------------------------------------------------|----------------------------------|
+| `disallowed-str-limit.neon`      | `Str::limit()`, `Stringable::limit()`                                | `hihaho.disallowed.strLimit`     |
+| `disallowed-file-responses.neon` | download and stream responses, in the paths listed in `fileResponsePaths` | `hihaho.disallowed.fileResponse` |
+
+**`Str::limit()`** cuts by display width (`mb_strwidth`), not by character count. Used as a length cap before a write, a value of wide characters comes out shorter than intended, and the column limit is not what is enforced. Use `mb_substr()` for a cap. For display text, cutting by width is correct, so exempt those paths by identifier:
+
+```neon
+parameters:
+    ignoreErrors:
+        -
+            identifier: hihaho.disallowed.strLimit
+            paths:
+                - app/Notifications/*
+```
+
+**File responses.** A serverless runtime caps the response body. Behind Vapor, Lambda buffers the response and base64-encodes binary bodies, which leaves a raw file of about 4.4 MB. A download that works locally fails in production once the file grows. The preset bans these in the configured paths:
+
+- `response()->download()`, `->streamDownload()` and `->file()`
+- `FilesystemAdapter::download()` and `->response()`, and their `Storage::` facade forms
+- `Excel::download()` and the `Exportable::download()` trait method (maatwebsite/excel)
+- `new StreamedResponse` and `new BinaryFileResponse`
+
+Store the file and redirect to a temporary signed URL instead. `fileResponsePaths` has no default, so including the preset without it fails the configuration. An empty list bans the calls everywhere.
+
+```neon
+parameters:
+    fileResponsePaths:
+        - app/Http/*
+        - app/Livewire/*
+```
+
+A file known to stay small takes an ignore with a reason:
+
+```php
+return response()->download($path); // @phpstan-ignore hihaho.disallowed.fileResponse (static asset under 50 KB)
+```
+
 ## Reflection extensions
 
 ### Stubbed methods

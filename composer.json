@@ -18,6 +18,7 @@
             "tests/Rules/Debug/stubs/",
             "tests/Rules/Validation/stubs/",
             "tests/Rules/Conventions/stubs/",
+            "tests/Presets/stubs/",
             "tests/ParameterClosureTypes/stubs/",
             "tests/ReturnTypes/stubs/routing/",
             "tests/ReturnTypes/stubs/routing/implicit/"
@@ -64,6 +65,9 @@
         "symplify/phpstan-extensions": "^12.0.1",
         "tomasvotruba/cognitive-complexity": "^1.0",
         "tomasvotruba/type-coverage": "^2.0"
+    },
+    "suggest": {
+        "spaze/phpstan-disallowed-calls": "Required by the opt-in presets in presets/ (^4.4)"
     },
     "scripts": {
         "fix-cs": "vendor/bin/pint",

@@ -1,0 +1,41 @@
+# Bans file download and stream responses in the configured paths. Requires
+# spaze/phpstan-disallowed-calls, and the fileResponsePaths parameter, which has no default:
+#
+#     parameters:
+#         fileResponsePaths:
+#             - app/Http/*
+#             - app/Livewire/*
+#
+# Serverless platforms cap the response body. AWS Lambda behind Vapor buffers the whole response
+# and base64-encodes binary bodies, so the raw file must stay under about 4.4 MB. Above that the
+# download fails in production while it works locally. Store the file and redirect to a temporary
+# signed URL instead. A file known to stay small takes an ignore with a reason.
+
+parametersSchema:
+    fileResponsePaths: listOf(string())
+
+parameters:
+    disallowedMethodCalls:
+        -
+            method:
+                - 'Illuminate\Contracts\Routing\ResponseFactory::download()'
+                - 'Illuminate\Contracts\Routing\ResponseFactory::streamDownload()'
+                - 'Illuminate\Contracts\Routing\ResponseFactory::file()'
+                - 'Illuminate\Filesystem\FilesystemAdapter::download()'
+                - 'Illuminate\Filesystem\FilesystemAdapter::response()'
+                - 'Maatwebsite\Excel\Excel::download()'
+                - 'Maatwebsite\Excel\Concerns\Exportable::download()'
+                - 'Symfony\Component\HttpFoundation\StreamedResponse::__construct()'
+                - 'Symfony\Component\HttpFoundation\BinaryFileResponse::__construct()'
+            message: 'the response body is capped; store the file and redirect to a temporary signed URL'
+            errorIdentifier: 'hihaho.disallowed.fileResponse'
+            allowExceptIn: %fileResponsePaths%
+    disallowedStaticCalls:
+        -
+            method:
+                - 'Illuminate\Support\Facades\Storage::download()'
+                - 'Illuminate\Support\Facades\Storage::response()'
+                - 'Maatwebsite\Excel\Facades\Excel::download()'
+            message: 'the response body is capped; store the file and redirect to a temporary signed URL'
+            errorIdentifier: 'hihaho.disallowed.fileResponse'
+            allowExceptIn: %fileResponsePaths%
