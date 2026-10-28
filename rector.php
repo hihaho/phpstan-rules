@@ -7,7 +7,6 @@ use Rector\Config\RectorConfig;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUselessParamTagRector;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUselessReturnTagRector;
 use Rector\Php81\Rector\FuncCall\NullToStrictStringFuncCallArgRector;
-use Rector\Php83\Rector\ClassMethod\AddOverrideAttributeToOverriddenMethodsRector;
 use Rector\PHPUnit\CodeQuality\Rector\Class_\AddSeeTestAnnotationRector;
 use Rector\Privatization\Rector\ClassMethod\PrivatizeFinalClassMethodRector;
 use Rector\TypeDeclaration\Rector\ArrowFunction\AddArrowFunctionReturnTypeRector;
@@ -51,9 +50,6 @@ return RectorConfig::configure()
         phpunitCodeQuality: true,
     )
     ->withAttributesSets()
-    ->withConfiguredRule(AddOverrideAttributeToOverriddenMethodsRector::class, [
-        AddOverrideAttributeToOverriddenMethodsRector::ADD_TO_INTERFACE_METHODS => true,
-    ])
     ->withImportNames()
     ->withEditorUrl('phpstorm://open?file=%file%&line=%line%')
     ->withParallel(300, 15, 15)

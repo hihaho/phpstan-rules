@@ -94,7 +94,7 @@ final class CombinedFuncCallRuleTest extends RuleTestCase
     {
         $errors = $this->gatherAnalyserErrors([__DIR__ . '/Debug/stubs/DebugInAppNamespaceStub.php']);
 
-        $this->assertNotEmpty($errors);
+        $this->assertNotSame([], $errors);
 
         foreach ($errors as $error) {
             $this->assertSame('hihaho.debug.noDebugInApp', $error->getIdentifier());
@@ -106,7 +106,7 @@ final class CombinedFuncCallRuleTest extends RuleTestCase
     {
         $errors = $this->gatherAnalyserErrors([__DIR__ . '/Debug/stubs/DebugInTestNamespaceStub.php']);
 
-        $this->assertNotEmpty($errors);
+        $this->assertNotSame([], $errors);
 
         foreach ($errors as $error) {
             $this->assertSame('hihaho.debug.noDebugInTests', $error->getIdentifier());
@@ -176,7 +176,7 @@ final class CombinedFuncCallRuleTest extends RuleTestCase
     {
         $errors = $this->gatherAnalyserErrors([__DIR__ . '/stubs/InvadeInAppNamespace.php']);
 
-        $this->assertNotEmpty($errors);
+        $this->assertNotSame([], $errors);
 
         foreach ($errors as $error) {
             $this->assertSame('hihaho.generic.noInvadeInAppCode', $error->getIdentifier());
@@ -188,7 +188,7 @@ final class CombinedFuncCallRuleTest extends RuleTestCase
     {
         $errors = $this->gatherAnalyserErrors([__DIR__ . '/stubs/UseSpatieInvadeInsteadOfLivewire.php']);
 
-        $this->assertNotEmpty($errors);
+        $this->assertNotSame([], $errors);
 
         foreach ($errors as $error) {
             $this->assertSame('hihaho.generic.disallowedUsageOfLivewireInvade', $error->getIdentifier());
@@ -255,7 +255,7 @@ final class CombinedFuncCallRuleTest extends RuleTestCase
     {
         $errors = $this->gatherAnalyserErrors([__DIR__ . '/Validation/stubs/RequestHelperWithArgStub.php']);
 
-        $this->assertNotEmpty($errors);
+        $this->assertNotSame([], $errors);
 
         foreach ($errors as $error) {
             $this->assertSame('hihaho.validation.noUnsafeRequestHelper', $error->getIdentifier());
