@@ -163,26 +163,14 @@ final readonly class HtmlBuilderContentSink
      */
     private function hasMapper(array $args): bool
     {
-        foreach ($args as $index => $arg) {
-            if ($arg->name instanceof Identifier ? $arg->name->name === 'mapper' : $index === 1) {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any($args, fn (Arg $arg, int $index): bool => $arg->name instanceof Identifier ? $arg->name->name === 'mapper' : $index === 1);
     }
 
     private function isBuilder(Expr $receiver, Scope $scope): bool
     {
         $type = $scope->getType($receiver);
 
-        foreach (self::BUILDER_CLASSES as $class) {
-            if ((new ObjectType($class))->isSuperTypeOf($type)->yes()) {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any(self::BUILDER_CLASSES, fn (string $class) => new ObjectType($class)->isSuperTypeOf($type)->yes());
     }
 
     private function isInCheckedNamespace(Scope $scope): bool

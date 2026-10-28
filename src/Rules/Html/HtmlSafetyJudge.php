@@ -64,13 +64,7 @@ final class HtmlSafetyJudge
         $parts = $this->splitParts($expr);
 
         if ($parts !== null) {
-            foreach ($parts as $part) {
-                if (! $this->isSafe($part, $scope)) {
-                    return false;
-                }
-            }
-
-            return true;
+            return array_all($parts, fn (Expr $part) => $this->isSafe($part, $scope));
         }
 
         if ($this->isEscapingCall($expr) || $this->isHtmlRenderingCall($expr, $scope)) {
@@ -142,7 +136,7 @@ final class HtmlSafetyJudge
         return $expr instanceof MethodCall
             && $expr->name instanceof Identifier
             && isset(self::HTML_RENDERING_METHODS[$expr->name->toLowerString()])
-            && (new ObjectType(Htmlable::class))->isSuperTypeOf($scope->getType($expr->var))->yes();
+            && new ObjectType(Htmlable::class)->isSuperTypeOf($scope->getType($expr->var))->yes();
     }
 
     private function isSafeType(Type $type): bool
