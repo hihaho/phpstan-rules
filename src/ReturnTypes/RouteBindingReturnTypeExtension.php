@@ -96,7 +96,7 @@ final class RouteBindingReturnTypeExtension implements ExpressionTypeResolverExt
             return null;
         }
 
-        if (! (new ObjectType(Request::class))->isSuperTypeOf($scope->getType($expr->var))->yes()) {
+        if (! new ObjectType(Request::class)->isSuperTypeOf($scope->getType($expr->var))->yes()) {
             return null;
         }
 
@@ -169,7 +169,7 @@ final class RouteBindingReturnTypeExtension implements ExpressionTypeResolverExt
 
         $bindings = [];
 
-        foreach ((new NodeFinder())->findInstanceOf($statements, StaticCall::class) as $call) {
+        foreach (new NodeFinder()->findInstanceOf($statements, StaticCall::class) as $call) {
             $binding = $this->callReader->bindingFromCall($call);
 
             if ($binding === null) {

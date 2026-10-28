@@ -350,12 +350,6 @@ trait DetectsPositionalFlagArgument
      */
     private function isFirstPartyClass(string $className, array $namespaces): bool
     {
-        foreach ($namespaces as $namespace) {
-            if (str_starts_with($className, rtrim($namespace, '\\') . '\\')) {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any($namespaces, fn (string $namespace) => str_starts_with($className, rtrim($namespace, '\\') . '\\'));
     }
 }

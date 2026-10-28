@@ -69,8 +69,8 @@ final readonly class CollectionListAllReturnTypeExtension implements DynamicMeth
 
         $receiverType = $scope->getType($receiver);
 
-        $isKnownListCollection = (new ObjectType(Collection::class))->isSuperTypeOf($receiverType)->yes()
-            || (new ObjectType(LazyCollection::class))->isSuperTypeOf($receiverType)->yes();
+        $isKnownListCollection = new ObjectType(Collection::class)->isSuperTypeOf($receiverType)->yes()
+            || new ObjectType(LazyCollection::class)->isSuperTypeOf($receiverType)->yes();
 
         if (! $isKnownListCollection) {
             return null;

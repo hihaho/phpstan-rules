@@ -1,18 +1,27 @@
 <?php declare(strict_types=1);
 
+use Rector\Caching\ValueObject\Storage\FileCacheStorage;
 use Rector\CodeQuality\Rector\ClassMethod\InlineArrayReturnAssignRector;
-use Rector\CodeQuality\Rector\If_\ExplicitBoolCompareRector;
-use Rector\CodingStyle\Rector\Encapsed\EncapsedStringsToSprintfRector;
+use Rector\CodeQuality\Rector\If_\ExplicitNullableObjectInstanceRector;
 use Rector\Config\RectorConfig;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUselessParamTagRector;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUselessReturnTagRector;
-use Rector\Php81\Rector\FuncCall\NullToStrictStringFuncCallArgRector;
+use Rector\Php80\Rector\Ternary\TernaryToNullsafeCoalesceRector;
 use Rector\PHPUnit\CodeQuality\Rector\Class_\AddSeeTestAnnotationRector;
 use Rector\Privatization\Rector\ClassMethod\PrivatizeFinalClassMethodRector;
 use Rector\TypeDeclaration\Rector\ArrowFunction\AddArrowFunctionReturnTypeRector;
 
+// Rector rejects a containerCacheDirectory that does not exist yet.
+is_dir(__DIR__ . '/.cache/phpstan') || mkdir(__DIR__ . '/.cache/phpstan', recursive: true);
+
 return RectorConfig::configure()
-    ->withCache('.cache/rector')
+    ->withCache(
+        cacheDirectory: './.cache/rector',
+        cacheClass: FileCacheStorage::class,
+        // Rector boots a PHPStan container and writes the same reflection cache
+        // entries PHPStan does, so it shares PHPStan's tmpDir: one copy, not two.
+        containerCacheDirectory: './.cache/phpstan',
+    )
     ->withPaths([
         __DIR__ . '/src',
         __DIR__ . '/tests',
@@ -20,6 +29,7 @@ return RectorConfig::configure()
     ->withSkip([
         __DIR__ . '/tests/Rules/stubs',
         __DIR__ . '/tests/Rules/Debug/stubs',
+        __DIR__ . '/tests/Rules/Validation/stubs',
         __DIR__ . '/tests/Rules/Conventions/stubs',
         __DIR__ . '/tests/Presets/stubs',
         __DIR__ . '/tests/Rules/Database/stubs',
@@ -29,13 +39,14 @@ return RectorConfig::configure()
         // Rector writes the FQCN, Pint's fully_qualified_strict_types shortens it back, and the next
         // Rector run appends a duplicate — the two tools never converge on a @see annotation.
         AddSeeTestAnnotationRector::class,
-        EncapsedStringsToSprintfRector::class,
-        ExplicitBoolCompareRector::class,
         InlineArrayReturnAssignRector::class,
-        NullToStrictStringFuncCallArgRector::class,
         PrivatizeFinalClassMethodRector::class,
         RemoveUselessParamTagRector::class,
         RemoveUselessReturnTagRector::class,
+        // Its `$x?->prop ?? $d` output fails PHPStan's nullsafe.neverNull.
+        TernaryToNullsafeCoalesceRector::class,
+        // On a nullable enum, its rewrite lets the deadCode set delete reachable code.
+        ExplicitNullableObjectInstanceRector::class,
     ])
     ->withPreparedSets(
         deadCode: true,
@@ -44,14 +55,13 @@ return RectorConfig::configure()
         typeDeclarations: true,
         typeDeclarationDocblocks: true,
         privatization: true,
-        instanceOf: true,
-        earlyReturn: true,
         rectorPreset: true,
         phpunitCodeQuality: true,
     )
+    ->withComposerBased(phpunit: true)
     ->withAttributesSets()
     ->withImportNames()
     ->withEditorUrl('phpstorm://open?file=%file%&line=%line%')
     ->withParallel(300, 15, 15)
     ->withMemoryLimit('3G')
-    ->withPhpSets(php83: true);
+    ->withPhpSets(php84: true);

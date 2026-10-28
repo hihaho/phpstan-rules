@@ -5,7 +5,7 @@ namespace Hihaho\PhpstanRules\ReturnTypes;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
-use PhpParser\Node;
+use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Expr\ClassConstFetch;
 use PhpParser\Node\Expr\StaticCall;
@@ -104,7 +104,7 @@ final class ImplicitRouteBindingResolver
             return [];
         }
 
-        return array_values((new NodeFinder())->findInstanceOf($statements, StaticCall::class));
+        return array_values(new NodeFinder()->findInstanceOf($statements, StaticCall::class));
     }
 
     /**
@@ -152,7 +152,7 @@ final class ImplicitRouteBindingResolver
      *
      * @return array{string, string}|null
      */
-    private function resolveActionMethod(Node $action): ?array
+    private function resolveActionMethod(Expr $action): ?array
     {
         if ($action instanceof ClassConstFetch) {
             return $action->class instanceof Name ? [$action->class->toString(), '__invoke'] : null;
@@ -218,7 +218,7 @@ final class ImplicitRouteBindingResolver
                 continue;
             }
 
-            return (new ObjectType(Model::class))->isSuperTypeOf($parameter->getType())->yes()
+            return new ObjectType(Model::class)->isSuperTypeOf($parameter->getType())->yes()
                 ? $parameter->getType()
                 : null;
         }

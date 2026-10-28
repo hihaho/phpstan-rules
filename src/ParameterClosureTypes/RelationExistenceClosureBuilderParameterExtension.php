@@ -129,7 +129,7 @@ final readonly class RelationExistenceClosureBuilderParameterExtension implement
                 $modelType->getMethod('newQuery', $scope)->getVariants(),
             )->getReturnType();
 
-            if ((new ObjectType(Builder::class))->isSuperTypeOf($builderType)->yes()) {
+            if (new ObjectType(Builder::class)->isSuperTypeOf($builderType)->yes()) {
                 return $builderType;
             }
         }
@@ -190,7 +190,7 @@ final readonly class RelationExistenceClosureBuilderParameterExtension implement
             $classReflection->getMethod($relationName, $scope)->getVariants(),
         )->getReturnType();
 
-        if (! (new ObjectType(Relation::class))->isSuperTypeOf($relationType)->yes()) {
+        if (! new ObjectType(Relation::class)->isSuperTypeOf($relationType)->yes()) {
             return null;
         }
 

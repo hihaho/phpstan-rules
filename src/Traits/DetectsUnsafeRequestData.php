@@ -69,13 +69,7 @@ trait DetectsUnsafeRequestData
 
     private function unsafeRequestTypeIsRequest(Type $type): bool
     {
-        foreach ($type->getObjectClassNames() as $className) {
-            if ($this->unsafeRequestClassIsRequest($className)) {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any($type->getObjectClassNames(), fn (string $className) => $this->unsafeRequestClassIsRequest($className));
     }
 
     private function unsafeRequestClassIsRequest(string $className): bool
@@ -84,7 +78,7 @@ trait DetectsUnsafeRequestData
         static $cache = [];
 
         if (! array_key_exists($className, $cache)) {
-            $cache[$className] = (new ObjectType(Request::class))->isSuperTypeOf(new ObjectType($className))->yes();
+            $cache[$className] = new ObjectType(Request::class)->isSuperTypeOf(new ObjectType($className))->yes();
         }
 
         return $cache[$className];

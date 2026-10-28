@@ -18,7 +18,7 @@ conventions, see [`hihaho/rector-rules`](https://github.com/hihaho/rector-rules)
 
 ## Requirements
 
-- PHP 8.3 or higher
+- PHP 8.4 or higher
 - PHPStan 2.1 or higher
 - Laravel 12.x or 13.x (via `illuminate/support` and `illuminate/database`)
 

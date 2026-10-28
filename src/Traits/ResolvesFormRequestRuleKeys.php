@@ -3,7 +3,6 @@
 namespace Hihaho\PhpstanRules\Traits;
 
 use Illuminate\Foundation\Http\FormRequest;
-use PhpParser\Node;
 use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\Variable;
@@ -15,9 +14,7 @@ use PhpParser\Node\Stmt\ClassLike;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Namespace_;
 use PhpParser\Node\Stmt\Return_;
-use PhpParser\NodeTraverser;
-use PhpParser\NodeVisitor;
-use PhpParser\NodeVisitorAbstract;
+use PhpParser\NodeFinder;
 use PHPStan\Analyser\Scope;
 use PHPStan\Parser\Parser;
 use PHPStan\Parser\ParserErrorsException;
@@ -58,7 +55,7 @@ trait ResolvesFormRequestRuleKeys
         static $cache = [];
 
         if (! array_key_exists($className, $cache)) {
-            $cache[$className] = (new ObjectType(FormRequest::class))
+            $cache[$className] = new ObjectType(FormRequest::class)
                 ->isSuperTypeOf(new ObjectType($className))
                 ->yes();
         }
@@ -330,28 +327,24 @@ trait ResolvesFormRequestRuleKeys
      */
     private function countReturns(array $stmts): int
     {
-        $visitor = new class extends NodeVisitorAbstract {
-            public int $count = 0;
+        $finder = new NodeFinder();
+        $nested = [];
 
-            public function enterNode(Node $node): ?int
-            {
-                if ($node instanceof FunctionLike) {
-                    return NodeVisitor::DONT_TRAVERSE_CHILDREN;
-                }
-
-                if ($node instanceof Return_) {
-                    ++$this->count;
-                }
-
-                return null;
+        foreach ($finder->findInstanceOf($stmts, FunctionLike::class) as $functionLike) {
+            foreach ($finder->findInstanceOf($functionLike, Return_::class) as $return) {
+                $nested[spl_object_id($return)] = true;
             }
-        };
+        }
 
-        $traverser = new NodeTraverser();
-        $traverser->addVisitor($visitor);
-        $traverser->traverse($stmts);
+        $count = 0;
 
-        return $visitor->count;
+        foreach ($finder->findInstanceOf($stmts, Return_::class) as $return) {
+            if (! isset($nested[spl_object_id($return)])) {
+                ++$count;
+            }
+        }
+
+        return $count;
     }
 
     private function rootSegment(string $key): string

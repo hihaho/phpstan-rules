@@ -1,0 +1,56 @@
+name: cache-prune
+
+on:
+  schedule:
+    - cron: '23 3 * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  prune:
+    name: Prune superseded caches on main
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    permissions:
+      actions: write
+
+    steps:
+      # phpstan.yml, pint-check.yml and rector-check.yml save one cache entry per
+      # commit on main. Delete superseded entries before they fill the repository
+      # cache limit and evict other caches. Scheduled, not chained onto the QA
+      # workflows, so `actions: write` stays out of every job that runs third-party
+      # actions.
+      - name: Prune superseded caches on main
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REF: refs/heads/main
+        run: |
+          keys="$RUNNER_TEMP/keys.txt"
+          keep=3
+
+          for prefix in 'phpstan-result-cache-' 'pint-cache-' 'rector-cache-'; do
+            echo "::group::${prefix}"
+
+            gh cache list \
+              --repo "$GITHUB_REPOSITORY" \
+              --ref "$REF" \
+              --key "$prefix" \
+              --sort created_at \
+              --order desc \
+              --limit 100 \
+              --json key \
+              --jq '.[].key' > "$keys"
+
+            echo "found $(wc -l < "$keys" | tr -d ' ') entries, keeping the newest ${keep}"
+
+            tail -n "+$((keep + 1))" "$keys" | while read -r key; do
+              echo "deleting ${key}"
+
+              gh cache delete "$key" --repo "$GITHUB_REPOSITORY" --ref "$REF"
+            done
+
+            echo "::endgroup::"
+          done

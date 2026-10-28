@@ -1,5 +1,6 @@
 {
     "skills": [
-        "phpstan-developer"
+        "phpstan-developer",
+        "security-audit"
     ]
 }

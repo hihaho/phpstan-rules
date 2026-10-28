@@ -157,7 +157,7 @@ final readonly class PropertyMutations
     private function find(Node $node, string $type): array
     {
         /** @var list<TNode> */
-        return (new NodeFinder())->findInstanceOf($node, $type);
+        return new NodeFinder()->findInstanceOf($node, $type);
     }
 
     /**

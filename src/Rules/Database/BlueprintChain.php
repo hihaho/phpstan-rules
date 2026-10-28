@@ -50,7 +50,7 @@ final readonly class BlueprintChain
             return [];
         }
 
-        $calls = (new NodeFinder())->findInstanceOf($closure, MethodCall::class);
+        $calls = new NodeFinder()->findInstanceOf($closure, MethodCall::class);
         $inner = [];
 
         foreach ($calls as $call) {
@@ -144,13 +144,7 @@ final readonly class BlueprintChain
      */
     public function addsOrDropsColumn(array $names): bool
     {
-        foreach ($names as $name) {
-            if ($name === 'dropColumn' || $this->definesColumn($name)) {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any($names, fn (string $name) => $name === 'dropColumn' || $this->definesColumn($name));
     }
 
     /**
@@ -173,6 +167,6 @@ final readonly class BlueprintChain
 
         $returnType = $blueprint->getNativeMethod($name)->getVariants()[0]->getReturnType();
 
-        return (new ObjectType(ColumnDefinition::class))->isSuperTypeOf($returnType)->yes();
+        return new ObjectType(ColumnDefinition::class)->isSuperTypeOf($returnType)->yes();
     }
 }

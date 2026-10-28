@@ -1,0 +1,69 @@
+name: pint-check
+
+on:
+  pull_request:
+    paths:
+      - '**.php'
+      - 'pint.json'
+      - 'composer.lock'
+      - '.github/workflows/pint-check.yml'
+  # A push to main saves the cache that pull requests restore.
+  push:
+    branches:
+      - main
+    paths:
+      - '**.php'
+      - 'pint.json'
+      - 'composer.lock'
+      - '.github/workflows/pint-check.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pint-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pint-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - name: Install composer dependencies
+        uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # v4.0.0
+
+      # The key carries the commit SHA because actions/cache never overwrites a key:
+      # without it, the first save is restored forever. Only a push to main saves,
+      # because a pull_request cache is visible to that pull request only.
+      # cache-prune.yml deletes superseded entries.
+      - name: Restore Pint cache
+        id: pint_cache
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/pint/
+          key: pint-cache-${{ hashFiles('composer.lock', 'pint.json') }}-${{ github.sha }}
+          restore-keys: |
+            pint-cache-${{ hashFiles('composer.lock', 'pint.json') }}-
+            pint-cache-
+
+      - name: Run Pint (test)
+        run: vendor/bin/pint --test
+
+      - name: Save Pint cache
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.pint_cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: .cache/pint/
+          key: pint-cache-${{ hashFiles('composer.lock', 'pint.json') }}-${{ github.sha }}

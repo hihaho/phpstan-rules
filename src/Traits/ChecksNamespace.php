@@ -18,13 +18,7 @@ trait ChecksNamespace
     {
         $scopeNamespace = $scope->getNamespace();
 
-        foreach ($namespaces as $namespace) {
-            if ($this->scopeNamespaceMatchesPrefix($scopeNamespace, $namespace)) {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any($namespaces, fn (string $namespace) => $this->scopeNamespaceMatchesPrefix($scopeNamespace, $namespace));
     }
 
     private function scopeNamespaceMatchesPrefix(?string $scopeNamespace, string $namespace): bool

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Override;
 use PhpParser\Node;
 use PhpParser\Node\Expr\Array_;
+use PhpParser\Node\PropertyItem;
 use PhpParser\Node\Stmt\Property;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ClassReflection;
@@ -65,13 +66,7 @@ final class NoEloquentWithPropertyRule implements Rule
 
     private function declaresWithProperty(Property $node): bool
     {
-        foreach ($node->props as $prop) {
-            if ($prop->name->toString() === 'with') {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any($node->props, fn (PropertyItem $prop) => $prop->name->toString() === 'with');
     }
 
     /**
@@ -103,7 +98,7 @@ final class NoEloquentWithPropertyRule implements Rule
             return false;
         }
 
-        return (new ObjectType(Model::class))
+        return new ObjectType(Model::class)
             ->isSuperTypeOf(new ObjectType($classReflection->getName()))
             ->yes();
     }

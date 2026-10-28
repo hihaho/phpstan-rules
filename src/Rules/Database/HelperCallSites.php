@@ -64,7 +64,7 @@ final class HelperCallSites
     {
         $calls = [];
 
-        foreach ((new NodeFinder())->findInstanceOf($class, MethodCall::class) as $call) {
+        foreach (new NodeFinder()->findInstanceOf($class, MethodCall::class) as $call) {
             if (! $call->var instanceof Variable || $call->var->name !== 'this') {
                 continue;
             }

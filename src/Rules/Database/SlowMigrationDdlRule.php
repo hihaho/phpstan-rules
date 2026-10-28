@@ -350,7 +350,7 @@ final readonly class SlowMigrationDdlRule implements Rule
 
     private function isMigration(ClassReflection $classReflection): bool
     {
-        return (new ObjectType(Migration::class))
+        return new ObjectType(Migration::class)
             ->isSuperTypeOf(new ObjectType($classReflection->getName()))
             ->yes();
     }
@@ -361,10 +361,10 @@ final readonly class SlowMigrationDdlRule implements Rule
      * @param  class-string<TNode>  $type
      * @return list<TNode>
      */
-    private function findNodes(Node $node, string $type): array
+    private function findNodes(Class_ $node, string $type): array
     {
         /** @var list<TNode> */
-        return (new NodeFinder())->findInstanceOf($node, $type);
+        return new NodeFinder()->findInstanceOf($node, $type);
     }
 
     /**

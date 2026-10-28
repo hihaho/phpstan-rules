@@ -1,12 +1,10 @@
-name: PHPStan
+name: phpstan
 
 permissions:
   contents: read
 
 on:
   push:
-    branches:
-      - main
     paths:
       - '**.php'
       - 'phpstan.neon.dist'
@@ -24,10 +22,9 @@ on:
       - 'composer.json'
       - 'composer.lock'
       - '.github/workflows/phpstan.yml'
-  workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: phpstan-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -38,24 +35,43 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 1
+          persist-credentials: false
 
       - name: Setup PHP
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
         with:
           php-version: '8.4'
           coverage: none
-          tools: composer:v2
 
       - name: Install composer dependencies
         uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # v4.0.0
 
-      - name: Cache PHPStan results
-        uses: actions/cache@v6
+      # The key carries the commit SHA because actions/cache never overwrites a key:
+      # without it, the first save is restored forever. Only a push to main saves,
+      # because a pull_request cache is visible to that pull request only.
+      # cache-prune.yml deletes superseded entries.
+      # cache/nette.configurator is left out: PHPStan keys the compiled container on
+      # the whole environment, and GITHUB_RUN_ID changes every run.
+      - name: Restore PHPStan cache
+        id: phpstan_cache
+        uses: actions/cache/restore@v6
         with:
-          path: .cache/phpstan/
-          key: phpstan-result-cache-${{ hashFiles('composer.lock', 'phpstan.neon.dist') }}
-          restore-keys: phpstan-result-cache-
+          path: |
+            .cache/phpstan/resultCache.php
+            .cache/phpstan/cache/PHPStan
+          key: phpstan-result-cache-${{ hashFiles('composer.lock', 'phpstan.neon.dist', 'phpstan-baseline.neon') }}-${{ github.sha }}
+          restore-keys: |
+            phpstan-result-cache-${{ hashFiles('composer.lock', 'phpstan.neon.dist', 'phpstan-baseline.neon') }}-
+            phpstan-result-cache-
 
       - name: Run PHPStan
-        run: vendor/bin/phpstan analyse --error-format=github --no-interaction --no-ansi
+        run: ./vendor/bin/phpstan --error-format=github --no-interaction --memory-limit=2G
+
+      - name: Save PHPStan cache
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.phpstan_cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            .cache/phpstan/resultCache.php
+            .cache/phpstan/cache/PHPStan
+          key: phpstan-result-cache-${{ hashFiles('composer.lock', 'phpstan.neon.dist', 'phpstan-baseline.neon') }}-${{ github.sha }}

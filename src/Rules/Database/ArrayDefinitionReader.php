@@ -83,13 +83,7 @@ final readonly class ArrayDefinitionReader
      */
     private function rebinds(Foreach_ $loop, string $variable): bool
     {
-        foreach ((new NodeFinder())->findInstanceOf($loop, Assign::class) as $assign) {
-            if ($assign->var instanceof Variable && $assign->var->name === $variable) {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any(new NodeFinder()->findInstanceOf($loop, Assign::class), fn (Assign $assign) => $assign->var instanceof Variable && $assign->var->name === $variable);
     }
 
     /**
@@ -120,7 +114,7 @@ final readonly class ArrayDefinitionReader
     {
         $loops = [];
 
-        foreach ((new NodeFinder())->findInstanceOf($class, Foreach_::class) as $loop) {
+        foreach (new NodeFinder()->findInstanceOf($class, Foreach_::class) as $loop) {
             if ($loop->valueVar instanceof Variable && $loop->valueVar->name === $variable) {
                 $loops[] = $loop;
             }
@@ -131,6 +125,6 @@ final readonly class ArrayDefinitionReader
 
     private function contains(Foreach_ $loop, StaticCall $call): bool
     {
-        return in_array($call, (new NodeFinder())->findInstanceOf($loop, StaticCall::class), true);
+        return in_array($call, new NodeFinder()->findInstanceOf($loop, StaticCall::class), true);
     }
 }

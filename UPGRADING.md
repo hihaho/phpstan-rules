@@ -6,6 +6,24 @@ For minor-version additions (new rules, new configuration keys), see
 [CHANGELOG.md](CHANGELOG.md) and the rule-specific sections in
 [README.md](README.md).
 
+## Upgrading from 3.x to 4.0
+
+### PHP 8.4 required
+
+**Likelihood of impact: high**
+
+Minimum PHP is now `^8.4`. The package source uses PHP 8.4 syntax, so it no longer loads on PHP 8.3.
+
+Bump your project's PHP constraint:
+
+```json
+"require": {
+    "php": "^8.4"
+}
+```
+
+If you cannot upgrade yet, stay on `hihaho/phpstan-rules:^3.18`.
+
 ## Upgrading from 2.x to 3.0
 
 ### PHP 8.3 required

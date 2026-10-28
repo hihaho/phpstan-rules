@@ -16,12 +16,15 @@ return BoostConfig::configure()
         'sandermuller/boost-skills',
     ])
     ->withTags([
+        'voice',
         Tag::Php,
         Tag::Github,
         'release-automation',
-        'voide',
     ])
     ->withRemoteSkills([
+        RemoteSkillSource::githubPath('cloudflare/security-audit-skill', 'c1c8a8c1471069fb0e188eeaff69b8e8db6564a8', [
+            'security-audit' => 'skills/security-audit',
+        ]),
         RemoteSkillSource::githubPath('peterfox/agent-skills', 'main', [
             'phpstan-developer' => 'phpstan-developer',
         ]),
