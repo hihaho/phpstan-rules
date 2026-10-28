@@ -1,0 +1,23 @@
+# Bans Str::limit() and Stringable::limit() as a length cap. Requires spaze/phpstan-disallowed-calls.
+#
+# limit() cuts by display width (mb_strwidth), not by character count, so a value of East Asian
+# characters or emoji comes out much shorter than expected — and one that is "limited" to fit a
+# column can still overflow it. It is fine for display text; allow it where it truncates labels:
+#
+#     ignoreErrors:
+#         -
+#             identifier: hihaho.disallowed.strLimit
+#             paths:
+#                 - app/Notifications/*
+
+parameters:
+    disallowedStaticCalls:
+        -
+            method: 'Illuminate\Support\Str::limit()'
+            message: 'it cuts by display width; use mb_substr() for a length cap'
+            errorIdentifier: 'hihaho.disallowed.strLimit'
+    disallowedMethodCalls:
+        -
+            method: 'Illuminate\Support\Stringable::limit()'
+            message: 'it cuts by display width; use mb_substr() for a length cap'
+            errorIdentifier: 'hihaho.disallowed.strLimit'
