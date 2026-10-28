@@ -13,8 +13,6 @@ use PHPStan\Analyser\Scope;
 use PHPStan\Rules\IdentifierRuleError;
 use PHPStan\Rules\RuleErrorBuilder;
 use PHPStan\Type\ObjectType;
-use Spatie\Html\BaseElement;
-use Spatie\Html\Html;
 
 /**
  * spatie/laravel-html escapes attribute values and `->text()`, and nothing
@@ -73,9 +71,12 @@ final readonly class HtmlBuilderContentSink
         'setchildren' => true,
     ];
 
+    /**
+     * Strings, not ::class: spatie/laravel-html is not a dependency of this package.
+     */
     private const array BUILDER_CLASSES = [
-        Html::class,
-        BaseElement::class,
+        'Spatie\Html\Html',
+        'Spatie\Html\BaseElement',
     ];
 
     private const string FACADE_CLASS = 'spatie\html\facades\html';

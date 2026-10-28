@@ -3,7 +3,6 @@
 namespace Hihaho\PhpstanRules\Rules\Html;
 
 use Hihaho\PhpstanRules\Traits\ChecksNamespace;
-use Laravel\Nova\Fields\Field;
 use PhpParser\Node\Expr;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ReflectionProvider;
@@ -19,7 +18,10 @@ final readonly class HtmlFieldReturnSink
 {
     use ChecksNamespace;
 
-    private const string NOVA_FIELD = Field::class;
+    /**
+     * A string, not ::class: laravel/nova is not a dependency of this package.
+     */
+    private const string NOVA_FIELD = 'Laravel\Nova\Fields\Field';
 
     /**
      * @param  list<string>  $namespaces

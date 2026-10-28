@@ -40,8 +40,9 @@ return RectorConfig::configure()
         // Rector writes the FQCN, Pint's fully_qualified_strict_types shortens it back, and the next
         // Rector run appends a duplicate — the two tools never converge on a @see annotation.
         AddSeeTestAnnotationRector::class,
-        // Optional third-party classes (livewire/livewire) are not dependencies.
+        // Optional third-party classes (livewire/livewire, spatie/laravel-html, laravel/nova) are not dependencies.
         StringClassNameToClassConstantRector::class => [
+            __DIR__ . '/src/Rules/Html',
             __DIR__ . '/src/Rules/Livewire',
         ],
         InlineArrayReturnAssignRector::class,
