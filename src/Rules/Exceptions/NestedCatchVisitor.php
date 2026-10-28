@@ -5,6 +5,7 @@ namespace Hihaho\PhpstanRules\Rules\Exceptions;
 use Override;
 use PhpParser\Node;
 use PhpParser\Node\Stmt\Catch_;
+use PhpParser\NodeFinder;
 use PhpParser\NodeVisitorAbstract;
 
 /**
@@ -15,50 +16,32 @@ use PhpParser\NodeVisitorAbstract;
  * A typical case is a fallback that itself may fail, inside a catch that has
  * already reported the original failure: swallowing the fallback's exception
  * hides nothing the outer catch did not record.
+ *
+ * Runs on leave: PHPStan's NameResolver shares this traversal, so the class
+ * names in a catch body (an aliased `Response::deny()`) are only resolved once
+ * the body has been traversed.
  */
 final class NestedCatchVisitor extends NodeVisitorAbstract
 {
     public const string ATTRIBUTE = 'hihahoInsideHandlingCatch';
 
-    /** @var list<bool> */
-    private array $handlingStack = [];
+    private readonly NodeFinder $nodeFinder;
 
     public function __construct(
         private readonly CatchBodyInspector $inspector,
-    ) {}
-
-    /**
-     * @param  Node[]  $nodes
-     */
-    #[Override]
-    public function beforeTraverse(array $nodes): null
-    {
-        $this->handlingStack = [];
-
-        return null;
-    }
-
-    #[Override]
-    public function enterNode(Node $node): null
-    {
-        if (! $node instanceof Catch_) {
-            return null;
-        }
-
-        if (in_array(true, $this->handlingStack, true)) {
-            $node->setAttribute(self::ATTRIBUTE, true);
-        }
-
-        $this->handlingStack[] = $this->inspector->handles($node);
-
-        return null;
+    ) {
+        $this->nodeFinder = new NodeFinder();
     }
 
     #[Override]
     public function leaveNode(Node $node): null
     {
-        if ($node instanceof Catch_) {
-            array_pop($this->handlingStack);
+        if (! $node instanceof Catch_ || ! $this->inspector->handles($node)) {
+            return null;
+        }
+
+        foreach ($this->nodeFinder->findInstanceOf($node->stmts, Catch_::class) as $nested) {
+            $nested->setAttribute(self::ATTRIBUTE, true);
         }
 
         return null;
