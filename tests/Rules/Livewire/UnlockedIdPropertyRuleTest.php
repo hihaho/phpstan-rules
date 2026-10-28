@@ -28,9 +28,10 @@ final class UnlockedIdPropertyRuleTest extends RuleTestCase
     }
 
     /**
-     * Not reported in the fixture: a #[Locked] id, a bool, a static property,
-     * protected and private properties, names that do not end in an id suffix,
-     * and a class that is not a Livewire component.
+     * Not reported in the fixture: #[Locked] in any position of any attribute
+     * group, bool and ?bool, static, protected, private and promoted properties,
+     * names that only contain an id suffix, a class that is not a Livewire
+     * component, a property a trait adds, and the child of a reported parent.
      */
     #[Test]
     public function flags_public_id_properties_without_locked(): void
@@ -45,6 +46,13 @@ final class UnlockedIdPropertyRuleTest extends RuleTestCase
             [$this->message('EditVideo', 'secondId'), 22, self::TIP],
             [$this->message('VideoForm', 'videoId'), 42, self::TIP],         // form object
             [$this->message('NestedEditVideo', 'playlistId'), 47, self::TIP], // component through a base class
+            [$this->message('AttributedProperties', 'urlId'), 60, self::TIP],             // another Livewire attribute
+            [$this->message('AttributedProperties', 'validatedId'), 63, self::TIP],
+            [$this->message('AttributedProperties', 'lookalikeLockedId'), 66, self::TIP], // a Locked from another namespace
+            [$this->message('AttributedProperties', 'mixedId'), 79, self::TIP],           // a union that contains bool
+            [$this->message('AttributedProperties', 'id'), 83, self::TIP],
+            [$this->message('AttributedProperties', 'uuid'), 85, self::TIP],
+            [$this->message('ParentWithId', 'parentId'), 107, self::TIP],                 // once, on the declaring class
         ]);
     }
 
@@ -52,6 +60,12 @@ final class UnlockedIdPropertyRuleTest extends RuleTestCase
     public function accepts_an_ignore_comment_with_a_reason(): void
     {
         $this->analyse([__DIR__ . '/stubs/ignored.php'], []);
+    }
+
+    #[Test]
+    public function ignores_classes_outside_the_configured_namespaces(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/outside-namespace.php'], []);
     }
 
     #[Test]

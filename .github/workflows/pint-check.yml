@@ -5,6 +5,7 @@ on:
     paths:
       - '**.php'
       - 'pint.json'
+      - 'composer.json'
       - 'composer.lock'
       - '.github/workflows/pint-check.yml'
   # A push to main saves the cache that pull requests restore.
@@ -14,6 +15,7 @@ on:
     paths:
       - '**.php'
       - 'pint.json'
+      - 'composer.json'
       - 'composer.lock'
       - '.github/workflows/pint-check.yml'
 

@@ -5,6 +5,7 @@ on:
     paths:
       - '**.php'
       - 'rector.php'
+      - 'composer.json'
       - 'composer.lock'
       - '.github/workflows/rector-check.yml'
   # A push to main saves the cache that pull requests restore.
@@ -14,6 +15,7 @@ on:
     paths:
       - '**.php'
       - 'rector.php'
+      - 'composer.json'
       - 'composer.lock'
       - '.github/workflows/rector-check.yml'
 

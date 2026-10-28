@@ -31,4 +31,9 @@ final class ClosureRuleFormRequestStub extends FormRequest
     {
         return $this->string('referral')->toString();
     }
+
+    public function code(): string
+    {
+        return $this->string('code')->toString();
+    }
 }

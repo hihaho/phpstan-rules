@@ -6,6 +6,7 @@ use Hihaho\PhpstanRules\Traits\ChecksNamespace;
 use Override;
 use PhpParser\Node;
 use PhpParser\Node\Identifier;
+use PhpParser\Node\NullableType;
 use PhpParser\Node\PropertyItem;
 use PhpParser\Node\Stmt\Property;
 use PHPStan\Analyser\Scope;
@@ -45,7 +46,7 @@ final readonly class UnlockedIdPropertyRule implements Rule
 
     private const string LOCKED_ATTRIBUTE = 'Livewire\Attributes\Locked';
 
-    private const string ID_NAME_PATTERN = '/(Id|Ids|Uuid|Uuids|_id|_ids|_uuid|_uuids)$/';
+    private const string ID_NAME_PATTERN = '/(^(id|ids|uuid|uuids)|Id|Ids|Uuid|Uuids|_id|_ids|_uuid|_uuids)$/';
 
     /**
      * @param  list<string>  $namespaces
@@ -123,22 +124,29 @@ final readonly class UnlockedIdPropertyRule implements Rule
      */
     private function isClientWritable(Property $property): bool
     {
-        if (! $property->isPublic() || $property->isStatic()) {
-            return false;
-        }
+        return $property->isPublic()
+            && ! $property->isStatic()
+            && ! $this->isBool($property)
+            && ! $this->isLocked($property);
+    }
 
-        if ($property->type instanceof Identifier && $property->type->toLowerString() === 'bool') {
-            return false;
-        }
+    private function isBool(Property $property): bool
+    {
+        $type = $property->type instanceof NullableType ? $property->type->type : $property->type;
 
+        return $type instanceof Identifier && $type->toLowerString() === 'bool';
+    }
+
+    private function isLocked(Property $property): bool
+    {
         foreach ($property->attrGroups as $group) {
             foreach ($group->attrs as $attribute) {
                 if ($attribute->name->toString() === self::LOCKED_ATTRIBUTE) {
-                    return false;
+                    return true;
                 }
             }
         }
 
-        return true;
+        return false;
     }
 }

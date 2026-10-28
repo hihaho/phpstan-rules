@@ -301,7 +301,7 @@ Flag a public property on a Livewire component or form object whose name marks i
 
 | Rule                     | Targets                                                    | Identifier                           |
 |--------------------------|------------------------------------------------------------|--------------------------------------|
-| `UnlockedIdPropertyRule` | public `*Id`, `*Ids`, `*Uuid`, `*_id` … property without `#[Locked]` | `hihaho.livewire.unlockedIdProperty` |
+| `UnlockedIdPropertyRule` | public `id`, `*Id`, `*Ids`, `*Uuid`, `*_id` … property without `#[Locked]` | `hihaho.livewire.unlockedIdProperty` |
 
 It checks nothing by default. Each project lists the namespaces to check:
 
