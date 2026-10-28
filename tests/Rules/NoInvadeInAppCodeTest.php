@@ -83,7 +83,7 @@ final class NoInvadeInAppCodeTest extends RuleTestCase
     {
         $errors = $this->gatherAnalyserErrors([__DIR__ . '/stubs/InvadeInAppNamespace.php']);
 
-        $this->assertNotEmpty($errors);
+        $this->assertNotSame([], $errors);
 
         foreach ($errors as $error) {
             $this->assertSame('hihaho.generic.noInvadeInAppCode', $error->getIdentifier());
@@ -94,7 +94,7 @@ final class NoInvadeInAppCodeTest extends RuleTestCase
     {
         $errors = $this->gatherAnalyserErrors([__DIR__ . '/stubs/UseSpatieInvadeInsteadOfLivewire.php']);
 
-        $this->assertNotEmpty($errors);
+        $this->assertNotSame([], $errors);
 
         foreach ($errors as $error) {
             $this->assertSame('hihaho.generic.disallowedUsageOfLivewireInvade', $error->getIdentifier());

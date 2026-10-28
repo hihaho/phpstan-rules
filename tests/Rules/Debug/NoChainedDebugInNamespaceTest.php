@@ -93,7 +93,7 @@ final class NoChainedDebugInNamespaceTest extends RuleTestCase
     {
         $errors = $this->gatherAnalyserErrors([__DIR__ . '/stubs/ChainedDebugInAppNamespaceStub.php']);
 
-        $this->assertNotEmpty($errors);
+        $this->assertNotSame([], $errors);
 
         foreach ($errors as $error) {
             $this->assertSame('hihaho.debug.noChainedDebugInApp', $error->getIdentifier());

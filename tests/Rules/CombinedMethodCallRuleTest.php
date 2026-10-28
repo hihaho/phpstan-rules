@@ -129,7 +129,7 @@ final class CombinedMethodCallRuleTest extends RuleTestCase
     {
         $errors = $this->gatherAnalyserErrors([__DIR__ . '/Debug/stubs/ChainedDebugInAppNamespaceStub.php']);
 
-        $this->assertNotEmpty($errors);
+        $this->assertNotSame([], $errors);
 
         foreach ($errors as $error) {
             $this->assertSame('hihaho.debug.noChainedDebugInApp', $error->getIdentifier());
@@ -270,7 +270,7 @@ final class CombinedMethodCallRuleTest extends RuleTestCase
     {
         $errors = $this->gatherAnalyserErrors([__DIR__ . '/Validation/stubs/RequestInControllerStub.php']);
 
-        $this->assertNotEmpty($errors);
+        $this->assertNotSame([], $errors);
 
         foreach ($errors as $error) {
             $this->assertSame('hihaho.validation.noUnsafeRequestData', $error->getIdentifier());
@@ -424,7 +424,7 @@ final class CombinedMethodCallRuleTest extends RuleTestCase
     {
         $errors = $this->gatherAnalyserErrors([__DIR__ . '/Validation/stubs/UnvalidatedFormRequestFieldStub.php']);
 
-        $this->assertNotEmpty($errors);
+        $this->assertNotSame([], $errors);
 
         foreach ($errors as $error) {
             $this->assertSame('hihaho.validation.unvalidatedFormRequestField', $error->getIdentifier());
@@ -488,7 +488,7 @@ final class CombinedMethodCallRuleTest extends RuleTestCase
     {
         $errors = $this->gatherAnalyserErrors([__DIR__ . '/Conventions/stubs/FlagMethodCallStub.php']);
 
-        $this->assertNotEmpty($errors);
+        $this->assertNotSame([], $errors);
 
         foreach ($errors as $error) {
             $this->assertSame('hihaho.conventions.positionalFlagArgument', $error->getIdentifier());
