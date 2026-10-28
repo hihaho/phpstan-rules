@@ -97,7 +97,7 @@ final class NoUnsafeRequestFacadeRuleTest extends RuleTestCase
     {
         $errors = $this->gatherAnalyserErrors([__DIR__ . '/stubs/RequestFacadeCallStub.php']);
 
-        $this->assertNotEmpty($errors);
+        $this->assertNotSame([], $errors);
 
         foreach ($errors as $error) {
             $this->assertSame('hihaho.validation.noUnsafeRequestFacade', $error->getIdentifier());

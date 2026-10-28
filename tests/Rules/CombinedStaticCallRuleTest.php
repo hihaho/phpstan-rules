@@ -128,7 +128,7 @@ final class CombinedStaticCallRuleTest extends RuleTestCase
     {
         $errors = $this->gatherAnalyserErrors([__DIR__ . '/stubs/FacadeAliasInClass.php']);
 
-        $this->assertNotEmpty($errors);
+        $this->assertNotSame([], $errors);
 
         foreach ($errors as $error) {
             $this->assertSame('hihaho.generic.onlyAllowFacadeAliasInBlade', $error->getIdentifier());
@@ -196,7 +196,7 @@ final class CombinedStaticCallRuleTest extends RuleTestCase
     {
         $errors = $this->gatherAnalyserErrors([__DIR__ . '/Debug/stubs/StaticChainedDebugInAppNamespaceStub.php']);
 
-        $this->assertNotEmpty($errors);
+        $this->assertNotSame([], $errors);
 
         foreach ($errors as $error) {
             $this->assertSame('hihaho.debug.noStaticChainedDebugInApp', $error->getIdentifier());
@@ -208,7 +208,7 @@ final class CombinedStaticCallRuleTest extends RuleTestCase
     {
         $errors = $this->gatherAnalyserErrors([__DIR__ . '/Debug/stubs/StaticChainedDebugInTestNamespaceStub.php']);
 
-        $this->assertNotEmpty($errors);
+        $this->assertNotSame([], $errors);
 
         foreach ($errors as $error) {
             $this->assertSame('hihaho.debug.noStaticChainedDebugInTests', $error->getIdentifier());
@@ -291,7 +291,7 @@ final class CombinedStaticCallRuleTest extends RuleTestCase
     {
         $errors = $this->gatherAnalyserErrors([__DIR__ . '/Validation/stubs/RequestFacadeCallStub.php']);
 
-        $this->assertNotEmpty($errors);
+        $this->assertNotSame([], $errors);
 
         foreach ($errors as $error) {
             $this->assertSame('hihaho.validation.noUnsafeRequestFacade', $error->getIdentifier());
