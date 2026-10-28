@@ -297,7 +297,7 @@ A configured name that does not exist, or that is not of the expected kind (trai
 
 ### Unlocked Livewire id properties
 
-Flag a public property on a Livewire component or form object whose name marks it as an id, unless it is `#[Locked]`. The browser can set any public property that is not locked. A user who changes `videoId` in the request payload points the next action at a record they cannot see.
+Flag a public id property on a Livewire component or form object that is not `#[Locked]`. The browser can set any unlocked public property, so a user who edits `postId` in the request payload points the next action at a record they cannot see.
 
 | Rule                     | Targets                                                    | Identifier                           |
 |--------------------------|------------------------------------------------------------|--------------------------------------|
@@ -314,26 +314,26 @@ parameters:
 ```
 
 ```php
-final class EditVideo extends Component
+final class EditPost extends Component
 {
-    public int $videoId;            // reported
+    public int $postId;             // reported
 
     #[Locked]
-    public int $containerId;        // fine
+    public int $categoryId;         // fine
 
     public bool $showId = false;    // fine — a bool cannot point at a record
 }
 ```
 
-Static, protected and private properties are not checked. Neither are properties a component gets from a trait, since only the class's own declarations are read. An id the user picks on purpose, such as a select or a checkbox list, is fine when the server validates or scopes it. Mark it with an ignore that says how:
+Only the class's own public, non-static properties are read, not ones a trait adds. An id the user picks on purpose (a select, a checkbox list) is fine when the server validates or scopes it; mark it with an ignore that says how:
 
 ```php
-public ?int $folderId = null; // @phpstan-ignore hihaho.livewire.unlockedIdProperty (validated with exists, scoped to the user's folders)
+public ?int $authorId = null; // @phpstan-ignore hihaho.livewire.unlockedIdProperty (validated with exists, scoped to the user's team)
 ```
 
 ### Inheritable setting reads
 
-Flag a direct read of a setting that stores `null` to mean "inherit from the parent", such as a video setting that falls back to its folder's. Reading the column treats that `null` as the value itself, so the child ignores the setting it was meant to inherit. Use the model's resolved getter instead, which walks the chain.
+Flag a direct read of a setting that stores `null` to mean "inherit from the parent". The read treats that `null` as the value, so the child ignores what it should inherit. Use the model's resolved getter instead.
 
 | Rule                         | Targets                                         | Identifier                                  |
 |------------------------------|-------------------------------------------------|---------------------------------------------|
@@ -344,21 +344,21 @@ It checks nothing by default. Each project lists its classes and their inheritab
 ```neon
 parameters:
     inheritableSettings:
-        App\Models\Video:
-            - autoplay
-            - player_theme
+        App\Models\Page:
+            - layout
+            - comments_enabled
 ```
 
 ```php
-$video->autoplay;               // reported
-$video?->autoplay;              // reported
-isset($video->autoplay);        // reported — still reads the raw column
-$video->resolvedAutoplay();     // fine
-$video->autoplay = null;        // fine — writing null is how a setting goes back to inheriting
-$playlist->autoplay;            // fine — not a configured class
+$page->layout;                  // reported
+$page?->layout;                 // reported
+isset($page->layout);           // reported — still reads the raw column
+$page->resolvedLayout();        // fine
+$page->layout = null;           // fine — writing null is how a setting goes back to inheriting
+$section->layout;               // fine — not a configured class
 ```
 
-A read through a subclass counts. A property with the same name on an unrelated class does not. The getters that resolve the inheritance have to read the raw column, so exempt them with an ignore that names the reason, or by path:
+A read through a subclass counts. The getters that resolve the inheritance must read the raw column, so exempt them by path or with an ignore that names the reason:
 
 ```neon
 parameters:
@@ -366,10 +366,10 @@ parameters:
         -
             identifier: hihaho.conventions.inheritableSettingRead
             paths:
-                - app/Models/Concerns/InheritsVideoSettings.php
+                - app/Models/Concerns/InheritsPageSettings.php
 ```
 
-A configured class that does not exist aborts the analysis with an `InvalidArgumentException`. Blade templates and query-builder column strings are not analysed.
+A configured class that does not exist aborts the analysis. Blade templates and query-builder column strings are not analysed.
 
 ### Slow migration DDL on outlier tables
 
@@ -566,7 +566,7 @@ includes:
 | `disallowed-str-limit.neon`      | `Str::limit()`, `Stringable::limit()`                                | `hihaho.disallowed.strLimit`     |
 | `disallowed-file-responses.neon` | download and stream responses, in the paths listed in `fileResponsePaths` | `hihaho.disallowed.fileResponse` |
 
-**`Str::limit()`** cuts by display width (`mb_strwidth`), not by character count. Used as a length cap before a write, a value of wide characters comes out shorter than intended, and the column limit is not what is enforced. Use `mb_substr()` for a cap. For display text, cutting by width is correct, so exempt those paths by identifier:
+**`Str::limit()`** cuts by display width (`mb_strwidth`), not by character count, so it does not enforce a column length. Use `mb_substr()` for a cap. For display text, cutting by width is correct, so exempt those paths by identifier:
 
 ```neon
 parameters:
@@ -577,7 +577,7 @@ parameters:
                 - app/Notifications/*
 ```
 
-**File responses.** A serverless runtime caps the response body. Behind Vapor, Lambda buffers the response and base64-encodes binary bodies, which leaves a raw file of about 4.4 MB. A download that works locally fails in production once the file grows. The preset bans these in the configured paths:
+**File responses.** A serverless runtime caps the response body: behind Vapor, Lambda base64-encodes binary bodies, which leaves about 4.4 MB for the raw file. The preset bans these in the configured paths:
 
 - `response()->download()`, `->streamDownload()` and `->file()`
 - `FilesystemAdapter::download()` and `->response()`, and their `Storage::` facade forms
