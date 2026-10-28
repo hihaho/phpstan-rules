@@ -6,8 +6,7 @@ includes:
     - vendor/spaze/phpstan-disallowed-calls/disallowed-insecure-calls.neon
 
 rules:
-    # Hand-picked symplify/phpstan-rules rules (its rule sets are off, see
-    # parameters.symplify). The list is hihaho/phpstan.neon's.
+    # Hand-picked symplify/phpstan-rules rules; its rule sets are off under parameters.symplify.
     - Symplify\PHPStanRules\Rules\StringFileAbsolutePathExistsRule
     - Symplify\PHPStanRules\Rules\Complexity\NoArrayMapWithArrayCallableRule
     - Symplify\PHPStanRules\Rules\Complexity\ForbiddenArrayMethodCallRule
@@ -73,13 +72,6 @@ parameters:
     ignoreErrors:
         -
             identifier: trait.unused
-            reportUnmatched: false
-        # NoDynamicNameRule (registered above) fires on the dynamic dispatch test
-        # helpers use. hihaho/phpstan.neon scopes the same identifier out of tests/.
-        -
-            identifier: symplify.noDynamicName
-            paths:
-                - tests/*
             reportUnmatched: false
         -
             identifier: ternary.condNotBoolean

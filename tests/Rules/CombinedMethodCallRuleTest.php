@@ -277,6 +277,14 @@ final class CombinedMethodCallRuleTest extends RuleTestCase
     // ----- unvalidated-field concern (mirrors UnvalidatedFormRequestFieldRuleTest) -----
 
     #[Test]
+    public function unvalidated_field_reads_rules_whose_closure_rules_contain_returns(): void
+    {
+        $this->analyse([__DIR__ . '/Validation/stubs/ClosureRuleFormRequestStub.php'], [
+            [sprintf(self::UNVALIDATED_PATTERN, 'referral', 'string'), 32, $this->unvalidatedTip('referral')],
+        ]);
+    }
+
+    #[Test]
     public function flags_a_field_read_that_rules_never_validates(): void
     {
         $this->analyse([__DIR__ . '/Validation/stubs/UnvalidatedFormRequestFieldStub.php'], [

@@ -1,6 +1,5 @@
 <?php declare(strict_types=1);
 
-use Rector\Caching\ValueObject\Storage\FileCacheStorage;
 use Rector\CodeQuality\Rector\ClassMethod\InlineArrayReturnAssignRector;
 use Rector\CodeQuality\Rector\If_\ExplicitNullableObjectInstanceRector;
 use Rector\Config\RectorConfig;
@@ -18,9 +17,7 @@ is_dir(__DIR__ . '/.cache/phpstan') || mkdir(__DIR__ . '/.cache/phpstan', recurs
 return RectorConfig::configure()
     ->withCache(
         cacheDirectory: './.cache/rector',
-        cacheClass: FileCacheStorage::class,
-        // Rector boots a PHPStan container and writes the same reflection cache
-        // entries PHPStan does, so it shares PHPStan's tmpDir: one copy, not two.
+        // Shares PHPStan's tmpDir so the reflection cache is stored once.
         containerCacheDirectory: './.cache/phpstan',
     )
     ->withPaths([
