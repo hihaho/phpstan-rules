@@ -15,6 +15,10 @@ parametersSchema:
     routeFiles: listOf(string())
     traitRequiresInterface: arrayOf(string())
     outlierTables: listOf(string())
+    unlockedLivewireIdProperty: structure([
+        namespaces: listOf(string())
+        excludeNamespaces: listOf(string())
+    ])
 
 parameters:
     # class name => (method name => return type string). Resolves runtime-only instance methods
@@ -38,6 +42,12 @@ parameters:
     # them may only do work MySQL is told to do instantly. Empty by default — each project
     # measures its own row counts before deciding.
     outlierTables: []
+
+    # Namespaces whose Livewire components and form objects may not expose a public id property
+    # without #[Locked]. Empty by default — the rule is inert until a project opts in.
+    unlockedLivewireIdProperty:
+        namespaces: []
+        excludeNamespaces: []
 
     noUnsafeRequestData:
         unsafeMethods:
@@ -142,6 +152,13 @@ services:
         arguments:
             traitRequiresInterface: %traitRequiresInterface%
             reflectionProvider: @reflectionProvider
+        tags:
+            - phpstan.rules.rule
+    -
+        class: Hihaho\PhpstanRules\Rules\Livewire\UnlockedIdPropertyRule
+        arguments:
+            namespaces: %unlockedLivewireIdProperty.namespaces%
+            excludeNamespaces: %unlockedLivewireIdProperty.excludeNamespaces%
         tags:
             - phpstan.rules.rule
     -

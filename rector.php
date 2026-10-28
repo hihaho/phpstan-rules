@@ -6,6 +6,7 @@ use Rector\CodeQuality\Rector\If_\ExplicitNullableObjectInstanceRector;
 use Rector\Config\RectorConfig;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUselessParamTagRector;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUselessReturnTagRector;
+use Rector\Php55\Rector\String_\StringClassNameToClassConstantRector;
 use Rector\Php80\Rector\Ternary\TernaryToNullsafeCoalesceRector;
 use Rector\PHPUnit\CodeQuality\Rector\Class_\AddSeeTestAnnotationRector;
 use Rector\Privatization\Rector\ClassMethod\PrivatizeFinalClassMethodRector;
@@ -31,6 +32,7 @@ return RectorConfig::configure()
         __DIR__ . '/tests/Rules/Debug/stubs',
         __DIR__ . '/tests/Rules/Validation/stubs',
         __DIR__ . '/tests/Rules/Conventions/stubs',
+        __DIR__ . '/tests/Rules/Livewire/stubs',
         __DIR__ . '/tests/Presets/stubs',
         __DIR__ . '/tests/Rules/Database/stubs',
         __DIR__ . '/tests/ReturnTypes/stubs',
@@ -39,6 +41,10 @@ return RectorConfig::configure()
         // Rector writes the FQCN, Pint's fully_qualified_strict_types shortens it back, and the next
         // Rector run appends a duplicate — the two tools never converge on a @see annotation.
         AddSeeTestAnnotationRector::class,
+        // Optional third-party classes (livewire/livewire) are not dependencies.
+        StringClassNameToClassConstantRector::class => [
+            __DIR__ . '/src/Rules/Livewire',
+        ],
         InlineArrayReturnAssignRector::class,
         PrivatizeFinalClassMethodRector::class,
         RemoveUselessParamTagRector::class,

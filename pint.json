@@ -61,6 +61,7 @@
         "tests/Rules/Debug/stubs",
         "tests/Rules/Validation/stubs",
         "tests/Rules/Conventions/stubs",
+        "tests/Rules/Livewire/stubs",
         "tests/Presets/stubs",
         "tests/Rules/Database/stubs"
     ]

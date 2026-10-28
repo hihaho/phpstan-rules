@@ -295,6 +295,42 @@ The check runs on reflection, not on the text of the `implements` clause, so an 
 
 A configured name that does not exist, or that is not of the expected kind (trait on the left, interface on the right), aborts the analysis with an `InvalidArgumentException` rather than matching nothing — a typo in the config must not turn the rule into a silent no-op.
 
+### Unlocked Livewire id properties
+
+Flag a public property on a Livewire component or form object whose name marks it as an id, unless it is `#[Locked]`. The browser can set any public property that is not locked. A user who changes `videoId` in the request payload points the next action at a record they cannot see.
+
+| Rule                     | Targets                                                    | Identifier                           |
+|--------------------------|------------------------------------------------------------|--------------------------------------|
+| `UnlockedIdPropertyRule` | public `*Id`, `*Ids`, `*Uuid`, `*_id` … property without `#[Locked]` | `hihaho.livewire.unlockedIdProperty` |
+
+It checks nothing by default. Each project lists the namespaces to check:
+
+```neon
+parameters:
+    unlockedLivewireIdProperty:
+        namespaces:
+            - App\Livewire
+        excludeNamespaces: []
+```
+
+```php
+final class EditVideo extends Component
+{
+    public int $videoId;            // reported
+
+    #[Locked]
+    public int $containerId;        // fine
+
+    public bool $showId = false;    // fine — a bool cannot point at a record
+}
+```
+
+Static, protected and private properties are not checked. Neither are properties a component gets from a trait, since only the class's own declarations are read. An id the user picks on purpose, such as a select or a checkbox list, is fine when the server validates or scopes it. Mark it with an ignore that says how:
+
+```php
+public ?int $folderId = null; // @phpstan-ignore hihaho.livewire.unlockedIdProperty (validated with exists, scoped to the user's folders)
+```
+
 ### Slow migration DDL on outlier tables
 
 Flag DDL a Laravel migration cannot run instantly against a table too large to rebuild inside a deploy. On a table of tens of millions of rows an `ADD INDEX` or `ADD FOREIGN KEY` runs under `ALGORITHM=COPY`: MySQL rebuilds the table and holds an exclusive metadata lock for the duration, queueing every write behind it. Inside a deploy hook with a timeout and automatic retries, one deploy stacks several of those on the hottest table in the system.
