@@ -15,6 +15,7 @@ parametersSchema:
     routeFiles: listOf(string())
     traitRequiresInterface: arrayOf(string())
     outlierTables: listOf(string())
+    inheritableSettings: arrayOf(listOf(string()))
 
 parameters:
     # class name => (method name => return type string). Resolves runtime-only instance methods
@@ -38,6 +39,11 @@ parameters:
     # them may only do work MySQL is told to do instantly. Empty by default — each project
     # measures its own row counts before deciding.
     outlierTables: []
+
+    # class FQCN => properties that store null to mean "inherit from the parent". Reading one
+    # directly skips the inheritance; the resolved getter should be used instead. Empty by
+    # default — each consuming project lists its own inheritable columns.
+    inheritableSettings: []
 
     noUnsafeRequestData:
         unsafeMethods:
@@ -141,6 +147,13 @@ services:
         class: Hihaho\PhpstanRules\Rules\Conventions\TraitRequiresInterfaceRule
         arguments:
             traitRequiresInterface: %traitRequiresInterface%
+            reflectionProvider: @reflectionProvider
+        tags:
+            - phpstan.rules.rule
+    -
+        class: Hihaho\PhpstanRules\Rules\Conventions\InheritableSettingReadRule
+        arguments:
+            inheritableSettings: %inheritableSettings%
             reflectionProvider: @reflectionProvider
         tags:
             - phpstan.rules.rule

@@ -295,6 +295,46 @@ The check runs on reflection, not on the text of the `implements` clause, so an 
 
 A configured name that does not exist, or that is not of the expected kind (trait on the left, interface on the right), aborts the analysis with an `InvalidArgumentException` rather than matching nothing — a typo in the config must not turn the rule into a silent no-op.
 
+### Inheritable setting reads
+
+Flag a direct read of a setting that stores `null` to mean "inherit from the parent", such as a video setting that falls back to its folder's. Reading the column treats that `null` as the value itself, so the child ignores the setting it was meant to inherit. Use the model's resolved getter instead, which walks the chain.
+
+| Rule                         | Targets                                         | Identifier                                  |
+|------------------------------|-------------------------------------------------|---------------------------------------------|
+| `InheritableSettingReadRule` | `$model->setting` read on a configured class    | `hihaho.conventions.inheritableSettingRead` |
+
+It checks nothing by default. Each project lists its classes and their inheritable properties:
+
+```neon
+parameters:
+    inheritableSettings:
+        App\Models\Video:
+            - autoplay
+            - player_theme
+```
+
+```php
+$video->autoplay;               // reported
+$video?->autoplay;              // reported
+isset($video->autoplay);        // reported — still reads the raw column
+$video->resolvedAutoplay();     // fine
+$video->autoplay = null;        // fine — writing null is how a setting goes back to inheriting
+$playlist->autoplay;            // fine — not a configured class
+```
+
+A read through a subclass counts. A property with the same name on an unrelated class does not. The getters that resolve the inheritance have to read the raw column, so exempt them with an ignore that names the reason, or by path:
+
+```neon
+parameters:
+    ignoreErrors:
+        -
+            identifier: hihaho.conventions.inheritableSettingRead
+            paths:
+                - app/Models/Concerns/InheritsVideoSettings.php
+```
+
+A configured class that does not exist aborts the analysis with an `InvalidArgumentException`. Blade templates and query-builder column strings are not analysed.
+
 ### Slow migration DDL on outlier tables
 
 Flag DDL a Laravel migration cannot run instantly against a table too large to rebuild inside a deploy. On a table of tens of millions of rows an `ADD INDEX` or `ADD FOREIGN KEY` runs under `ALGORITHM=COPY`: MySQL rebuilds the table and holds an exclusive metadata lock for the duration, queueing every write behind it. Inside a deploy hook with a timeout and automatic retries, one deploy stacks several of those on the hottest table in the system.
