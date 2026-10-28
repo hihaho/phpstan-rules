@@ -92,7 +92,7 @@ final class NoDebugInNamespaceTest extends RuleTestCase
     {
         $errors = $this->gatherAnalyserErrors([__DIR__ . '/stubs/DebugInAppNamespaceStub.php']);
 
-        $this->assertNotEmpty($errors);
+        $this->assertNotSame([], $errors);
 
         foreach ($errors as $error) {
             $this->assertSame('hihaho.debug.noDebugInApp', $error->getIdentifier());
@@ -104,7 +104,7 @@ final class NoDebugInNamespaceTest extends RuleTestCase
     {
         $errors = $this->gatherAnalyserErrors([__DIR__ . '/stubs/DebugInTestNamespaceStub.php']);
 
-        $this->assertNotEmpty($errors);
+        $this->assertNotSame([], $errors);
 
         foreach ($errors as $error) {
             $this->assertSame('hihaho.debug.noDebugInTests', $error->getIdentifier());

@@ -163,7 +163,7 @@ final class NoUnsafeRequestDataRuleTest extends RuleTestCase
     {
         $errors = $this->gatherAnalyserErrors([__DIR__ . '/stubs/RequestInControllerStub.php']);
 
-        $this->assertNotEmpty($errors);
+        $this->assertNotSame([], $errors);
 
         foreach ($errors as $error) {
             $this->assertSame('hihaho.validation.noUnsafeRequestData', $error->getIdentifier());

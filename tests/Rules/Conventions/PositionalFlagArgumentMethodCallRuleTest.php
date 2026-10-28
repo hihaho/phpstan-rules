@@ -103,7 +103,7 @@ final class PositionalFlagArgumentMethodCallRuleTest extends RuleTestCase
     {
         $errors = $this->gatherAnalyserErrors([__DIR__ . '/stubs/FlagMethodCallStub.php']);
 
-        $this->assertNotEmpty($errors);
+        $this->assertNotSame([], $errors);
 
         foreach ($errors as $error) {
             $this->assertSame('hihaho.conventions.positionalFlagArgument', $error->getIdentifier());

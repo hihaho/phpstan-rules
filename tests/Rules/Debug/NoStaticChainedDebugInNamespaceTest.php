@@ -88,7 +88,7 @@ final class NoStaticChainedDebugInNamespaceTest extends RuleTestCase
     {
         $errors = $this->gatherAnalyserErrors([__DIR__ . '/stubs/StaticChainedDebugInAppNamespaceStub.php']);
 
-        $this->assertNotEmpty($errors);
+        $this->assertNotSame([], $errors);
 
         foreach ($errors as $error) {
             $this->assertSame('hihaho.debug.noStaticChainedDebugInApp', $error->getIdentifier());
@@ -100,7 +100,7 @@ final class NoStaticChainedDebugInNamespaceTest extends RuleTestCase
     {
         $errors = $this->gatherAnalyserErrors([__DIR__ . '/stubs/StaticChainedDebugInTestNamespaceStub.php']);
 
-        $this->assertNotEmpty($errors);
+        $this->assertNotSame([], $errors);
 
         foreach ($errors as $error) {
             $this->assertSame('hihaho.debug.noStaticChainedDebugInTests', $error->getIdentifier());
