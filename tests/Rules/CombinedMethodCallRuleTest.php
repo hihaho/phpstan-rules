@@ -3,6 +3,8 @@
 namespace Hihaho\PhpstanRules\Tests\Rules;
 
 use Hihaho\PhpstanRules\Rules\CombinedMethodCallRule;
+use Hihaho\PhpstanRules\Rules\Html\HtmlBuilderContentSink;
+use Hihaho\PhpstanRules\Rules\Html\HtmlSafetyJudge;
 use Override;
 use PHPStan\Parser\Parser;
 use PHPStan\Rules\Rule;
@@ -42,6 +44,7 @@ final class CombinedMethodCallRuleTest extends RuleTestCase
             excludeNamespaces: ['App\\Providers', 'App\\Http\\Responses'],
             parser: $parser,
             firstPartyNamespaces: ['App', 'Database\\Factories', 'Tests'],
+            htmlSink: new HtmlBuilderContentSink([], [], new HtmlSafetyJudge()),
         );
     }
 

@@ -24,6 +24,10 @@ parametersSchema:
         excludeNamespaces: listOf(string())
         reportNarrowCatches: bool()
     ])
+    unescapedHtml: structure([
+        namespaces: listOf(string())
+        excludeNamespaces: listOf(string())
+    ])
 
 parameters:
     # class name => (method name => return type string). Resolves runtime-only instance methods
@@ -61,6 +65,13 @@ parameters:
         namespaces: []
         excludeNamespaces: []
         reportNarrowCatches: false
+
+    # Namespaces checked for unescaped values reaching raw-HTML sinks: the content arguments of
+    # spatie/laravel-html builder methods and the closures of Nova ->asHtml() fields. Empty by
+    # default — the rules are inert until a project opts in.
+    unescapedHtml:
+        namespaces: []
+        excludeNamespaces: []
 
     noUnsafeRequestData:
         unsafeMethods:
@@ -134,6 +145,7 @@ services:
             namespaces: %noUnsafeRequestData.namespaces%
             excludeNamespaces: %noUnsafeRequestData.excludeNamespaces%
             firstPartyNamespaces: %positionalFlagArgument.firstPartyNamespaces%
+            htmlSink: @Hihaho\PhpstanRules\Rules\Html\HtmlBuilderContentSink
         tags:
             - phpstan.rules.rule
     -
@@ -145,6 +157,7 @@ services:
             excludeNamespaces: %noUnsafeRequestData.excludeNamespaces%
             parser: @defaultAnalysisParser
             firstPartyNamespaces: %positionalFlagArgument.firstPartyNamespaces%
+            htmlSink: @Hihaho\PhpstanRules\Rules\Html\HtmlBuilderContentSink
         tags:
             - phpstan.rules.rule
     -
@@ -229,6 +242,37 @@ services:
             excludeNamespaces: %swallowedException.excludeNamespaces%
             reportNarrowCatches: %swallowedException.reportNarrowCatches%
             inspector: @Hihaho\PhpstanRules\Rules\Exceptions\CatchBodyInspector
+        tags:
+            - phpstan.rules.rule
+    -
+        class: Hihaho\PhpstanRules\Rules\Html\HtmlSafetyJudge
+    -
+        class: Hihaho\PhpstanRules\Rules\Html\HtmlBuilderContentSink
+        arguments:
+            namespaces: %unescapedHtml.namespaces%
+            excludeNamespaces: %unescapedHtml.excludeNamespaces%
+            judge: @Hihaho\PhpstanRules\Rules\Html\HtmlSafetyJudge
+    -
+        class: Hihaho\PhpstanRules\Rules\Html\HtmlFieldReturnSink
+        arguments:
+            namespaces: %unescapedHtml.namespaces%
+            excludeNamespaces: %unescapedHtml.excludeNamespaces%
+            judge: @Hihaho\PhpstanRules\Rules\Html\HtmlSafetyJudge
+            reflectionProvider: @reflectionProvider
+    -
+        class: Hihaho\PhpstanRules\Rules\Html\HtmlFieldClosureVisitor
+        tags:
+            - phpstan.parser.richParserNodeVisitor
+    -
+        class: Hihaho\PhpstanRules\Rules\Html\UnescapedHtmlFieldClosureRule
+        arguments:
+            sink: @Hihaho\PhpstanRules\Rules\Html\HtmlFieldReturnSink
+        tags:
+            - phpstan.rules.rule
+    -
+        class: Hihaho\PhpstanRules\Rules\Html\UnescapedHtmlFieldArrowFunctionRule
+        arguments:
+            sink: @Hihaho\PhpstanRules\Rules\Html\HtmlFieldReturnSink
         tags:
             - phpstan.rules.rule
     -

@@ -3,6 +3,7 @@
 namespace Hihaho\PhpstanRules\Rules;
 
 use Hihaho\PhpstanRules\Rules\Debug\BaseNoDebugRule;
+use Hihaho\PhpstanRules\Rules\Html\HtmlBuilderContentSink;
 use Hihaho\PhpstanRules\Traits\DetectsFacadeAlias;
 use Hihaho\PhpstanRules\Traits\DetectsPositionalFlagArgument;
 use Hihaho\PhpstanRules\Traits\DetectsUnsafeRequestFacade;
@@ -48,6 +49,7 @@ final readonly class CombinedStaticCallRule extends BaseNoDebugRule
         private array $namespaces,
         private array $excludeNamespaces,
         private array $firstPartyNamespaces,
+        private HtmlBuilderContentSink $htmlSink,
     ) {
         $this->facadeReflection = $reflectionProvider->hasClass(Facade::class)
             ? $reflectionProvider->getClass(Facade::class)
@@ -94,6 +96,11 @@ final readonly class CombinedStaticCallRule extends BaseNoDebugRule
         $debugError = $this->staticDebugError($node, $methodName, $scope, $this->reflectionProvider, $this->facadeReflection);
         if ($debugError instanceof IdentifierRuleError) {
             $errors[] = $debugError;
+        }
+
+        $htmlError = $this->htmlSink->staticCallError($node, $methodName, $scope);
+        if ($htmlError instanceof IdentifierRuleError) {
+            $errors[] = $htmlError;
         }
 
         $requestError = $this->unsafeRequestFacadeError($node->class, $methodName, $scope, $this->unsafeMethodsLookup, $this->namespaces, $this->excludeNamespaces);

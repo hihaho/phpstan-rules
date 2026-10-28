@@ -466,6 +466,51 @@ A comment in the body is not an exemption. Mark a deliberate swallow with an ign
 
 PHPStan only makes that reason mandatory through its global `reportIgnoresWithoutComments: true` setting, so set that in the project's `phpstan.neon`. The package does not set it, because it applies to every ignore in the project.
 
+### Unescaped values in raw-HTML sinks
+
+Flag a value that can carry markup when it reaches code that prints HTML without escaping it. spatie/laravel-html escapes attribute values and `->text()`, and nothing else. `html()->a($href, $contents)`, `->span($contents)`, `->div($contents)`, `->html($html)` and `->children($children)` all render their content raw. A Nova field marked `->asHtml()` prints its value raw too.
+
+| Rule                                    | Targets                                                         | Identifier                           |
+|-----------------------------------------|-----------------------------------------------------------------|--------------------------------------|
+| `CombinedMethodCallRule` / `CombinedStaticCallRule` | content argument of a spatie builder, element or `Html::` facade call | `hihaho.html.unescapedBuilderContent` |
+| `UnescapedHtmlFieldClosureRule` / `UnescapedHtmlFieldArrowFunctionRule` | return value of a `make()`, `displayUsing()` or `resolveUsing()` callback on an `->asHtml()` Nova field | `hihaho.html.unescapedHtmlField` |
+
+It checks nothing by default. Each project lists the namespaces to check:
+
+```neon
+parameters:
+    unescapedHtml:
+        namespaces:
+            - App
+        excludeNamespaces: []
+```
+
+Concatenations, interpolations, ternaries, `??` and `sprintf()` are split, and each part is judged on its own. A part is safe when it is:
+
+- a literal string, an int, a float, a bool, null or a backed enum
+- passed through `e()`, `htmlspecialchars()` or `htmlentities()`
+- an `Htmlable`, such as a builder chain ending in `->text()`, or that object's `->toHtml()`
+
+Anything else is reported, including a plain `string` variable.
+
+```php
+Text::make('Title')->displayUsing(fn (?string $title) => html()->a($url, $title)->toHtml())->asHtml();    // reported — a() renders $title raw
+Text::make('Title')->displayUsing(fn (?string $title) => html()->a($url)->text($title)->toHtml())->asHtml(); // fine
+
+Text::make('Name')->displayUsing(fn (string $name) => "<b>{$name}</b>")->asHtml();          // reported
+Text::make('Name')->displayUsing(fn (string $name) => '<b>' . e($name) . '</b>')->asHtml(); // fine
+```
+
+Each `return` in a closure is judged with the scope at that return. A closure that returns a literal placeholder early and an escaped value later is fine.
+
+A `children()` call with a mapper is not checked, because the mapper's own builder calls are. A bare `->asHtml()` field with no callback is not checked.
+
+Mark trusted markup with an ignore that says why. See [Swallowed exceptions](#swallowed-exceptions) for making the reason mandatory:
+
+```php
+$html->div($sanitised); // @phpstan-ignore hihaho.html.unescapedBuilderContent (purified on save)
+```
+
 ## Disallowed-call presets
 
 Opt-in configuration for [spaze/phpstan-disallowed-calls](https://github.com/spaze/phpstan-disallowed-calls). It is not loaded with the extension. Install spaze, then include the presets you want:

@@ -32,6 +32,7 @@ return RectorConfig::configure()
         __DIR__ . '/tests/Rules/Livewire/stubs',
         __DIR__ . '/tests/Presets/stubs',
         __DIR__ . '/tests/Rules/Exceptions/stubs',
+        __DIR__ . '/tests/Rules/Html/stubs',
         __DIR__ . '/tests/Rules/Database/stubs',
         __DIR__ . '/tests/ReturnTypes/stubs',
         __DIR__ . '/tests/ParameterClosureTypes/stubs',
