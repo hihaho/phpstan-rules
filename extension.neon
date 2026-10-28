@@ -28,6 +28,7 @@ parametersSchema:
         namespaces: listOf(string())
         excludeNamespaces: listOf(string())
     ])
+    inheritableSettings: arrayOf(listOf(string()))
 
 parameters:
     # class name => (method name => return type string). Resolves runtime-only instance methods
@@ -72,6 +73,11 @@ parameters:
     unescapedHtml:
         namespaces: []
         excludeNamespaces: []
+
+    # class FQCN => properties that store null to mean "inherit from the parent". Reading one
+    # directly skips the inheritance; the resolved getter should be used instead. Empty by
+    # default — each consuming project lists its own inheritable columns.
+    inheritableSettings: []
 
     noUnsafeRequestData:
         unsafeMethods:
@@ -185,6 +191,13 @@ services:
         arguments:
             namespaces: %unlockedLivewireIdProperty.namespaces%
             excludeNamespaces: %unlockedLivewireIdProperty.excludeNamespaces%
+        tags:
+            - phpstan.rules.rule
+    -
+        class: Hihaho\PhpstanRules\Rules\Conventions\InheritableSettingReadRule
+        arguments:
+            inheritableSettings: %inheritableSettings%
+            reflectionProvider: @reflectionProvider
         tags:
             - phpstan.rules.rule
     -
