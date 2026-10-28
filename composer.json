@@ -20,6 +20,7 @@
             "tests/Rules/Conventions/stubs/",
             "tests/Rules/Livewire/stubs/",
             "tests/Presets/stubs/",
+            "tests/Rules/Exceptions/stubs/",
             "tests/ParameterClosureTypes/stubs/",
             "tests/ReturnTypes/stubs/routing/",
             "tests/ReturnTypes/stubs/routing/implicit/"
