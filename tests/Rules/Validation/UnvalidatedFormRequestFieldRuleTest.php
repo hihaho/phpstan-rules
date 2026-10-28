@@ -180,7 +180,7 @@ final class UnvalidatedFormRequestFieldRuleTest extends RuleTestCase
     {
         $errors = $this->gatherAnalyserErrors([__DIR__ . '/stubs/UnvalidatedFormRequestFieldStub.php']);
 
-        $this->assertNotEmpty($errors);
+        $this->assertNotSame([], $errors);
 
         foreach ($errors as $error) {
             $this->assertSame('hihaho.validation.unvalidatedFormRequestField', $error->getIdentifier());

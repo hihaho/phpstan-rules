@@ -46,8 +46,10 @@ final class RouteBindingTarget
         // A binding whose parameter name is a class constant (RouteParams::SUBTITLE) is resolved.
         assertType(Subtitle::class, $request->route('subtitle'));
 
-        // No argument returns the Route object — left untouched.
-        assertType(Route::class, $request->route());
+        // No argument returns the Route object — left untouched. Laravel 13 types it Route|null and
+        // Laravel 12 Route, so the assertion accepts either and rejects anything narrowed to a model.
+        $route = $request->route();
+        assertType('true', $route instanceof Route || $route === null);
 
         // A dynamic (non-constant) parameter name is not narrowed.
         $name = $this->name();
