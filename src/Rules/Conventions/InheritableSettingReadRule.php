@@ -88,7 +88,7 @@ final readonly class InheritableSettingReadRule implements Rule
         $type = TypeCombinator::removeNull($scope->getType($receiver));
 
         foreach ($this->settings as $class => $properties) {
-            if (isset($properties[$property]) && (new ObjectType($class))->isSuperTypeOf($type)->yes()) {
+            if (isset($properties[$property]) && new ObjectType($class)->isSuperTypeOf($type)->yes()) {
                 return $class;
             }
         }
