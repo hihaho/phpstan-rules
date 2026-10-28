@@ -232,6 +232,22 @@ final class SwallowedExceptionStubs
         }
     }
 
+    public function nestedInsideDenyingCatch(): AuthorizationResponse
+    {
+        try {
+            $this->work();
+
+            return AuthorizationResponse::allow();
+        } catch (Throwable) {
+            try {
+                $this->work();
+            } catch (Throwable) {
+            }
+
+            return AuthorizationResponse::deny('Not allowed.');
+        }
+    }
+
     private function work(string $value = ''): string
     {
         return $value;
