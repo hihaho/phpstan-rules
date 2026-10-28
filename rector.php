@@ -6,6 +6,7 @@ use Rector\CodingStyle\Rector\Encapsed\EncapsedStringsToSprintfRector;
 use Rector\Config\RectorConfig;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUselessParamTagRector;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUselessReturnTagRector;
+use Rector\Php55\Rector\String_\StringClassNameToClassConstantRector;
 use Rector\Php81\Rector\FuncCall\NullToStrictStringFuncCallArgRector;
 use Rector\Php83\Rector\ClassMethod\AddOverrideAttributeToOverriddenMethodsRector;
 use Rector\PHPUnit\CodeQuality\Rector\Class_\AddSeeTestAnnotationRector;
@@ -30,6 +31,10 @@ return RectorConfig::configure()
         // Rector writes the FQCN, Pint's fully_qualified_strict_types shortens it back, and the next
         // Rector run appends a duplicate — the two tools never converge on a @see annotation.
         AddSeeTestAnnotationRector::class,
+        // Optional third-party classes (spatie/laravel-html, laravel/nova) are not dependencies.
+        StringClassNameToClassConstantRector::class => [
+            __DIR__ . '/src/Rules/Html',
+        ],
         EncapsedStringsToSprintfRector::class,
         ExplicitBoolCompareRector::class,
         InlineArrayReturnAssignRector::class,
