@@ -46,11 +46,6 @@ jobs:
       - name: Install composer dependencies
         uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # 4.0.0
 
-      # Rector 2.8.2 crashes on PHPStan 2.3.4 (rectorphp/rector#9947). Remove this
-      # step once a Rector release fixes it.
-      - name: Pin PHPStan below 2.3.4
-        run: composer update phpstan/phpstan --with 'phpstan/phpstan:<2.3.4' --no-interaction --no-progress
-
       # The key carries the commit SHA because actions/cache never overwrites a key:
       # without it, the first save is restored forever. Only a push to main saves,
       # because a pull_request cache is visible to that pull request only.
