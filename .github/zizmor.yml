@@ -1,5 +1,5 @@
-# First-party `actions/*` and zizmor-action are tag-pinned on purpose; every
-# third-party action is SHA-pinned with a version comment.
+# First-party `actions/*` are tag-pinned on purpose; every third-party action is
+# SHA-pinned with a version comment.
 rules:
   unpinned-uses:
     disable: true
