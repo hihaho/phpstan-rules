@@ -2,6 +2,42 @@
 
 All notable changes to `hihaho/phpstan-rules` will be documented in this file.
 
+## v4.0.0 - 2026-10-28
+
+<!-- verified-sha: d81d3dce16a82186ed394b513744abd320a40f04 -->
+### Breaking
+
+**PHP 8.4 is now required.** The package source uses PHP 8.4 syntax, so it no longer loads on PHP 8.3. Stay on `^3.18` until your project runs 8.4. See [UPGRADING.md](https://github.com/hihaho/phpstan-rules/blob/main/UPGRADING.md#upgrading-from-3x-to-40).
+
+### Added
+
+Every new rule is inert until you list the namespaces or classes it should check, so upgrading reports nothing new on its own.
+
+**Swallowed exceptions** (`hihaho.exceptions.swallowedException`). A `catch (Throwable)` or `catch (Exception)` that never rethrows, reports or reads what it caught is reported. Bool probes (`is*()`, `has*()`), nullable fetches (`try*()`, `find*()`), typed denials and a catch nested inside a reporting catch are exempt. Enable it with `swallowedException.namespaces`; `reportNarrowCatches` extends it to every caught type.
+
+**Unescaped values in raw-HTML sinks** (`hihaho.html.unescapedBuilderContent`, `hihaho.html.unescapedHtmlField`). A value that can carry markup is reported when it reaches the content argument of a spatie/laravel-html builder call, or the callback return of a Nova `->asHtml()` field:
+
+```php
+html()->a($url, $title);              // reported: a() renders its content raw
+html()->a($url)->text($title);        // fine
+
+```
+Concatenations, interpolations and `sprintf()` are judged part by part. Enable it with `unescapedHtml.namespaces`.
+
+**Unlocked Livewire id properties** (`hihaho.livewire.unlockedIdProperty`). A public `id`, `*Id`, `*Uuid` or `*_id` property on a Livewire component or form object without `#[Locked]` is reported, because the browser can change it. Enable it with `unlockedLivewireIdProperty.namespaces`.
+
+**Inheritable setting reads** (`hihaho.conventions.inheritableSettingRead`). A direct read of a property that stores `null` to mean "inherit from the parent" is reported; writes are not. Configure the classes and properties with `inheritableSettings`.
+
+**Disallowed-call presets** for spaze/phpstan-disallowed-calls, opt-in under `presets/`. `disallowed-str-limit.neon` bans `Str::limit()` as a length cap. `disallowed-file-responses.neon` bans download and stream responses in the paths you list in `fileResponsePaths`.
+
+### Notes
+
+Mark a deliberate case with `@phpstan-ignore <identifier> (reason)`. PHPStan makes the reason mandatory only through its global `reportIgnoresWithoutComments: true` setting.
+
+`CombinedMethodCallRule` and `CombinedStaticCallRule` take a new `htmlSink` constructor argument. Both are registered from `extension.neon`, so this only matters if you construct them yourself.
+
+**Full Changelog**: https://github.com/hihaho/phpstan-rules/compare/v3.18.1...v4.0.0
+
 ## v3.18.1 - 2026-09-04
 
 <!-- verified-sha: c3c07a38116ca9bfc7f492e9ddc5462d849b8759 -->
@@ -39,6 +75,7 @@ private function addColumn(string $table, string $column, Closure $definition): 
 }
 
 
+
 ```
 A column added to a 74.6M-row table without `->instant()` passed in silence. The call is now read as the invocations it performs: each call site pairs the table it passes with the definition it passes, so the outlier is reported and an ordinary table in the same helper is not. A parameter a call site omits resolves through its default.
 
@@ -54,6 +91,7 @@ foreach ($this->columns as $column => $definition) {
 
     Schema::table($this->table, $definition);
 }
+
 
 
 ```
@@ -85,6 +123,7 @@ private function addIndex(string $index, Closure $definition): void
 
     Schema::table($this->table, $definition);
 }
+
 
 
 
@@ -127,6 +166,7 @@ parameters:
 
 
 
+
 ```
 ```php
 Schema::table($this->table, function (Blueprint $table): void {
@@ -134,6 +174,7 @@ Schema::table($this->table, function (Blueprint $table): void {
     $table->string('external_learner_id', 255); // reported — no ->instant()
     $table->string('locale', 8)->instant();     // fine — MySQL rejects what it cannot apply instantly
 });
+
 
 
 
@@ -196,6 +237,7 @@ parameters:
 
 
 
+
 ```
 ```php
 enum PortalPdfState: string          // reported — has localizationKey(), invisible to the contract
@@ -207,6 +249,7 @@ enum ActionType: int implements BaseActionType   // fine — BaseActionType exte
 {
     use HasLocalization;
 }
+
 
 
 
@@ -253,6 +296,7 @@ $interaction->loadMissing('chapters');
 
 
 
+
 ```
 An explicit empty `$with = []` (which restates Eloquent's own default and eager-loads nothing) is not flagged, and a `$with` property on any non-`Model` class is ignored. Detection keys off the declaring class being a `Model` subclass, so intermediate/abstract base models are covered transitively. Identifier: `hihaho.conventions.noEloquentWithProperty`.
 
@@ -274,6 +318,7 @@ parameters:
     stubbedMethods:
         Laravel\Nova\Fields\Number:
             onlyOnExport: '$this'   # Number::make(…)->onlyOnExport()->sortable() stays typed
+
 
 
 
@@ -306,6 +351,7 @@ parameters:
     routeFiles:
         - routes/web.php
         - routes/api.php
+
 
 
 
@@ -386,12 +432,14 @@ parameters:
 
 
 
+
 ```
 ```php
 public function handle(Request $request): void
 {
     $video = $request->route('video_id'); // Video — no assert() needed
 }
+
 
 
 
@@ -432,6 +480,7 @@ public function scopeWithPublishedPosts(Builder $query): void
     // $q is Builder<Post> — Post::PUBLISHED resolves instead of erroring against base Model.
     $query->whereHas('posts', fn (Builder $q) => $q->where(Post::STATUS, Post::PUBLISHED));
 }
+
 
 
 
@@ -487,6 +536,7 @@ public function ids(Collection $users): array
 
 
 
+
 ```
 The extension is registered automatically — no configuration. Two guards keep it sound: detection is syntactic (the receiver must be a direct `->values()` call, so a chain split across variables is left alone rather than guessed), and the receiver must be a `Support\Collection`/`LazyCollection` or subclass — so Eloquent collections benefit while a bare `Enumerable` or a custom implementation with unknown key semantics is never narrowed. Only `values()` is handled; `flatten()`, `collapse()`, and `flatMap()` are deliberately excluded because Laravel doesn't reliably type them as lists.
 
@@ -513,6 +563,7 @@ parameters:
             validPassword: string
         Illuminate\Testing\TestResponse:
             assertSeeLivewire: Illuminate\Testing\TestResponse
+
 
 
 
@@ -603,6 +654,7 @@ parameters:
             - Database\Factories
             - Tests
         outputPath: named-arguments-manifest.json
+
 
 
 
