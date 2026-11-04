@@ -84,9 +84,10 @@ final class PositionalFlagArgumentMethodCallRuleTest extends RuleTestCase
      * An intersection receiver flags when exactly one member declares the
      * method, and when multiple declarers agree on the flag parameter's name
      * (once, not per member). It stays silent when the declarers disagree on
-     * the name, or when one of them is vendor-declared. A union receiver
-     * resolves the same way; a member that lacks the method entirely is
-     * PHPStan's own undefined-method error to report, not ambiguity.
+     * the name, or when one of them is vendor-declared. A union receiver needs
+     * every member to declare the method: at runtime the call may land on the
+     * member that lacks it, where a `__call` would see a string key instead of a
+     * position. A nullable receiver is not such a union.
      */
     #[Test]
     public function resolves_intersection_receivers_by_declarer_agreement(): void
@@ -94,8 +95,68 @@ final class PositionalFlagArgumentMethodCallRuleTest extends RuleTestCase
         $this->analyse([__DIR__ . '/stubs/IntersectionFlagCallStub.php'], [
             [$this->message('active'), 43, $this->tip()],
             [$this->message('short'), 48, $this->tip()],
-            [$this->message('short'), 63, $this->tip()],
+            [$this->message('short'), 68, $this->tip()],
+            [$this->message('short'), 88, $this->tip()],
         ]);
+    }
+
+    #[Test]
+    public function reports_one_error_per_call_naming_the_whole_trailing_run(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/FlagFixMethodCallStub.php'], [
+            ['Pass named arguments (nullable: ..., strict: ...) for the bool/null flags — they are opaque positionally.', 27, $this->tip()],
+            [$this->message('nullable'), 28, $this->tip()],
+            [$this->message('on'), 29, $this->tip()],
+            ['Pass named arguments (left: ..., right: ...) for the bool/null flags — they are opaque positionally.', 30, $this->tip()],
+            ['Pass named arguments (left: ..., right: ...) for the bool/null flags — they are opaque positionally.', 31, $this->tip()],
+            [$this->message('right'), 31, $this->tip()],
+            [$this->message('on'), 32, $this->tip()],
+            [$this->message('on'), 32, $this->tip()],
+            [$this->message('nullable'), 34, $this->tip()],
+            [$this->message('on'), 34, $this->tip()],
+        ]);
+    }
+
+    /**
+     * Covers consecutive flags, a flag before a named argument, a null literal, nested
+     * calls and two calls on one line (both need a second round), and a multi-line
+     * fluent chain, whose layout and comment must survive.
+     */
+    #[Test]
+    public function fixes_every_reported_call_and_keeps_the_formatting(): void
+    {
+        $this->fix(__DIR__ . '/stubs/FlagFixMethodCallStub.php', __DIR__ . '/stubs/FlagFixMethodCallStub.php.fixed');
+    }
+
+    #[Test]
+    public function fixes_receivers_whose_declarers_agree_and_leaves_the_others(): void
+    {
+        $this->fix(__DIR__ . '/stubs/IntersectionFlagCallStub.php', __DIR__ . '/stubs/IntersectionFlagCallStub.php.fixed');
+    }
+
+    /**
+     * A flag before a positional, unpacked arguments, variadic and missing parameters,
+     * already named flags, a first-class callable, a dynamic method name, and a
+     * `@no-named-arguments` callee, whose named arguments core would fix straight back.
+     */
+    #[Test]
+    public function does_not_report_calls_it_cannot_safely_name(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/FlagSkippedCallsStub.php'], []);
+    }
+
+    /**
+     * `$this` resolves per using class, and those two classes name the parameter
+     * differently. The call on a typed object has one callee in every context.
+     */
+    #[Test]
+    public function in_a_trait_only_fixes_calls_that_do_not_depend_on_the_using_class(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/FlagTraitContextStub.php'], [
+            [$this->message('enabled'), 19, $this->tip()],
+            [$this->message('enabled'), 19, $this->tip()],
+        ]);
+        $this->fix(__DIR__ . '/stubs/FlagTraitContextStub.php', __DIR__ . '/stubs/FlagTraitContextStub.php.fixed');
     }
 
     #[Test]

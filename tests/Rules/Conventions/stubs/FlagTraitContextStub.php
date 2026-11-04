@@ -1,0 +1,43 @@
+<?php declare(strict_types=1);
+
+namespace App\Services;
+
+final class TraitContextTarget
+{
+    public function apply(bool $enabled): void {}
+}
+
+trait UsesFlagCalls
+{
+    public function run(TraitContextTarget $target): void
+    {
+        $this->set(true);
+        $this?->set(true);
+        self::make(true);
+        static::make(true);
+        new self(true);
+        $target->apply(true);
+    }
+}
+
+final class FirstTraitUser
+{
+    use UsesFlagCalls;
+
+    public function __construct(public bool $enabled = false) {}
+
+    public function set(bool $enabled): void {}
+
+    public static function make(bool $enabled): void {}
+}
+
+final class SecondTraitUser
+{
+    use UsesFlagCalls;
+
+    public function __construct(public bool $on = false) {}
+
+    public function set(bool $on): void {}
+
+    public static function make(bool $on): void {}
+}

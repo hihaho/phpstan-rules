@@ -2,15 +2,17 @@
 
 namespace Hihaho\PhpstanRules\Traits;
 
+use Hihaho\PhpstanRules\Support\TrailingFlagRun;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
-use PhpParser\Node\Expr\ConstFetch;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\New_;
 use PhpParser\Node\Expr\NullsafeMethodCall;
 use PhpParser\Node\Expr\StaticCall;
+use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
+use PhpParser\Node\Stmt\Class_;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\ExtendedMethodReflection;
@@ -21,35 +23,33 @@ use PHPStan\Rules\RuleErrorBuilder;
 use PHPStan\Type\TypeCombinator;
 
 /**
- * Detects a bare `true`/`false`/`null` literal passed positionally as the final
- * argument of a first-party method, static, or constructor call — where naming
- * the argument (`paramName: false`) would make the call self-documenting.
+ * Detects bare `true`/`false`/`null` literals passed positionally at the end of a
+ * first-party method, static, or constructor call — where naming them
+ * (`paramName: false`) makes the call self-documenting — and fixes them.
  *
- * The detection core (`flagSiteFor*`) returns a `{method, argIndex, paramName,
- * value}` record so it can drive both the error rules (CI gate) and the
- * named-argument manifest Collector (rector producer) from one implementation.
+ * Scope: the trailing run of {@see TrailingFlagRun}. Any bare flag on a named,
+ * non-variadic parameter qualifies — the parameter is NOT required to be
+ * bool-typed, matching the convention (a bare null on a `?Object`/`mixed`
+ * parameter is opaque too).
  *
- * Scope: the last argument only, and only when every argument is positional (no
- * named or spread args), so the arg index maps directly to the parameter index.
- * Any bare flag on a named, non-variadic parameter qualifies — the parameter is
- * NOT required to be bool-typed, matching the convention (a bare null on a
- * `?Object`/`mixed` parameter is opaque too) and the sister rector fixer, which
- * names bare flags without a type check.
- *
- * Type resolution uses whatever PHPStan extensions the consumer loads. In a
+ * Type resolution uses whatever PHPStan extensions the consumer loads, so in a
  * larastan-equipped app this resolves receivers (generic/inherited properties)
- * that bare PHPStan cannot — the gap the sister rector rule leaves behind.
+ * that bare PHPStan cannot.
+ *
+ * One call yields one error with one fix per argument. PHPStan applies an error's
+ * fixes together or not at all, so a skipped fix can never leave a positional
+ * argument behind a named one.
  */
 trait DetectsPositionalFlagArgument
 {
     /**
      * @param  list<string>  $firstPartyNamespaces
-     * @return array{method: string, argIndex: int, paramName: string, value: string}|null
+     * @return list<array{arg: Arg, paramName: string}>
      */
-    private function flagSiteForMethodCall(MethodCall $node, Scope $scope, array $firstPartyNamespaces): ?array
+    private function flagSiteForMethodCall(MethodCall $node, Scope $scope, array $firstPartyNamespaces): array
     {
         if (! $node->name instanceof Identifier || $this->isVirtualNullsafeCall($node)) {
-            return null;
+            return [];
         }
 
         return $this->instanceCallFlagSite($node->var, $node->name->name, $node->getArgs(), $scope, $firstPartyNamespaces);
@@ -57,12 +57,12 @@ trait DetectsPositionalFlagArgument
 
     /**
      * @param  list<string>  $firstPartyNamespaces
-     * @return array{method: string, argIndex: int, paramName: string, value: string}|null
+     * @return list<array{arg: Arg, paramName: string}>
      */
-    private function flagSiteForNullsafeMethodCall(NullsafeMethodCall $node, Scope $scope, array $firstPartyNamespaces): ?array
+    private function flagSiteForNullsafeMethodCall(NullsafeMethodCall $node, Scope $scope, array $firstPartyNamespaces): array
     {
         if (! $node->name instanceof Identifier) {
-            return null;
+            return [];
         }
 
         return $this->instanceCallFlagSite($node->var, $node->name->name, $node->getArgs(), $scope, $firstPartyNamespaces);
@@ -87,39 +87,51 @@ trait DetectsPositionalFlagArgument
      * receiver expression, a method name, and args; the receiver type resolution
      * is identical (a nullable receiver collapses via removeNull).
      *
+     * The receiver type must certainly have the method. That leaves intersections
+     * alone but declines a union with a member that lacks it: the call may land on
+     * that member, and if it forwards through `__call`, a named argument arrives
+     * under a string key instead of its position.
+     *
      * @param  array<Arg>  $args
      * @param  list<string>  $firstPartyNamespaces
-     * @return array{method: string, argIndex: int, paramName: string, value: string}|null
+     * @return list<array{arg: Arg, paramName: string}>
      */
-    private function instanceCallFlagSite(Expr $receiver, string $methodName, array $args, Scope $scope, array $firstPartyNamespaces): ?array
+    private function instanceCallFlagSite(Expr $receiver, string $methodName, array $args, Scope $scope, array $firstPartyNamespaces): array
     {
-        $flagIndex = $this->lastBareFlagIndex($args);
-
-        if ($flagIndex === null) {
-            return null;
+        if (! TrailingFlagRun::mayContainFlag($args)) {
+            return [];
         }
 
-        $classReflections = TypeCombinator::removeNull($scope->getType($receiver))->getObjectClassReflections();
+        if ($scope->isInTrait() && $receiver instanceof Variable && $receiver->name === 'this') {
+            return [];
+        }
 
-        return $this->agreedFlagSite($classReflections, $methodName, $args, $flagIndex, $scope, $firstPartyNamespaces);
+        $receiverType = TypeCombinator::removeNull($scope->getType($receiver));
+
+        if (! $receiverType->hasMethod($methodName)->yes()) {
+            return [];
+        }
+
+        return $this->agreedFlagSite($receiverType->getObjectClassReflections(), $methodName, $args, $scope, $firstPartyNamespaces);
     }
 
     /**
-     * Resolves the flag record across every receiver member that declares the
-     * method — an intersection (or union) receiver yields one reflection per
-     * member. Declines when no member declares it, when any declarer would
-     * decline on its own (vendor declaring class, variadic parameter), or when
-     * two declarers disagree on the flag parameter's name — only that
-     * disagreement makes the suggested name ambiguous. This is deliberately
-     * broader than the sister rector rule, which still declines on any
-     * multi-member receiver: reporting beats silently auto-fixing here.
+     * Resolves the arguments to name across every receiver member that declares
+     * the method — an intersection or union receiver yields one reflection per
+     * member. Declines when no member declares it, when any declarer would decline
+     * on its own (vendor declaring class, variadic parameter), or when two
+     * declarers disagree on the parameter names — only that disagreement makes the
+     * fix ambiguous.
+     *
+     * Comparing the names is enough: every run ends at the same last argument, so
+     * two runs of the same length cover the same arguments.
      *
      * @param  list<ClassReflection>  $classReflections
      * @param  array<Arg>  $args
      * @param  list<string>  $firstPartyNamespaces
-     * @return array{method: string, argIndex: int, paramName: string, value: string}|null
+     * @return list<array{arg: Arg, paramName: string}>
      */
-    private function agreedFlagSite(array $classReflections, string $methodName, array $args, int $flagIndex, Scope $scope, array $firstPartyNamespaces): ?array
+    private function agreedFlagSite(array $classReflections, string $methodName, array $args, Scope $scope, array $firstPartyNamespaces): array
     {
         $site = null;
 
@@ -128,81 +140,97 @@ trait DetectsPositionalFlagArgument
                 continue;
             }
 
-            $record = $this->flagRecord($classReflection->getMethod($methodName, $scope), $methodName, $args, $flagIndex, $scope, $firstPartyNamespaces);
+            $namings = $this->flagNamings($classReflection->getMethod($methodName, $scope), $args, $scope, $firstPartyNamespaces);
 
-            if ($record === null || ($site !== null && $record['paramName'] !== $site['paramName'])) {
-                return null;
+            if ($namings === [] || ($site !== null && array_column($namings, 'paramName') !== array_column($site, 'paramName'))) {
+                return [];
             }
 
-            $site = $record;
+            $site = $namings;
         }
 
-        return $site;
+        return $site ?? [];
     }
 
     /**
      * @param  list<string>  $firstPartyNamespaces
-     * @return array{method: string, argIndex: int, paramName: string, value: string}|null
+     * @return list<array{arg: Arg, paramName: string}>
      */
-    private function flagSiteForStaticCall(StaticCall $node, Scope $scope, ReflectionProvider $reflectionProvider, array $firstPartyNamespaces): ?array
+    private function flagSiteForStaticCall(StaticCall $node, Scope $scope, ReflectionProvider $reflectionProvider, array $firstPartyNamespaces): array
     {
         if (! $node->class instanceof Name || ! $node->name instanceof Identifier) {
-            return null;
+            return [];
         }
 
         $args = $node->getArgs();
-        $flagIndex = $this->lastBareFlagIndex($args);
 
-        if ($flagIndex === null) {
-            return null;
+        if (! TrailingFlagRun::mayContainFlag($args) || $this->isClassContextDependentInTrait($node->class, $scope)) {
+            return [];
         }
 
         $className = $scope->resolveName($node->class);
 
         if (! $reflectionProvider->hasClass($className)) {
-            return null;
+            return [];
         }
 
         $classReflection = $reflectionProvider->getClass($className);
 
         if (! $classReflection->hasMethod($node->name->name)) {
-            return null;
+            return [];
         }
 
-        return $this->flagRecord($classReflection->getMethod($node->name->name, $scope), $node->name->name, $args, $flagIndex, $scope, $firstPartyNamespaces);
+        return $this->flagNamings($classReflection->getMethod($node->name->name, $scope), $args, $scope, $firstPartyNamespaces);
     }
 
     /**
      * @param  list<string>  $firstPartyNamespaces
-     * @return array{method: string, argIndex: int, paramName: string, value: string}|null
+     * @return list<array{arg: Arg, paramName: string}>
      */
-    private function flagSiteForNew(New_ $node, Scope $scope, ReflectionProvider $reflectionProvider, array $firstPartyNamespaces): ?array
+    private function flagSiteForNew(New_ $node, Scope $scope, ReflectionProvider $reflectionProvider, array $firstPartyNamespaces): array
     {
-        if (! $node->class instanceof Name) {
-            return null;
-        }
-
         $args = $node->getArgs();
-        $flagIndex = $this->lastBareFlagIndex($args);
 
-        if ($flagIndex === null) {
+        if (! TrailingFlagRun::mayContainFlag($args)) {
+            return [];
+        }
+
+        $classReflection = $this->instantiatedClass($node->class, $scope, $reflectionProvider);
+
+        if (! $classReflection instanceof ClassReflection || ! $classReflection->hasConstructor()) {
+            return [];
+        }
+
+        return $this->flagNamings($classReflection->getConstructor(), $args, $scope, $firstPartyNamespaces);
+    }
+
+    /**
+     * An anonymous class only gets past the first-party check on a constructor it
+     * inherits: one it declares itself has no first-party declaring class.
+     */
+    private function instantiatedClass(Name|Expr|Class_ $class, Scope $scope, ReflectionProvider $reflectionProvider): ?ClassReflection
+    {
+        if ($class instanceof Class_) {
+            return $reflectionProvider->getAnonymousClassReflection($class, $scope);
+        }
+
+        if (! $class instanceof Name || $this->isClassContextDependentInTrait($class, $scope)) {
             return null;
         }
 
-        $className = $scope->resolveName($node->class);
+        $className = $scope->resolveName($class);
 
-        if (! $reflectionProvider->hasClass($className)) {
-            return null;
-        }
+        return $reflectionProvider->hasClass($className) ? $reflectionProvider->getClass($className) : null;
+    }
 
-        $classReflection = $reflectionProvider->getClass($className);
-
-        if (! $classReflection->hasConstructor()) {
-            return null;
-        }
-
-        // The rector rule keys constructor records on the resolved FQCN.
-        return $this->flagRecord($classReflection->getConstructor(), $className, $args, $flagIndex, $scope, $firstPartyNamespaces);
+    /**
+     * A trait is analysed once per using class, and `self`/`static`/`parent` (like
+     * `$this`) can resolve to a differently named parameter in each of them. A name
+     * that is right for one using class breaks the other, so such calls are left alone.
+     */
+    private function isClassContextDependentInTrait(Name $class, Scope $scope): bool
+    {
+        return $scope->isInTrait() && $class->isSpecialClassName();
     }
 
     /**
@@ -210,7 +238,7 @@ trait DetectsPositionalFlagArgument
      */
     private function positionalFlagErrorForMethodCall(MethodCall $node, Scope $scope, array $firstPartyNamespaces): ?IdentifierRuleError
     {
-        return $this->flagErrorFromSite($this->flagSiteForMethodCall($node, $scope, $firstPartyNamespaces));
+        return $this->flagError($this->flagSiteForMethodCall($node, $scope, $firstPartyNamespaces));
     }
 
     /**
@@ -218,7 +246,7 @@ trait DetectsPositionalFlagArgument
      */
     private function positionalFlagErrorForNullsafeMethodCall(NullsafeMethodCall $node, Scope $scope, array $firstPartyNamespaces): ?IdentifierRuleError
     {
-        return $this->flagErrorFromSite($this->flagSiteForNullsafeMethodCall($node, $scope, $firstPartyNamespaces));
+        return $this->flagError($this->flagSiteForNullsafeMethodCall($node, $scope, $firstPartyNamespaces));
     }
 
     /**
@@ -226,7 +254,7 @@ trait DetectsPositionalFlagArgument
      */
     private function positionalFlagErrorForStaticCall(StaticCall $node, Scope $scope, ReflectionProvider $reflectionProvider, array $firstPartyNamespaces): ?IdentifierRuleError
     {
-        return $this->flagErrorFromSite($this->flagSiteForStaticCall($node, $scope, $reflectionProvider, $firstPartyNamespaces));
+        return $this->flagError($this->flagSiteForStaticCall($node, $scope, $reflectionProvider, $firstPartyNamespaces));
     }
 
     /**
@@ -234,31 +262,28 @@ trait DetectsPositionalFlagArgument
      */
     private function positionalFlagErrorForNew(New_ $node, Scope $scope, ReflectionProvider $reflectionProvider, array $firstPartyNamespaces): ?IdentifierRuleError
     {
-        return $this->flagErrorFromSite($this->flagSiteForNew($node, $scope, $reflectionProvider, $firstPartyNamespaces));
+        return $this->flagError($this->flagSiteForNew($node, $scope, $reflectionProvider, $firstPartyNamespaces));
     }
 
     /**
-     * @param  array{method: string, argIndex: int, paramName: string, value: string}|null  $site
-     */
-    private function flagErrorFromSite(?array $site): ?IdentifierRuleError
-    {
-        return $site === null ? null : $this->flagError($site['paramName']);
-    }
-
-    /**
-     * Builds the shared `{method, argIndex, paramName, value}` record, gating on
-     * the member's declaring class (not the receiver) so an App\ class inheriting
-     * a vendor method is not named against vendor-declared, non-semver-stable
-     * parameter names.
+     * The arguments to name for one callee, gating on the member's declaring class
+     * (not the receiver) so an App\ class inheriting a vendor method is not named
+     * against vendor-declared, non-semver-stable parameter names.
+     *
+     * A `@no-named-arguments` callee declines: core reports named arguments on it
+     * and fixes them back to positional, so naming them here would never settle.
      *
      * @param  array<Arg>  $args
      * @param  list<string>  $firstPartyNamespaces
-     * @return array{method: string, argIndex: int, paramName: string, value: string}|null
+     * @return list<array{arg: Arg, paramName: string}>
      */
-    private function flagRecord(ExtendedMethodReflection $method, string $methodLabel, array $args, int $flagIndex, Scope $scope, array $firstPartyNamespaces): ?array
+    private function flagNamings(ExtendedMethodReflection $method, array $args, Scope $scope, array $firstPartyNamespaces): array
     {
-        if (! $this->isFirstPartyClass($method->getDeclaringClass()->getName(), $firstPartyNamespaces)) {
-            return null;
+        if (
+            ! $this->isFirstPartyClass($method->getDeclaringClass()->getName(), $firstPartyNamespaces)
+            || ! $method->acceptsNamedArguments()->yes()
+        ) {
+            return [];
         }
 
         $variants = $method->getVariants();
@@ -271,78 +296,55 @@ trait DetectsPositionalFlagArgument
             ? $variants[0]
             : ParametersAcceptorSelector::selectFromArgs($scope, $args, $variants)
         )->getParameters();
-        $parameter = $parameters[$flagIndex] ?? null;
 
-        if ($parameter === null || $parameter->isVariadic()) {
-            return null;
+        $args = array_values($args);
+        $namings = [];
+
+        foreach (TrailingFlagRun::indexes($args, $parameters) as $index) {
+            $namings[] = ['arg' => $args[$index], 'paramName' => $parameters[$index]->getName()];
         }
 
-        return [
-            'method' => $methodLabel,
-            'argIndex' => $flagIndex,
-            'paramName' => $parameter->getName(),
-            'value' => $this->flagLiteral($args[$flagIndex]),
-        ];
-    }
-
-    private function flagError(string $paramName): IdentifierRuleError
-    {
-        return RuleErrorBuilder::message(sprintf(
-            'Pass a named argument (%s: ...) for the bool/null flag — it is opaque positionally.',
-            $paramName,
-        ))
-            ->identifier('hihaho.conventions.positionalFlagArgument')
-            ->tip('Name the flag at the call site so its meaning is visible: instead of foo(true), write foo(enabled: true).')
-            ->build();
+        return $namings;
     }
 
     /**
-     * Index of the final argument when it is a bare bool/null flag and every
-     * argument is positional, else null. The last-arg check runs first as the
-     * cheap reject on the hot path.
-     *
-     * @param  array<Arg>  $args
+     * @param  list<array{arg: Arg, paramName: string}>  $namings
      */
-    private function lastBareFlagIndex(array $args): ?int
+    private function flagError(array $namings): ?IdentifierRuleError
     {
-        if ($args === []) {
+        if ($namings === []) {
             return null;
         }
 
-        $lastIndex = count($args) - 1;
+        $builder = RuleErrorBuilder::message($this->flagMessage(array_column($namings, 'paramName')))
+            ->identifier('hihaho.conventions.positionalFlagArgument')
+            ->tip('Name the flag at the call site so its meaning is visible: instead of foo(true), write foo(enabled: true).');
 
-        if (! $this->isBareBoolOrNullFlag($args[$lastIndex])) {
-            return null;
+        foreach ($namings as $naming) {
+            $paramName = $naming['paramName'];
+
+            $builder->fixNode($naming['arg'], static function (Arg $arg) use ($paramName): Arg {
+                $arg->name = new Identifier($paramName);
+
+                return $arg;
+            });
         }
 
-        foreach ($args as $arg) {
-            if ($arg->name instanceof Identifier || $arg->unpack) {
-                return null;
-            }
-        }
-
-        return $lastIndex;
+        return $builder->build();
     }
 
-    private function isBareBoolOrNullFlag(Arg $arg): bool
+    /**
+     * @param  list<string>  $paramNames
+     */
+    private function flagMessage(array $paramNames): string
     {
-        if ($arg->name instanceof Identifier || $arg->unpack) {
-            return false;
+        if (count($paramNames) === 1) {
+            return "Pass a named argument ({$paramNames[0]}: ...) for the bool/null flag — it is opaque positionally.";
         }
 
-        if (! $arg->value instanceof ConstFetch) {
-            return false;
-        }
+        $list = implode(', ', array_map(static fn (string $name): string => "{$name}: ...", $paramNames));
 
-        return match ($arg->value->name->toLowerString()) {
-            'true', 'false', 'null' => true,
-            default => false,
-        };
-    }
-
-    private function flagLiteral(Arg $arg): string
-    {
-        return $arg->value instanceof ConstFetch ? $arg->value->name->toLowerString() : '';
+        return "Pass named arguments ({$list}) for the bool/null flags — they are opaque positionally.";
     }
 
     /**

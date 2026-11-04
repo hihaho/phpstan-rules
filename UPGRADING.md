@@ -6,6 +6,66 @@ For minor-version additions (new rules, new configuration keys), see
 [CHANGELOG.md](CHANGELOG.md) and the rule-specific sections in
 [README.md](README.md).
 
+## Upgrading from 4.x to 5.0
+
+### PHPStan 2.3.5 required
+
+**Likelihood of impact: high**
+
+Minimum PHPStan is now `^2.3.5`, because the flag fix relies on the multi-node fixes in that release. Bump your constraint:
+
+```json
+"require-dev": {
+    "phpstan/phpstan": "^2.3.5"
+}
+```
+
+Rector 2.8.4 and later already require this version, so a Rector below that may need bumping too.
+
+### Positional flag arguments: more calls are reported
+
+**Likelihood of impact: high**
+
+`hihaho.conventions.positionalFlagArgument` used to report only a flag in the last position, and only when no argument was named. It now also reports:
+
+- consecutive trailing flags: `new Widget('name', true, false)`
+- a flag before a named argument: `$toggle->configure('name', false, strict: true)`
+- an anonymous class inheriting a first-party constructor: `new class('name', true) extends Widget {}`
+- the last flag of `in_array()`, `array_search()` and `json_decode()`
+
+No longer reported: callees marked `@no-named-arguments`, and `$this`, `self`, `static` and `parent` calls inside a trait.
+
+Clear the new errors with the fix, or add them to your baseline:
+
+```bash
+vendor/bin/phpstan analyse --fix
+```
+
+Run it at level 5 or higher so PHPStan also reports subclasses that rename a parameter you now pass by name (`argument.parameterRenamedInSubtype`). Those calls fail at runtime until the names match.
+
+To turn the native-function check off, set the map to empty with `nativeFunctions!: {}` under `parameters.positionalFlagArgument`.
+
+### Named-argument manifest removed
+
+**Likelihood of impact: low**
+
+`named-argument-manifest.neon`, `FlagArgumentManifestCollector` and `WriteNamedArgumentManifestRule` are gone. They only existed to feed `NamedArgumentFromManifestRector` in `hihaho/rector-rules`, and PHPStan now fixes these calls itself.
+
+Remove the `named-argument-manifest.neon` include before upgrading, because PHPStan fails to load a config that includes a missing file. Remove the `namedArgumentManifest` block under `parameters` too. That file declared it, so PHPStan now stops with `Unexpected item 'parameters › namedArgumentManifest'`:
+
+```diff
+ includes:
+-    - vendor/hihaho/phpstan-rules/named-argument-manifest.neon
+
+ parameters:
+-    namedArgumentManifest:
+-        firstPartyNamespaces:
+-            - App
+-        outputPath: .config/named-arguments-manifest.json
+```
+
+Remove `NamedArgumentFromManifestRector` from your `rector.php` as well, along with any generated manifest file.
+
 ## Upgrading from 3.x to 4.0
 
 ### PHP 8.4 required

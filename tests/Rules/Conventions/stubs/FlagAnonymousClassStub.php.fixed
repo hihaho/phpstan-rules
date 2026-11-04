@@ -1,0 +1,44 @@
+<?php declare(strict_types=1);
+
+namespace Vendor\Anonymous;
+
+class VendorConstructorBase
+{
+    public function __construct(public string $key = '', public bool $flag = false) {}
+}
+
+namespace App\Services;
+
+use Vendor\Anonymous\VendorConstructorBase;
+
+class AnonymousConstructorBase
+{
+    public function __construct(public string $key = '', public bool $readOnly = false, public bool $lazy = false) {}
+}
+
+final class FlagAnonymousClassStub
+{
+    public function inheritedConstructor(): void
+    {
+        new class('key', readOnly: true) extends AnonymousConstructorBase {};
+        new class('key', readOnly: true, lazy: false) extends AnonymousConstructorBase {};
+        new class('key', readOnly: false, lazy: true) extends AnonymousConstructorBase {
+            public function label(): string
+            {
+                return $this->key;
+            }
+        };
+    }
+
+    public function declined(): void
+    {
+        new class('key', true) extends AnonymousConstructorBase {
+            public function __construct(string $key, bool $own)
+            {
+                parent::__construct($key, $own);
+            }
+        };
+        new class('key', true) extends VendorConstructorBase {};
+        new class(true) {};
+    }
+}

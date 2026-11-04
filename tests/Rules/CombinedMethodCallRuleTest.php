@@ -502,4 +502,10 @@ final class CombinedMethodCallRuleTest extends RuleTestCase
             $this->assertSame('hihaho.conventions.positionalFlagArgument', $error->getIdentifier());
         }
     }
+
+    #[Test]
+    public function fixes_positional_flag_arguments(): void
+    {
+        $this->fix(__DIR__ . '/Conventions/stubs/FlagFixMethodCallStub.php', __DIR__ . '/Conventions/stubs/FlagFixMethodCallStub.php.fixed');
+    }
 }

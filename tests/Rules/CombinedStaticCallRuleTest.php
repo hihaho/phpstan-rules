@@ -314,4 +314,10 @@ final class CombinedStaticCallRuleTest extends RuleTestCase
             ],
         ]);
     }
+
+    #[Test]
+    public function fixes_positional_flag_arguments(): void
+    {
+        $this->fix(__DIR__ . '/Conventions/stubs/FlagFixStaticCallStub.php', __DIR__ . '/Conventions/stubs/FlagFixStaticCallStub.php.fixed');
+    }
 }

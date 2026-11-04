@@ -9,6 +9,7 @@ parametersSchema:
     ])
     positionalFlagArgument: structure([
         firstPartyNamespaces: listOf(string())
+        nativeFunctions: arrayOf(arrayOf(string(), int()), string())
     ])
     stubbedMethods: arrayOf(arrayOf(string()))
     routeBindingProviders: listOf(string())
@@ -131,6 +132,10 @@ parameters:
             - App
             - Database\Factories
             - Tests
+        nativeFunctions:
+            in_array: {2: strict}
+            array_search: {2: strict}
+            json_decode: {1: associative}
 
 rules:
     - Hihaho\PhpstanRules\Rules\Conventions\NoEloquentWithPropertyRule
@@ -142,6 +147,7 @@ services:
             namespaces: %noUnsafeRequestData.namespaces%
             excludeNamespaces: %noUnsafeRequestData.excludeNamespaces%
             reflectionProvider: @reflectionProvider
+            nativeFunctionFlags: %positionalFlagArgument.nativeFunctions%
         tags:
             - phpstan.rules.rule
     -

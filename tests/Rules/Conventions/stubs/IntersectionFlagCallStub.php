@@ -62,4 +62,40 @@ final class IntersectionFlagCallStub
     {
         $subject->render(true);
     }
+
+    public function unionAgreeingDeclarers(RendersShort|AlsoRendersShort $subject): void
+    {
+        $subject->render(true);
+    }
+
+    public function unionDisagreeingDeclarers(RendersShort|RendersCompact $subject): void
+    {
+        $subject->render(true);
+    }
+
+    public function unionWithMagicMember(RendersShort|ForwardsCalls $subject): void
+    {
+        $subject->render(true);
+    }
+
+    public function unionWithNonObjectMember(RendersShort|string $subject): void
+    {
+        $subject->render(true);
+    }
+
+    public function nullableDeclarer(?RendersShort $subject): void
+    {
+        $subject->render(true);
+    }
+}
+
+final class ForwardsCalls
+{
+    /**
+     * @param  array<int|string, mixed>  $arguments
+     */
+    public function __call(string $name, array $arguments): mixed
+    {
+        return $arguments[0] ?? $name;
+    }
 }

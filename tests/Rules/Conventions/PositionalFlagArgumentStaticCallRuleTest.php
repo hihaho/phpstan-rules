@@ -33,4 +33,17 @@ final class PositionalFlagArgumentStaticCallRuleTest extends RuleTestCase
             ],
         ]);
     }
+
+    #[Test]
+    public function fixes_static_calls_including_consecutive_flags_and_a_named_tail(): void
+    {
+        $this->fix(__DIR__ . '/stubs/FlagFixStaticCallStub.php', __DIR__ . '/stubs/FlagFixStaticCallStub.php.fixed');
+    }
+
+    /** `self::` and `static::` resolve per using class, and the two using classes name the parameter differently. */
+    #[Test]
+    public function does_not_report_self_or_static_calls_in_a_trait(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/FlagTraitContextStub.php'], []);
+    }
 }
