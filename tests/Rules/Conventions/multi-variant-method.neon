@@ -1,0 +1,5 @@
+services:
+    -
+        class: Hihaho\PhpstanRules\Tests\Rules\Conventions\Source\MultiVariantMethodExtension
+        tags:
+            - phpstan.broker.methodsClassReflectionExtension

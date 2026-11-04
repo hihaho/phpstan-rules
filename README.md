@@ -19,7 +19,7 @@ conventions, see [`hihaho/rector-rules`](https://github.com/hihaho/rector-rules)
 ## Requirements
 
 - PHP 8.4 or higher
-- PHPStan 2.1 or higher
+- PHPStan 2.3.5 or higher
 - Laravel 12.x or 13.x (via `illuminate/support` and `illuminate/database`)
 
 ## Installation
@@ -180,7 +180,13 @@ Rule hits in `Support` or utility namespaces often point at dead code. Grep the 
 
 ### Convention rules
 
-Flag a bare `true`/`false`/`null` literal passed **positionally** as the last argument of a **first-party** method, nullsafe-method, static, or constructor call. A positional `setActive('name', false)` hides what the flag means; naming it — `setActive('name', active: false)` — makes the call self-documenting.
+Flag bare `true`/`false`/`null` literals passed **positionally** at the end of a **first-party** method, nullsafe-method, static, or constructor call, or of a mapped native function. A positional `setActive('name', false)` hides what the flag means; naming it — `setActive('name', active: false)` — makes the call self-documenting. PHPStan can apply the fix itself:
+
+```bash
+vendor/bin/phpstan analyse --fix
+```
+
+`--fix` is still labelled experimental in PHPStan. It skips baselined and ignored errors unless you also pass `--fix-ignored`, and it removes `@phpstan-ignore` comments that no longer match anything.
 
 | Rule                                          | Targets                       | Identifier                                  |
 |-----------------------------------------------|-------------------------------|---------------------------------------------|
@@ -188,21 +194,25 @@ Flag a bare `true`/`false`/`null` literal passed **positionally** as the last ar
 | `PositionalFlagArgumentNullsafeMethodCallRule`| `$obj?->method(..., true)`    | `hihaho.conventions.positionalFlagArgument` |
 | `PositionalFlagArgumentStaticCallRule`        | `Klass::method(..., true)`    | `hihaho.conventions.positionalFlagArgument` |
 | `PositionalFlagArgumentConstructorRule`       | `new Klass(..., true)`        | `hihaho.conventions.positionalFlagArgument` |
+| `CombinedFuncCallRule`                        | `in_array($a, $b, true)`      | `hihaho.conventions.positionalFlagArgument` |
 
 ```php
 namespace App\Services;
 
-$toggle->setActive('name', false);          // reported — name the flag: active: false
+$toggle->setActive('name', false);          // reported — fixed to active: false
 $toggle?->setActive('name', false);         // reported
 StaticFlag::toggle('name', false);          // reported
-new Widget('name', true);                   // reported
+new Widget('name', true, false);            // one error — both flags are named together
+$toggle->configure('name', false, strict: true); // reported — the flag before a named argument
+in_array($needle, $haystack, true);         // reported — fixed to strict: true
 
 $toggle->setActive('name', active: false);  // fine — already named
+$toggle->label(true, 'hello');              // fine — naming it would force 'hello' to be named too
 ```
 
-This pairs with rector-rules' `FirstPartyFlagArgumentToNamedRector`, which auto-fixes the flags it can resolve with bare PHPStan. Because PHPStan rules inherit the consumer's extensions, this rule flags the rest in a larastan-equipped app — including receivers (generic or inherited properties) that rector cannot resolve. rector rewrites; this rule gates.
+Because PHPStan rules inherit the consumer's extensions, this resolves receivers (generic or inherited properties) in a larastan-equipped app that bare PHPStan cannot.
 
-Scope: the **last** argument only, and only when every argument is positional (no named or spread args); the matched parameter must be named and non-variadic. The parameter need **not** be bool-typed — a bare `null` on a `?Object` or `mixed` parameter is opaque too, matching the convention and the rector fixer (which names any bare flag without a type check). The gate is on the resolved member's **declaring** class, so an `App\` class inheriting a vendor method isn't flagged against vendor-declared, non-semver-stable parameter names. Callee namespaces are configurable:
+Scope: the flags at the end of the call, ignoring any named arguments after them. A positional argument that isn't a flag ends the run, and a spread argument anywhere declines the call. Every matched parameter must be named and non-variadic. The parameter need **not** be bool-typed — a bare `null` on a `?Object` or `mixed` parameter is opaque too. The gate is on the resolved member's **declaring** class, so an `App\` class inheriting a vendor method isn't flagged against vendor-declared, non-semver-stable parameter names. Callee namespaces are configurable:
 
 ```neon
 parameters:
@@ -213,7 +223,25 @@ parameters:
             - Tests
 ```
 
-Param names aren't semver-stable in vendor code, so only first-party callees are flagged.
+Param names aren't semver-stable in vendor code, so only first-party callees are flagged. An anonymous class counts when it inherits a first-party constructor, not when it declares its own.
+
+Two kinds of call are deliberately not reported, because naming their arguments would break them:
+
+- A callee marked `@no-named-arguments`. PHPStan reports named arguments on it and fixes them back to positional.
+- `$this->`, `self::`, `static::`, `parent::` and `new self` calls inside a trait. Each using class can name the parameter differently, so no single name is safe.
+
+A call resolved on an interface or parent class is named after that method. If a subclass renames the parameter, the named call fails at runtime for that subclass. PHPStan's own `argument.parameterRenamedInSubtype` reports this; in our testing it fired at level 5 and above.
+
+Native functions are matched by a map of function name to flag position and parameter name, and only when the flag is the **last** argument, so `json_decode($json, true, 512)` is left alone. A function in your own namespace that shadows a native one is not matched. Your map merges into the defaults below; write `nativeFunctions!:` to replace them instead:
+
+```neon
+parameters:
+    positionalFlagArgument:
+        nativeFunctions:
+            in_array: {2: strict}
+            array_search: {2: strict}
+            json_decode: {1: associative}
+```
 
 ### No Eloquent `$with` property
 
@@ -240,27 +268,6 @@ $interaction->loadMissing('chapters');
 ```
 
 An explicit empty `$with = []` (which restates Eloquent's own default and eager-loads nothing) is not flagged. The rule keys off the declaring class being a `Model` subclass, so a `$with` property on any other class is ignored.
-
-#### Named-argument manifest (opt-in producer)
-
-rector-rules' `NamedArgumentFromManifestRector` names these flags at call sites whose receiver only resolves under larastan — the sites bare-PHPStan auto-fixers can't reach. It is inert without a JSON manifest, which this package can produce: include the opt-in extension and run analysis in your larastan-equipped project.
-
-```neon
-includes:
-    - vendor/hihaho/phpstan-rules/named-argument-manifest.neon
-
-parameters:
-    namedArgumentManifest:
-        firstPartyNamespaces:
-            - App
-            - Database\Factories
-            - Tests
-        outputPath: named-arguments-manifest.json
-```
-
-`vendor/bin/phpstan analyse` then writes `named-arguments-manifest.json` — the same detection emitted as records (`{file, line, method, argIndex, paramName, value}`) instead of errors, with no CI errors raised. It is a PHPStan Collector, not an error formatter, so it is independent of the gate rules and unaffected by your baseline (baselined sites still appear in the manifest).
-
-`outputPath` may be nested (e.g. `.config/named-arguments-manifest.json`); the parent directory is created if it does not exist.
 
 ### Trait requires interface
 

@@ -1,0 +1,101 @@
+<?php declare(strict_types=1);
+
+namespace Vendor\Toggles;
+
+interface VendorRenders
+{
+    public function render(bool $short): void;
+}
+
+namespace App\Services;
+
+use Vendor\Toggles\VendorRenders;
+
+interface TogglesActive
+{
+    public function setActive(string $key, bool $active): void;
+}
+
+interface HasExtras
+{
+    public function addExtra(string $key): void;
+}
+
+interface RendersShort
+{
+    public function render(bool $short): void;
+}
+
+interface AlsoRendersShort
+{
+    public function render(bool $short): void;
+}
+
+interface RendersCompact
+{
+    public function render(bool $compact): void;
+}
+
+final class IntersectionFlagCallStub
+{
+    public function oneDeclarer(TogglesActive&HasExtras $subject): void
+    {
+        $subject->setActive('name', active: true);
+    }
+
+    public function agreeingDeclarers(RendersShort&AlsoRendersShort $subject): void
+    {
+        $subject->render(short: true);
+    }
+
+    public function disagreeingDeclarers(RendersShort&RendersCompact $subject): void
+    {
+        $subject->render(true);
+    }
+
+    public function vendorDeclarer(RendersShort&VendorRenders $subject): void
+    {
+        $subject->render(true);
+    }
+
+    public function unionOneDeclarer(RendersShort|HasExtras $subject): void
+    {
+        $subject->render(true);
+    }
+
+    public function unionAgreeingDeclarers(RendersShort|AlsoRendersShort $subject): void
+    {
+        $subject->render(short: true);
+    }
+
+    public function unionDisagreeingDeclarers(RendersShort|RendersCompact $subject): void
+    {
+        $subject->render(true);
+    }
+
+    public function unionWithMagicMember(RendersShort|ForwardsCalls $subject): void
+    {
+        $subject->render(true);
+    }
+
+    public function unionWithNonObjectMember(RendersShort|string $subject): void
+    {
+        $subject->render(true);
+    }
+
+    public function nullableDeclarer(?RendersShort $subject): void
+    {
+        $subject->render(short: true);
+    }
+}
+
+final class ForwardsCalls
+{
+    /**
+     * @param  array<int|string, mixed>  $arguments
+     */
+    public function __call(string $name, array $arguments): mixed
+    {
+        return $arguments[0] ?? $name;
+    }
+}

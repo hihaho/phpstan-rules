@@ -1,0 +1,42 @@
+<?php declare(strict_types=1);
+
+namespace App\Services;
+
+final class FixableToggle
+{
+    public function configure(string $key, bool $nullable = false, bool $strict = false): self
+    {
+        return $this;
+    }
+
+    public function toggle(?bool $on): self
+    {
+        return $this;
+    }
+
+    public function combine(bool $left, bool $right): bool
+    {
+        return $left && $right;
+    }
+}
+
+final class FlagFixMethodCallStub
+{
+    public function run(FixableToggle $toggle): void
+    {
+        $toggle->configure('key', nullable: true, strict: FALSE);
+        $toggle->configure('key', nullable: false, strict: true);
+        $toggle->toggle(on: null);
+        $toggle->toggle($toggle->combine(left: true, right: false));
+        $toggle->combine($toggle->combine(left: true, right: false), right: true);
+        $toggle->toggle(on: true); $toggle->toggle(on: false);
+
+        $toggle
+            ->configure(
+                'key',
+                nullable: true,
+            )
+            // keeps this comment
+            ->toggle(on: false);
+    }
+}

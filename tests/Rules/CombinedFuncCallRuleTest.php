@@ -28,6 +28,11 @@ final class CombinedFuncCallRuleTest extends RuleTestCase
             namespaces: ['App'],
             excludeNamespaces: ['App\\Providers', 'App\\Http\\Responses'],
             reflectionProvider: self::createReflectionProvider(),
+            nativeFunctionFlags: [
+                'in_array' => [2 => 'strict'],
+                'array_search' => [2 => 'strict'],
+                'json_decode' => [1 => 'associative'],
+            ],
         );
     }
 
@@ -260,5 +265,43 @@ final class CombinedFuncCallRuleTest extends RuleTestCase
         foreach ($errors as $error) {
             $this->assertSame('hihaho.validation.noUnsafeRequestHelper', $error->getIdentifier());
         }
+    }
+
+    // ----- positional native flag concern -----
+
+    private function flagMessage(string $param): string
+    {
+        return "Pass a named argument ({$param}: ...) for the bool/null flag — it is opaque positionally.";
+    }
+
+    private function flagTip(): string
+    {
+        return 'Name the flag at the call site so its meaning is visible: instead of foo(true), write foo(enabled: true).';
+    }
+
+    #[Test]
+    public function flags_a_trailing_flag_of_a_mapped_native_function(): void
+    {
+        $this->analyse([__DIR__ . '/Conventions/stubs/NativeFlagCallsStub.php'], [
+            [$this->flagMessage('strict'), 13, $this->flagTip()],
+            [$this->flagMessage('strict'), 14, $this->flagTip()],
+            [$this->flagMessage('strict'), 15, $this->flagTip()],
+            [$this->flagMessage('strict'), 16, $this->flagTip()],
+            [$this->flagMessage('strict'), 17, $this->flagTip()],
+            [$this->flagMessage('associative'), 18, $this->flagTip()],
+            [$this->flagMessage('associative'), 19, $this->flagTip()],
+        ]);
+    }
+
+    #[Test]
+    public function fixes_a_trailing_flag_of_a_mapped_native_function(): void
+    {
+        $this->fix(__DIR__ . '/Conventions/stubs/NativeFlagCallsStub.php', __DIR__ . '/Conventions/stubs/NativeFlagCallsStub.php.fixed');
+    }
+
+    #[Test]
+    public function does_not_flag_a_namespaced_function_shadowing_a_native_one(): void
+    {
+        $this->analyse([__DIR__ . '/Conventions/stubs/NativeFlagShadowStub.php'], []);
     }
 }

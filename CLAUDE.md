@@ -24,7 +24,7 @@ auto-fixes them rather than just reporting.
 ## Dependencies
 
 - **PHP**: ^8.4
-- **PHPStan**: ^2.1
+- **PHPStan**: ^2.3.5
 - **Laravel Support** (illuminate/support): ^12.0||^13.0
 - **Testing**: PHPUnit ^12.5
 - **Code Style**: Laravel Pint ^1.21

@@ -48,4 +48,17 @@ final class PositionalFlagArgumentNullsafeMethodCallRuleTest extends RuleTestCas
             [$this->message('active'), 23, $this->tip()],
         ]);
     }
+
+    #[Test]
+    public function fixes_nullsafe_calls_including_consecutive_flags(): void
+    {
+        $this->fix(__DIR__ . '/stubs/FlagFixNullsafeCallStub.php', __DIR__ . '/stubs/FlagFixNullsafeCallStub.php.fixed');
+    }
+
+    /** `$this?->` resolves per using class, and the two using classes name the parameter differently. */
+    #[Test]
+    public function does_not_report_this_calls_in_a_trait(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/FlagTraitContextStub.php'], []);
+    }
 }
