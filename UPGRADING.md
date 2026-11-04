@@ -51,7 +51,20 @@ To turn the native-function check off, set the map to empty with `nativeFunction
 
 `named-argument-manifest.neon`, `FlagArgumentManifestCollector` and `WriteNamedArgumentManifestRule` are gone. They only existed to feed `NamedArgumentFromManifestRector` in `hihaho/rector-rules`, and PHPStan now fixes these calls itself.
 
-Remove the `named-argument-manifest.neon` include before upgrading, because PHPStan fails to load a config that includes a missing file. Remove `NamedArgumentFromManifestRector` from your `rector.php` as well, along with any generated manifest file.
+Remove the `named-argument-manifest.neon` include before upgrading, because PHPStan fails to load a config that includes a missing file. Remove the `namedArgumentManifest` block under `parameters` too. That file declared it, so PHPStan now stops with `Unexpected item 'parameters › namedArgumentManifest'`:
+
+```diff
+ includes:
+-    - vendor/hihaho/phpstan-rules/named-argument-manifest.neon
+
+ parameters:
+-    namedArgumentManifest:
+-        firstPartyNamespaces:
+-            - App
+-        outputPath: .config/named-arguments-manifest.json
+```
+
+Remove `NamedArgumentFromManifestRector` from your `rector.php` as well, along with any generated manifest file.
 
 ## Upgrading from 3.x to 4.0
 
