@@ -58,7 +58,7 @@
         "phpstan/phpstan-deprecation-rules": "^2.0",
         "phpstan/phpstan-phpunit": "^2.0",
         "phpstan/phpstan-strict-rules": "^2.0",
-        "phpunit/phpunit": "^12.5.22",
+        "phpunit/phpunit": "^13.4.6",
         "rector/rector": "^2.0",
         "sandermuller/boost-core": "^1.8.1",
         "sandermuller/boost-skills": "^2.36",
