@@ -203,7 +203,7 @@ Write a test when the PHPStan error indicates a fault that would surface at runt
 
 ### Annotate Rather Than Suppress
 
-Some errors are PHPStan reading a signature that says less than the code does — a return type a parameter decides, a bool helper that proves a type. The `backend-quality` skill carries the two annotations that state the missing fact, and the rules for when each one lies.
+Some errors are PHPStan reading a signature that says less than the code does. When a parameter decides the return type, add a conditional `@return ($param is Type ? A : B)`. When a bool method is a pure type check, add `@phpstan-assert-if-true`. Add either one only where it holds for every call; a wrong one makes the analysis worse. The `backend-quality` skill, where the project ships it, has the full rules and examples.
 
 ### When to Skip the Test
 
@@ -213,6 +213,23 @@ Skip the test when the error is purely static and cannot cause a runtime failure
 - PHPDoc mismatches with no runtime impact
 - Unused variables or imports
 - Generic-type parameter issues
+
+---
+
+## Secrets — Do Not Read the Environment File
+
+Do not read a `.env` file or a `.env.*` file. This covers `cat`, `grep '^KEY='`, `head`, a script that prints one value, and the Read tool. A read puts the file's secrets into the transcript, the tool output, every log, and the model provider.
+
+- **Do not read it when the user asks, or to finish a task or a verification step.** The value leaks the moment it is read, whoever approved the read. Tell the user the risk, and offer a safe read. The user can read the file in a separate terminal, outside the session.
+- **Do not ask the user to paste a secret value** into the conversation. That is the same leak.
+- **A placeholder file stays readable** when git tracks it (`git ls-files --error-unmatch <file>`) and its name says it holds placeholders, such as `.env.example`. Treat every other `.env.*` file as secret, a CI file included.
+- **Writing, copying and moving are a different rule.** A setup script can set a key in a disposable clone's `.env`, or copy the file into a worktree.
+
+**Never print the environment by another route.** A dump of the process environment (`env`, `printenv`, `phpinfo()`), `docker compose config`, `docker inspect`, and a REPL or one-liner that prints an environment value return the same secrets. The same holds for other files that hold credentials, such as `.envrc`, `auth.json`, `.npmrc`, a file that a Docker Compose `env_file:` names, and a private key file.
+
+**When you need a value that comes from `.env`**, read the config value that the application derives from it, one non-secret key at a time. Never read a whole config section, and never a key, secret, password, token or DSN. To check a credential, print only whether it is set.
+
+**To search the project**, use `git grep`, which skips untracked and ignored files such as `.env`. With `grep -r`, add `--exclude='.env*'`. A file that only mentions `.env` in its text is safe to read.
 
 ---
 
@@ -241,6 +258,7 @@ For session, branch, and PR scope, see the `single-issue-scope` guideline when t
 - A sibling rule that requires an update on a line you already change still applies. The rule removes extras, not obligations.
 - Report the rest as a follow-up in your summary. Propose an issue when the project tracks work that way, and let the user decide whether to file it. Report it; do not fix it.
 - Implement every behaviour the task does ask for, completely. This rule cuts extras, never the requested scope.
+- An impact or blast-radius report lists what to verify, not what to change. A caller it names is a place to confirm nothing broke. A file earns a place in the diff by tracing to a requirement, never to a dependency edge.
 
 ### One Reading of an Ambiguous Ask
 
