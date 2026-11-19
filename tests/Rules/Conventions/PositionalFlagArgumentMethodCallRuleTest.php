@@ -84,9 +84,10 @@ final class PositionalFlagArgumentMethodCallRuleTest extends RuleTestCase
      * An intersection receiver flags when exactly one member declares the
      * method, and when multiple declarers agree on the flag parameter's name
      * (once, not per member). It stays silent when the declarers disagree on
-     * the name, or when one of them is vendor-declared. A union receiver
-     * resolves the same way; a member that lacks the method entirely is
-     * PHPStan's own undefined-method error to report, not ambiguity.
+     * the name, or when one of them is vendor-declared. A union receiver flags
+     * when every member declares the method, and is silent when a member lacks
+     * it: that member may forward it through `__call`, which would get the
+     * named flag under a string key.
      */
     #[Test]
     public function resolves_intersection_receivers_by_declarer_agreement(): void
@@ -94,7 +95,24 @@ final class PositionalFlagArgumentMethodCallRuleTest extends RuleTestCase
         $this->analyse([__DIR__ . '/stubs/IntersectionFlagCallStub.php'], [
             [$this->message('active'), 43, $this->tip()],
             [$this->message('short'), 48, $this->tip()],
-            [$this->message('short'), 63, $this->tip()],
+            [$this->message('short'), 68, $this->tip()],
+        ]);
+    }
+
+    /**
+     * A `@method` or `@mixin` method, and a protected method called from
+     * outside, run through `__call`, which receives its arguments as a
+     * positional array: a named flag would arrive under a string key.
+     * `@no-named-arguments` forbids naming outright. Only the native calls on
+     * the last two lines are reported; the second under the native parameter
+     * name, because the native method wins over the `@method` that renames it.
+     */
+    #[Test]
+    public function does_not_flag_magic_or_no_named_argument_methods(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/MagicFlagCallStub.php'], [
+            [$this->message('visible'), 47, $this->tip()],
+            [$this->message('shown'), 48, $this->tip()],
         ]);
     }
 

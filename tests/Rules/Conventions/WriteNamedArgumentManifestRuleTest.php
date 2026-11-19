@@ -121,6 +121,19 @@ final class WriteNamedArgumentManifestRuleTest extends RuleTestCase
     }
 
     #[Test]
+    public function it_keeps_both_calls_of_a_chain_that_start_at_the_same_offset(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/ChainedFlagCallsStub.php'], []);
+
+        $json = (string) file_get_contents($this->manifestPath);
+
+        // `$flags->first(...)->second(...)`: both calls start at `$flags`, so a
+        // key on the call's start offset would drop one of them.
+        $this->assertStringContainsString('"method": "first"', $json);
+        $this->assertStringContainsString('"method": "second"', $json);
+    }
+
+    #[Test]
     public function it_creates_a_missing_parent_directory_for_a_nested_output_path(): void
     {
         $directory = sys_get_temp_dir() . '/phpstan-rules-manifest-' . getmypid() . '/.config';

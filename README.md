@@ -215,6 +215,8 @@ parameters:
 
 Param names aren't semver-stable in vendor code, so only first-party callees are flagged.
 
+Only calls that reach a **native** method are flagged. A `@method` or `@mixin` method, a macro, larastan's forwarded builder and model-static calls, and anything else that runs through `__call` / `__callStatic` is skipped: those receive their arguments positionally, so a named flag would arrive under a string key. Also skipped: `@no-named-arguments` callees, `static::` calls and `new static` (late bound, so a subclass may rename the parameter), and a union receiver where a member lacks the method.
+
 ### No Eloquent `$with` property
 
 Flag a non-empty `$with` property declared on an Eloquent `Model`. A model's `$with` eager-loads its relations on **every** query for that model — globally and invisibly, whether or not the caller needs them — which quietly inflates the query count across every endpoint that touches the model. Load relations explicitly at the call site instead.

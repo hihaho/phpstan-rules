@@ -62,4 +62,9 @@ final class IntersectionFlagCallStub
     {
         $subject->render(true);
     }
+
+    public function unionAllDeclarers(RendersShort|AlsoRendersShort $subject): void
+    {
+        $subject->render(true);
+    }
 }
