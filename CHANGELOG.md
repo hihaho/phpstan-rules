@@ -2,6 +2,16 @@
 
 All notable changes to `hihaho/phpstan-rules` will be documented in this file.
 
+## v4.0.1 - 2026-11-19
+
+<!-- verified-sha: 83133ada9970c375357c70f2a9bebcb47c40bf4b -->
+### Fixed
+
+- The positional flag rules (`hihaho.conventions.positionalFlagArgument`) and the named-argument manifest no longer name a flag on a call that runs through `__call` or `__callStatic`. Those methods receive their arguments as a positional array, so a named flag arrived under a string key. Skipped now: `@method` and `@mixin` methods, macros, larastan's forwarded builder and model-static calls, a protected or private method called from outside, `@no-named-arguments` callees, `static::` calls and `new static`, and a union receiver where a member lacks the method. You may see fewer errors and manifest records after upgrading. Nothing new is reported. ([#110](https://github.com/hihaho/phpstan-rules/pull/110))
+- The manifest kept only one record when a chain had two flag calls, as in `$a->first('x', true)->second('y', false)`. Both are recorded now. ([#110](https://github.com/hihaho/phpstan-rules/pull/110))
+
+**Full changelog**: https://github.com/hihaho/phpstan-rules/compare/v4.0.0...v4.0.1
+
 ## v4.0.0 - 2026-10-28
 
 <!-- verified-sha: d81d3dce16a82186ed394b513744abd320a40f04 -->
@@ -20,6 +30,7 @@ Every new rule is inert until you list the namespaces or classes it should check
 ```php
 html()->a($url, $title);              // reported: a() renders its content raw
 html()->a($url)->text($title);        // fine
+
 
 ```
 Concatenations, interpolations and `sprintf()` are judged part by part. Enable it with `unescapedHtml.namespaces`.
@@ -76,6 +87,7 @@ private function addColumn(string $table, string $column, Closure $definition): 
 
 
 
+
 ```
 A column added to a 74.6M-row table without `->instant()` passed in silence. The call is now read as the invocations it performs: each call site pairs the table it passes with the definition it passes, so the outlier is reported and an ordinary table in the same helper is not. A parameter a call site omits resolves through its default.
 
@@ -91,6 +103,7 @@ foreach ($this->columns as $column => $definition) {
 
     Schema::table($this->table, $definition);
 }
+
 
 
 
@@ -123,6 +136,7 @@ private function addIndex(string $index, Closure $definition): void
 
     Schema::table($this->table, $definition);
 }
+
 
 
 
@@ -167,6 +181,7 @@ parameters:
 
 
 
+
 ```
 ```php
 Schema::table($this->table, function (Blueprint $table): void {
@@ -174,6 +189,7 @@ Schema::table($this->table, function (Blueprint $table): void {
     $table->string('external_learner_id', 255); // reported — no ->instant()
     $table->string('locale', 8)->instant();     // fine — MySQL rejects what it cannot apply instantly
 });
+
 
 
 
@@ -238,6 +254,7 @@ parameters:
 
 
 
+
 ```
 ```php
 enum PortalPdfState: string          // reported — has localizationKey(), invisible to the contract
@@ -249,6 +266,7 @@ enum ActionType: int implements BaseActionType   // fine — BaseActionType exte
 {
     use HasLocalization;
 }
+
 
 
 
@@ -297,6 +315,7 @@ $interaction->loadMissing('chapters');
 
 
 
+
 ```
 An explicit empty `$with = []` (which restates Eloquent's own default and eager-loads nothing) is not flagged, and a `$with` property on any non-`Model` class is ignored. Detection keys off the declaring class being a `Model` subclass, so intermediate/abstract base models are covered transitively. Identifier: `hihaho.conventions.noEloquentWithProperty`.
 
@@ -318,6 +337,7 @@ parameters:
     stubbedMethods:
         Laravel\Nova\Fields\Number:
             onlyOnExport: '$this'   # Number::make(…)->onlyOnExport()->sortable() stays typed
+
 
 
 
@@ -351,6 +371,7 @@ parameters:
     routeFiles:
         - routes/web.php
         - routes/api.php
+
 
 
 
@@ -433,12 +454,14 @@ parameters:
 
 
 
+
 ```
 ```php
 public function handle(Request $request): void
 {
     $video = $request->route('video_id'); // Video — no assert() needed
 }
+
 
 
 
@@ -480,6 +503,7 @@ public function scopeWithPublishedPosts(Builder $query): void
     // $q is Builder<Post> — Post::PUBLISHED resolves instead of erroring against base Model.
     $query->whereHas('posts', fn (Builder $q) => $q->where(Post::STATUS, Post::PUBLISHED));
 }
+
 
 
 
@@ -537,6 +561,7 @@ public function ids(Collection $users): array
 
 
 
+
 ```
 The extension is registered automatically — no configuration. Two guards keep it sound: detection is syntactic (the receiver must be a direct `->values()` call, so a chain split across variables is left alone rather than guessed), and the receiver must be a `Support\Collection`/`LazyCollection` or subclass — so Eloquent collections benefit while a bare `Enumerable` or a custom implementation with unknown key semantics is never narrowed. Only `values()` is handled; `flatten()`, `collapse()`, and `flatMap()` are deliberately excluded because Laravel doesn't reliably type them as lists.
 
@@ -563,6 +588,7 @@ parameters:
             validPassword: string
         Illuminate\Testing\TestResponse:
             assertSeeLivewire: Illuminate\Testing\TestResponse
+
 
 
 
@@ -654,6 +680,7 @@ parameters:
             - Database\Factories
             - Tests
         outputPath: named-arguments-manifest.json
+
 
 
 
