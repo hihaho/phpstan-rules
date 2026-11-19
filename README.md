@@ -7,19 +7,14 @@
 [![License](https://img.shields.io/packagist/l/hihaho/phpstan-rules.svg?style=flat-square)](LICENSE.md)
 [![Laravel Compatibility](https://badge.laravel.cloud/badge/hihaho/phpstan-rules?style=flat)](https://packagist.org/packages/hihaho/phpstan-rules)
 
-A set of PHPStan rules that enforce [Hihaho's Laravel guidelines](https://guidelines.hihaho.com/laravel.html)
-at analyse time. They flag `invade()` calls in app code, facade aliases
-outside Blade, stray debug helpers (`dump`, `dd`, `ray`, and friends)
-left behind in production or test paths, and unvalidated request reads —
-including `FormRequest` fields read outside the class's own `rules()`.
+Code review keeps catching the same Laravel mistakes: a `dd()` left in a controller, a request field read without validation, an index added to a huge table inside a deploy. These PHPStan rules report them at analyse time, following [Hihaho's Laravel guidelines](https://guidelines.hihaho.com/laravel.html).
 
-If you want the auto-fix counterparts for class-naming and route-group
-conventions, see [`hihaho/rector-rules`](https://github.com/hihaho/rector-rules).
+For auto-fixes of class-naming and route-group conventions, see [`hihaho/rector-rules`](https://github.com/hihaho/rector-rules).
 
 ## Requirements
 
 - PHP 8.4 or higher
-- PHPStan 2.1 or higher
+- PHPStan 2.1.8 or higher
 - Laravel 12.x or 13.x (via `illuminate/support` and `illuminate/database`)
 
 ## Installation
@@ -28,10 +23,7 @@ conventions, see [`hihaho/rector-rules`](https://github.com/hihaho/rector-rules)
 composer require --dev hihaho/phpstan-rules
 ```
 
-If you have [`phpstan/extension-installer`](https://github.com/phpstan/extension-installer),
-that's it. The rules register themselves.
-
-Without it, include the extension in your `phpstan.neon`:
+With [`phpstan/extension-installer`](https://github.com/phpstan/extension-installer) the rules register themselves. Without it, include the extension in your `phpstan.neon`:
 
 ```neon
 includes:
@@ -42,10 +34,7 @@ includes:
 
 ### `NoInvadeInAppCode`
 
-Flags [`invade()`](https://github.com/spatie/invade) calls inside `App\`.
-`invade` is a test helper for reaching into private state; it has no place
-in production code. Also flags `\Livewire\invade()` in any namespace; if
-you need `invade`, use the global one from `spatie/invade`.
+Flags [`invade()`](https://github.com/spatie/invade) calls inside `App\`: it is a test helper for reaching into private state. Also flags `\Livewire\invade()` in any namespace; use the global one from `spatie/invade`.
 
 ```php
 namespace App\Services;
@@ -58,8 +47,7 @@ Identifiers: `hihaho.generic.noInvadeInAppCode`,
 
 ### `OnlyAllowFacadeAliasInBlade`
 
-Short facade aliases belong in Blade. In PHP, use the fully qualified facade
-so imports stay explicit.
+Short facade aliases belong in Blade. In PHP, import the fully qualified facade.
 
 ```php
 use Route;                            // reported
@@ -70,7 +58,7 @@ Identifier: `hihaho.generic.onlyAllowFacadeAliasInBlade`
 
 ### Debug rules
 
-Three rules that together keep debug calls out of `App\` and `Tests\`:
+Three rules keep debug calls out of `App\` and `Tests\`:
 
 | Rule                                  | Targets                         | Examples                                                      |
 |---------------------------------------|---------------------------------|---------------------------------------------------------------|
@@ -78,9 +66,7 @@ Three rules that together keep debug calls out of `App\` and `Tests\`:
 | `ChainedNoDebugInNamespaceRule`       | Method chains on Laravel types  | `collect()->dump()`, `$builder->dd()`                         |
 | `StaticChainedNoDebugInNamespaceRule` | Static calls on Laravel facades | `Http::dump()`, `Cache::dd()`                                 |
 
-The chained and static rules use PHPStan reflection to narrow matches:
-they only flag methods declared by (or proxied through) the `Illuminate\`
-namespace, so your own domain classes with a `->dump()` method stay clean.
+The chained and static rules only flag methods declared by (or proxied through) `Illuminate\`, so your own `->dump()` method stays clean.
 
 Identifiers: `hihaho.debug.noDebugIn{App,Tests}`,
 `hihaho.debug.noChainedDebugIn{App,Tests}`,
@@ -88,7 +74,7 @@ Identifiers: `hihaho.debug.noDebugIn{App,Tests}`,
 
 ### Request-validation rules
 
-Four rules flag unvalidated request data. The first three flag reads from `Illuminate\Http\Request`; the fourth flags reading a field inside a `FormRequest` that the same class's `rules()` never validates. Use validated data instead: `$request->validated()`, `$request->safe()->string('key')`, or the array returned by `$request->validate([...])`.
+Four rules flag unvalidated request data. Use validated data instead: `$request->validated()`, `$request->safe()->string('key')`, or the array `$request->validate([...])` returns.
 
 | Rule                              | Targets                                                          | Identifier                                      |
 |-----------------------------------|------------------------------------------------------------------|-------------------------------------------------|
@@ -96,8 +82,6 @@ Four rules flag unvalidated request data. The first three flag reads from `Illum
 | `NoUnsafeRequestHelperRule`       | `request('key')` helper with a literal arg                       | `hihaho.validation.noUnsafeRequestHelper`       |
 | `NoUnsafeRequestFacadeRule`       | Static calls on `Illuminate\Support\Facades\Request`             | `hihaho.validation.noUnsafeRequestFacade`       |
 | `UnvalidatedFormRequestFieldRule` | `$this->input('key')` inside a `FormRequest`, `key` ∉ `rules()`  | `hihaho.validation.unvalidatedFormRequestField` |
-
-`FormRequest` auto-validation runs on dispatch, but inherited readers still return the full payload including keys outside `rules()`, so they're flagged on `FormRequest` too. Chained `request()->input('x')` is caught by the Data rule because the receiver resolves to `Request`. Zero-argument `request()` is not flagged.
 
 ```php
 namespace App\Http\Controllers;
@@ -120,13 +104,10 @@ final class StoreUserController
 }
 ```
 
-Reads from `$this` inside a `Request` subclass, including your own `FormRequest` bases, are exempted. The scope-class check walks the inheritance chain, so a custom `App\Http\Requests\FormRequest extends BaseFormRequest extends Illuminate\Foundation\Http\FormRequest` works without extra config. Static calls on `Illuminate\Http\Request` itself (e.g. `Request::capture()`) aren't flagged; they don't return raw input.
-
-`UnvalidatedFormRequestFieldRule` covers that `$this`-inside-a-`FormRequest` exemption from the other side: it flags `$this->boolean('submit_redirect')` when `submit_redirect` is never declared in the same class's `rules()`. To stay high-precision it only resolves a literal `return [...]` array — a conditional, spread, `array_merge()`, returned variable, or a `rules()` it can't read statically makes the class opaque and skips it — and it skips any class that overrides `prepareForValidation()`, `validationData()`, or `all()` (including via a shared base or trait), since those rewrite the validated set. `rules()` declared on a base class is followed; nested keys match on their root segment, so a rule for `address.street` validates a read of `address`.
-
-Out of scope: ArrayAccess (`$request['x']`), magic property access (`$request->x`), and Symfony `InputBag` property access (`$request->query->get('x')`, `->headers->get()`, `->cookies->get()`). The InputBag path is legitimate for raw header or cookie reads, but flag it in code review so it doesn't turn into a de-facto suppression channel.
-
-#### Configuration
+- Reads on a `FormRequest` are flagged too: its inherited readers still return keys outside `rules()`.
+- Reads from `$this` inside a `Request` subclass, including your own `FormRequest` bases, are exempt. `UnvalidatedFormRequestFieldRule` covers that exemption from the other side: it flags `$this->boolean('submit_redirect')` when `rules()` never declares `submit_redirect`.
+- `UnvalidatedFormRequestFieldRule` only reads a literal `return [...]` from `rules()`, including one on a base class; a nested rule key such as `address.street` covers a read of `address`. A `rules()` it cannot read statically, or a class that overrides `prepareForValidation()`, `validationData()` or `all()`, is skipped.
+- Not flagged: zero-argument `request()`, static calls on `Illuminate\Http\Request` itself (`Request::capture()`), ArrayAccess (`$request['x']`), magic properties (`$request->x`) and `InputBag` reads (`$request->query->get('x')`, `->headers`, `->cookies`). Watch the `InputBag` path in code review so it does not become a way around the rule.
 
 ```neon
 parameters:
@@ -144,43 +125,38 @@ parameters:
             - get
 ```
 
-`App\Providers` and `App\Http\Responses` are default-excluded because the signatures there come from the framework (`RateLimiter::for(...)` closures, `LoginResponse::toResponse(Request)`) and there's no FormRequest to route the data through. `App\Http\Resources` is opt-in. Whether a resource should read raw request is a team call.
+`App\Providers` and `App\Http\Responses` are excluded by default: their signatures come from the framework and have no FormRequest to route data through. `UnvalidatedFormRequestFieldRule` reuses these namespaces and keeps its own reader list under `unvalidatedFormRequestField.accessors` (defaults in `extension.neon`).
 
-`UnvalidatedFormRequestFieldRule` reuses `noUnsafeRequestData.namespaces` / `excludeNamespaces` and carries its own list of single-key readers under `unvalidatedFormRequestField.accessors` (`input`, `get`, `query`, `post`, `string`, `str`, `integer`, `boolean`, `float`, `json`, `array`, `collect`, `date`, `enum`, `enums`, `file`); the full default is in `extension.neon`.
+<details>
+<summary>Adopting on an existing codebase</summary>
 
-#### Adopting on an existing codebase
-
-First-run baselines are nonzero. Generate one and work it down over multiple PRs:
+The first run reports a lot. Generate a baseline and work it down over several PRs:
 
 ```bash
 vendor/bin/phpstan analyse --generate-baseline
 ```
 
-Patterns that will stay baselined (the rule can't help with them):
+Patterns that stay baselined:
 
-- Dynamic-key admin CRUD. Bulk-edit controllers looping over `$request->collect('fields')->each(...)` with schema-driven keys. Suppress inline:
+- Dynamic-key admin CRUD, such as `$request->collect('fields')->each(...)` with schema-driven keys. Suppress inline:
   ```php
   // @phpstan-ignore hihaho.validation.noUnsafeRequestData
   $value = $request->input($field->key);
   ```
-- Pre-validation framework callbacks. Already covered by the `App\Providers` default exclusion.
-- Fortify response contracts. Already covered by the `App\Http\Responses` default exclusion.
 - `JsonResource::toArray(Request)`. Add `App\Http\Resources` to `excludeNamespaces` if you accept the pattern.
-
-Safe-swap yield on the first triage runs 2-10% from field data: calls already validated inline where the flagged key is in the rules, plus FormRequest cases where the flagged key is in `rules()` and migrates to `$request->safe()->string(...)` or `$request->validated()`. The rest needs judgment. Your options are to introduce a FormRequest, extend existing rules to cover the flagged key, push validation upstream, or refactor the surrounding code. Plan on several PRs over weeks, not a one-time sweep.
 
 Common traps:
 
-- "Injected a FormRequest, so I'm safe." The rule fires when the FormRequest has no `rules()` (auth-only wrappers) or has rules that don't cover the flagged key. Check `rules()` before assuming it's a false positive.
-- `validated()` drops keys not in `rules()`, nested props included. Reading `$request->input('interactions.$.foo')` won't migrate if only `interactions` is in `rules()`. You'll need nested rules first.
-- LLM agents are unreliable for bulk triage on this rule. Reliable categorization needs AST inspection that intersects `validate()` rule keys with flagged keys; one adopter's agent caught 1 of 5 candidates. Use human review or a Rector pass.
-- Livewire and Filament projects handle input through component props and form schemas, outside these rules' node targets. A low hit count is a structural fact, not proof of cleanliness. Review `mount()` and form-submit paths separately.
+- An injected FormRequest is not enough. The rule fires when it has no `rules()` (an auth-only wrapper) or its rules do not cover the key.
+- `validated()` drops keys outside `rules()`, nested ones included. A read of `interactions.$.foo` only migrates once a nested rule covers it.
+- Livewire and Filament input arrives through component props and form schemas, which these rules do not read. A low hit count there proves nothing; review `mount()` and submit paths yourself.
+- A hit in a `Support` or utility namespace often points at dead code. Check the callers before baselining it.
 
-Rule hits in `Support` or utility namespaces often point at dead code. Grep the call graph before adding to the baseline; the fix may be a delete.
+</details>
 
-### Convention rules
+### Positional flag arguments
 
-Flag a bare `true`/`false`/`null` literal passed **positionally** as the last argument of a **first-party** method, nullsafe-method, static, or constructor call. A positional `setActive('name', false)` hides what the flag means; naming it — `setActive('name', active: false)` — makes the call self-documenting.
+Flag a bare `true`/`false`/`null` passed **positionally** as the last argument of a **first-party** call. `setActive('name', false)` hides what the flag means; `setActive('name', active: false)` does not.
 
 | Rule                                          | Targets                       | Identifier                                  |
 |-----------------------------------------------|-------------------------------|---------------------------------------------|
@@ -200,9 +176,11 @@ new Widget('name', true);                   // reported
 $toggle->setActive('name', active: false);  // fine — already named
 ```
 
-This pairs with rector-rules' `FirstPartyFlagArgumentToNamedRector`, which auto-fixes the flags it can resolve with bare PHPStan. Because PHPStan rules inherit the consumer's extensions, this rule flags the rest in a larastan-equipped app — including receivers (generic or inherited properties) that rector cannot resolve. rector rewrites; this rule gates.
+rector-rules' `FirstPartyFlagArgumentToNamedRector` auto-fixes the flags bare PHPStan can resolve. This rule uses your PHPStan extensions, so in a larastan-equipped app it also reports the receivers Rector cannot resolve.
 
-Scope: the **last** argument only, and only when every argument is positional (no named or spread args); the matched parameter must be named and non-variadic. The parameter need **not** be bool-typed — a bare `null` on a `?Object` or `mixed` parameter is opaque too, matching the convention and the rector fixer (which names any bare flag without a type check). The gate is on the resolved member's **declaring** class, so an `App\` class inheriting a vendor method isn't flagged against vendor-declared, non-semver-stable parameter names. Callee namespaces are configurable:
+- Only the last argument, and only when every argument is positional. The parameter must be named and non-variadic, but need not be bool-typed: a bare `null` on a `?Object` parameter is just as opaque.
+- Only first-party callees, judged by the method's **declaring** class: vendor parameter names are not semver-stable, so an `App\` class inheriting a vendor method is not flagged.
+- Only calls that reach a **native** method. `@method` and `@mixin` methods, macros, larastan's forwarded builder and model-static calls, and anything else that runs through `__call` / `__callStatic` receive their arguments positionally, so a named flag would arrive under a string key. Also skipped: `@no-named-arguments` callees, `static::` calls and `new static` (a subclass may rename the parameter), and a union receiver where a member lacks the method.
 
 ```neon
 parameters:
@@ -213,13 +191,28 @@ parameters:
             - Tests
 ```
 
-Param names aren't semver-stable in vendor code, so only first-party callees are flagged.
+#### Named-argument manifest (opt-in)
 
-Only calls that reach a **native** method are flagged. A `@method` or `@mixin` method, a macro, larastan's forwarded builder and model-static calls, and anything else that runs through `__call` / `__callStatic` is skipped: those receive their arguments positionally, so a named flag would arrive under a string key. Also skipped: `@no-named-arguments` callees, `static::` calls and `new static` (late bound, so a subclass may rename the parameter), and a union receiver where a member lacks the method.
+rector-rules' `NamedArgumentFromManifestRector` names flags at the call sites only larastan can resolve. It reads a JSON manifest that this package writes when you include the opt-in extension:
+
+```neon
+includes:
+    - vendor/hihaho/phpstan-rules/named-argument-manifest.neon
+
+parameters:
+    namedArgumentManifest:
+        firstPartyNamespaces:
+            - App
+            - Database\Factories
+            - Tests
+        outputPath: named-arguments-manifest.json
+```
+
+`vendor/bin/phpstan analyse` then writes one record per site (`{file, line, method, argIndex, paramName, value}`) and reports no errors. Your baseline does not apply: baselined sites still appear. A nested `outputPath` gets its parent directory created.
 
 ### No Eloquent `$with` property
 
-Flag a non-empty `$with` property declared on an Eloquent `Model`. A model's `$with` eager-loads its relations on **every** query for that model — globally and invisibly, whether or not the caller needs them — which quietly inflates the query count across every endpoint that touches the model. Load relations explicitly at the call site instead.
+Flag a non-empty `$with` property on an Eloquent `Model`. It eager-loads its relations on **every** query for that model, whether the caller needs them or not. Load relations at the call site instead.
 
 | Rule                          | Targets                                   | Identifier                                 |
 |-------------------------------|-------------------------------------------|--------------------------------------------|
@@ -241,38 +234,15 @@ Interaction::query()->with('chapters')->get();
 $interaction->loadMissing('chapters');
 ```
 
-An explicit empty `$with = []` (which restates Eloquent's own default and eager-loads nothing) is not flagged. The rule keys off the declaring class being a `Model` subclass, so a `$with` property on any other class is ignored.
-
-#### Named-argument manifest (opt-in producer)
-
-rector-rules' `NamedArgumentFromManifestRector` names these flags at call sites whose receiver only resolves under larastan — the sites bare-PHPStan auto-fixers can't reach. It is inert without a JSON manifest, which this package can produce: include the opt-in extension and run analysis in your larastan-equipped project.
-
-```neon
-includes:
-    - vendor/hihaho/phpstan-rules/named-argument-manifest.neon
-
-parameters:
-    namedArgumentManifest:
-        firstPartyNamespaces:
-            - App
-            - Database\Factories
-            - Tests
-        outputPath: named-arguments-manifest.json
-```
-
-`vendor/bin/phpstan analyse` then writes `named-arguments-manifest.json` — the same detection emitted as records (`{file, line, method, argIndex, paramName, value}`) instead of errors, with no CI errors raised. It is a PHPStan Collector, not an error formatter, so it is independent of the gate rules and unaffected by your baseline (baselined sites still appear in the manifest).
-
-`outputPath` may be nested (e.g. `.config/named-arguments-manifest.json`); the parent directory is created if it does not exist.
-
 ### Trait requires interface
 
-Flag a class or enum that uses a configured trait but does not implement the interface that trait is meant to satisfy. PHP cannot make a trait require an interface, so the two drift apart silently: the class picks up the trait's methods and nothing breaks at runtime, but every tool that identifies such classes **by interface** — other rules, dynamic return type extensions, translation scanners — quietly skips it.
+Flag a class or enum that uses a configured trait without implementing the interface that trait belongs with. PHP cannot make a trait require an interface, so nothing breaks at runtime, but every tool that finds such classes **by interface** skips it.
 
 | Rule                          | Targets                                              | Identifier                                 |
 |-------------------------------|------------------------------------------------------|--------------------------------------------|
 | `TraitRequiresInterfaceRule`  | class/enum using trait `T` without implementing `I`  | `hihaho.conventions.traitRequiresInterface`|
 
-It checks nothing by default — each project declares its own pairs via the `traitRequiresInterface` parameter, a map of `trait => interface`:
+It checks nothing by default. Each project maps `trait => interface`:
 
 ```neon
 parameters:
@@ -293,9 +263,7 @@ enum ActionType: int implements BaseActionType   // fine — BaseActionType exte
 }
 ```
 
-The check runs on reflection, not on the text of the `implements` clause, so an interface inherited through an intermediate interface or a parent class counts as implemented, and a trait reached through another trait or through a parent class counts as used. Traits and interfaces are never flagged themselves: a trait cannot implement an interface, and an interface has no `implements` clause to fix — that includes a trait (`SideMenu` above) that uses a configured trait.
-
-A configured name that does not exist, or that is not of the expected kind (trait on the left, interface on the right), aborts the analysis with an `InvalidArgumentException` rather than matching nothing — a typo in the config must not turn the rule into a silent no-op.
+Interfaces and traits reached through a parent class, another interface or another trait count. Traits and interfaces themselves are never flagged. A configured name that does not exist, or is the wrong kind, aborts the analysis with an `InvalidArgumentException`, so a typo cannot silently disable the rule.
 
 ### Unlocked Livewire id properties
 
@@ -375,7 +343,7 @@ A configured class that does not exist aborts the analysis. Blade templates and 
 
 ### Slow migration DDL on outlier tables
 
-Flag DDL a Laravel migration cannot run instantly against a table too large to rebuild inside a deploy. On a table of tens of millions of rows an `ADD INDEX` or `ADD FOREIGN KEY` runs under `ALGORITHM=COPY`: MySQL rebuilds the table and holds an exclusive metadata lock for the duration, queueing every write behind it. Inside a deploy hook with a timeout and automatic retries, one deploy stacks several of those on the hottest table in the system.
+Flag migration DDL that MySQL cannot apply instantly to a very large table. An `ADD INDEX` or `ADD FOREIGN KEY` there rebuilds the table under an exclusive metadata lock, and every write queues behind it for the duration of the deploy.
 
 | Rule                     | Targets                                                   | Identifier                                            |
 |--------------------------|-----------------------------------------------------------|-------------------------------------------------------|
@@ -418,11 +386,15 @@ return new class extends Migration
 };
 ```
 
-Laravel's `ColumnDefinition::instant()` compiles to `algorithm=instant`, so asserting it makes MySQL reject an operation it cannot apply instantly instead of silently rebuilding the table. Index and foreign-key work belongs in a queued job run outside the deploy.
+- `->instant()` compiles to `algorithm=instant`, so MySQL rejects an operation it cannot apply instantly instead of rebuilding the table. Move index and foreign-key work to a queued job outside the deploy.
+- `timestamps()`, `softDeletes()` and the `morphs()` family return `void`, so they cannot carry `->instant()`. Add those columns one by one instead.
+- The whole class is read, `down()` included. Only creation calls are flagged: `dropIndex()`/`dropForeign()` in `down()` are fine, and so is a foreign key from a new, empty table to an outlier.
+- A raw statement is keyed on the table it ALTERs, so `ALTER TABLE lti_grades ... REFERENCES video_sessions` is fine. One whose target cannot be read statically reports `unresolvableAlterTarget`: name the table with a literal or assert `ALGORITHM=INSTANT`.
 
-`timestamps()`, `softDeletes()` and the `morphs()` family return `void`, so they cannot carry `->instant()` at all and are reported whenever they touch an outlier. Add the columns individually with the assertion instead.
+<details>
+<summary>Helpers and loops</summary>
 
-Chains are read from anywhere in the closure, and the table and the definition are both traced when a helper supplies them. A resumable migration usually guards each statement and hands the work to a private method, so neither is written at the call:
+The table and the definition are traced through a private helper, so a resumable migration that guards each statement is still checked:
 
 ```php
 $this->addColumn('video_sessions', 'locale', fn (Blueprint $table) => $table->string('locale', 8));
@@ -437,19 +409,13 @@ private function addColumn(string $table, string $column, Closure $definition): 
 }
 ```
 
-Each call site is read as its own invocation, pairing the table it passes with the definition it passes. A helper used for an outlier and for an ordinary table reports only the first.
+Each call site pairs the table it passes with the definition it passes, so a helper used for an outlier and for an ordinary table reports only the first.
 
-Definitions held in an array the migration loops over are read the same way. One literal has to fill the property, and nothing in the class may change it afterwards. Reading it elsewhere does not count: `count($this->columns)`, and the `array_keys()` a `down()` uses to drop the columns in reverse, both get a copy.
+Definitions in an array property the migration loops over are read too, when one literal fills the property and nothing changes it afterwards. Reading it (`count($this->columns)`, `array_keys()` in `down()`) is fine.
 
-Everything else reports `uncheckableSchemaChange`: a definition built elsewhere, an array written twice or aliased by reference, an argument the callee takes by reference, a helper nothing in the class calls. Write the closure at the call site to clear it. A statically empty array reports nothing, since the loop runs nothing.
+Everything else reports `uncheckableSchemaChange`: a definition built elsewhere, an array written twice or aliased by reference, an argument passed by reference, a helper nothing calls. Write the closure at the call site to clear it.
 
-A raw statement is keyed on the table it ALTERs, not on any mention of the name, so `ALTER TABLE lti_grades ... REFERENCES video_sessions` is fine.
-
-The whole migration class is inspected, `down()` included, since a rollback that recreates a column does the same work to the same table. Only creation calls are flagged. `dropIndex()`/`dropForeign()` live in `down()`, which a deploy never runs, and flagging them would push authors to write migrations that cannot roll back. A new table may point a foreign key at an outlier: the new table is empty, so it costs nothing.
-
-An `ALTER TABLE` whose target cannot be read statically (a name from a constructor argument, a config value, or a variable defined elsewhere) reports `unresolvableAlterTarget`. Name the table with a literal, or assert `ALGORITHM=INSTANT`, to clear it.
-
-Because a typed property (`private string $table = 'video_sessions'`) infers as `string` and an interpolated statement as `non-falsy-string`, the rule reads the literal off the migration's own class declaration instead of the type engine. A table name it cannot resolve statically is not reported.
+</details>
 
 ### Swallowed exceptions
 
@@ -493,12 +459,11 @@ try {
 }
 ```
 
-Some catches are exempt because the return value carries the failure:
+Exempt, because the return value carries the failure:
 
 - a method returning `bool` named `check*`, `can*`, `is*`, `has*`, `supports*`, `verify*`, `declares*`, `validate*` or `should*`
 - a method returning a nullable type named `try*`, `parse*`, `maybe*`, `find*`, `fetch*` or `resolve*`
-
-A catch nested inside a catch that already handles its exception is exempt too. A handled nested catch does not cover the outer one, though: once the fallback succeeds, the outer exception is gone.
+- a catch nested inside a catch that already handles its exception (not the other way round)
 
 A comment in the body is not an exemption. Mark a deliberate swallow with an ignore that says why:
 
@@ -506,7 +471,7 @@ A comment in the body is not an exemption. Mark a deliberate swallow with an ign
 } catch (Throwable) { // @phpstan-ignore hihaho.exceptions.swallowedException (best-effort cache warmup)
 ```
 
-PHPStan only makes that reason mandatory through its global `reportIgnoresWithoutComments: true` setting, so set that in the project's `phpstan.neon`. The package does not set it, because it applies to every ignore in the project.
+To make that reason mandatory, set PHPStan's `reportIgnoresWithoutComments: true` in your `phpstan.neon`. The package does not set it for you, because it applies to every ignore in the project.
 
 ### Unescaped values in raw-HTML sinks
 
@@ -543,9 +508,7 @@ Text::make('Name')->displayUsing(fn (string $name) => "<b>{$name}</b>")->asHtml(
 Text::make('Name')->displayUsing(fn (string $name) => '<b>' . e($name) . '</b>')->asHtml(); // fine
 ```
 
-Each `return` in a closure is judged with the scope at that return. A closure that returns a literal placeholder early and an escaped value later is fine.
-
-A `children()` call with a mapper is not checked, because the mapper's own builder calls are. A bare `->asHtml()` field with no callback is not checked.
+Each `return` in a closure is judged on its own. Not checked: a `children()` call with a mapper (the mapper's own builder calls are), and a bare `->asHtml()` field with no callback.
 
 Mark trusted markup with an ignore that says why. See [Swallowed exceptions](#swallowed-exceptions) for making the reason mandatory:
 
@@ -601,19 +564,13 @@ A file known to stay small takes an ignore with a reason:
 return response()->download($path); // @phpstan-ignore hihaho.disallowed.fileResponse (static asset under 50 KB)
 ```
 
-## Reflection extensions
+## Type extensions
 
 ### Stubbed methods
 
-`StubbedMethodsClassReflectionExtension` teaches PHPStan about **instance** methods that exist at
-runtime but not in reflection — Faker custom providers (added via `__call`) and Laravel macros.
-Without it, calls to these resolve to "undefined method" and have to be baselined, which also hides
-genuine typos. With it, the configured methods resolve to their declared return type, and a
-misspelled name (not in the configured set) still fails analysis. Statically-called methods (e.g.
-facade `__callStatic`) are out of scope — the stubbed methods are modelled as instance methods.
+`StubbedMethodsClassReflectionExtension` declares **instance** methods that exist at runtime but not in reflection, such as Faker providers added through `__call` and Laravel macros. They resolve to the configured return type, and a misspelled name still fails. Static calls (`__callStatic`) are not covered.
 
-It resolves nothing by default — each project declares its own methods via the `stubbedMethods`
-parameter, a map of `class name => (method name => return type)`:
+It resolves nothing by default. Map `class => (method => return type)`:
 
 ```neon
 parameters:
@@ -629,23 +586,11 @@ parameters:
             onlyOnExport: '$this'
 ```
 
-Return types are parsed with PHPStan's type-string resolver, so any valid PHPDoc type works
-(`string`, `array<int, int>`, a class name for chainable assertions, etc.). A return type of
-`$this`, `static`, or `self` is bound to the receiver, so a stubbed **fluent** method (a
-`$this`-returning macro, a chainable Nova field method) keeps its chain typed
-(`Number::make(…)->onlyOnExport()->sortable()`) instead of widening. Stubbed methods accept any
-arguments, so only the method name and its return type are modelled — argument types are not checked.
-
-## Return type extensions
+Any PHPDoc type works. `$this`, `static` and `self` bind to the receiver, so a fluent macro keeps its chain typed. Arguments are not checked.
 
 ### Collection `values()->all()` list typing
 
-`CollectionListAllReturnTypeExtension` types `->values()->all()` on a `Collection`/`LazyCollection`
-as `list<TValue>` instead of `array<int, TValue>`. Laravel types `values()` as `static<int, TValue>`
-and `all()` as `array<TKey, TValue>`, neither of which carries PHPStan's list marker — so a method
-declared `@return list<T>` is forced to wrap the chain in `array_values()` even though `values()`
-already re-keyed to a list at runtime. The list type matters: a non-list array is JSON-encoded as a
-JS object, silently breaking frontend consumers that expect an array.
+`CollectionListAllReturnTypeExtension` types `->values()->all()` on a `Collection`/`LazyCollection` as `list<TValue>` instead of `array<int, TValue>`, so a `@return list<T>` method needs no `array_values()` wrapper. It is registered automatically.
 
 ```php
 /** @return list<int> */
@@ -655,23 +600,11 @@ public function ids(Collection $users): array
 }
 ```
 
-It is registered automatically — no configuration. Two guards keep it sound: detection is syntactic
-(the receiver must be a direct `->values()` call, so a chain split across variables is left alone
-rather than guessed), and the receiver must be a `Support\Collection`/`LazyCollection` (or subclass)
-— a bare `Enumerable` or a custom implementation with unknown key semantics is never narrowed.
+The receiver must be a direct `->values()` call on a `Support\Collection`/`LazyCollection` or subclass. A chain split across variables, or a bare `Enumerable`, keeps the default type.
 
 ### Route-model binding typing
 
-`RouteBindingReturnTypeExtension` types `$this->route('x')` / `$request->route('x')` as the model
-bound to route parameter `x`, reading the actual bindings from your route-service providers. Laravel
-types `route()` as `object|string|null`, so resolving a bound model normally needs an
-`assert($model instanceof Video)` after every call — and the parameter name doesn't reveal the model
-(`video_id` → `Video`). This reads `Route::model('x', M::class)` and `Route::bind('x', fn (): M => …)`
-from the configured providers and returns the bound type, so the assert is no longer needed while a
-wrong assignment still fails.
-
-Configure the providers to read via the `routeBindingProviders` parameter — it's empty by default, so
-nothing is narrowed until you list them:
+`RouteBindingReturnTypeExtension` types `$this->route('x')` / `$request->route('x')` as the model bound to parameter `x`, so you no longer need an `assert($model instanceof Video)` after each call. It reads `Route::model('x', M::class)` and `Route::bind('x', fn (): M => …)` from the providers you list:
 
 ```neon
 parameters:
@@ -686,18 +619,13 @@ public function handle(Request $request): void
 }
 ```
 
-Scope: only a single constant-string argument is narrowed (`route()` with no argument, a default
-argument, a dynamic name, or an unknown parameter keeps its default type); only the instance method
-is covered (the `Request::` facade's static form is out of scope); `Route::bind()` closures without a
-return-type hint, and `Route::model()` bindings with a missing-model callback, are skipped. A bound
-parameter is typed as the **non-null** model — matching the intent of the `assert()` calls it
-replaces. That over-claims by dropping `null` when the current route lacks the parameter (an optional
-`{param?}` segment, or shared middleware/helpers reached from routes without it), so use it for code
-reached only via routes that define the parameter and keep an explicit null check where a request may
-legitimately lack it.
+> **The bound model is typed non-null.** That is wrong when the current route lacks the parameter (an optional `{param?}` segment, or middleware shared with routes without it). Keep an explicit null check in that code.
 
-**Implicit bindings.** Parameters bound implicitly (by the controller's type-hint, with no
-`Route::model()` declaration) are resolved as a fallback by listing your route files in `routeFiles`:
+> **Expect a one-time cleanup.** Existing `assert()` and `instanceof` guards after `route('x')` become "always true", and `treatPhpDocTypesAsCertain: false` does not soften that. Remove them, except on the routes above.
+
+Only a single constant-string argument is narrowed, and only the instance method (not the `Request::` facade). A `Route::bind()` closure without a return type, and a `Route::model()` with a missing-model callback, are skipped.
+
+**Implicit bindings.** List your route files to also type parameters bound by the controller's type-hint:
 
 ```neon
 parameters:
@@ -706,65 +634,25 @@ parameters:
         - routes/api.php
 ```
 
-It reads each `Route::<verb>('uri/{param}', Action)` — an invokable `Controller::class` or a
-`[Controller::class, 'method']` — and types `route('param')` as the action parameter Laravel would
-bind to it (matched by name or `Str::snake()`, exactly as the framework does), unioned across every
-route that declares the parameter. Explicit provider bindings win over implicit ones. It is fail-safe:
-closures, group-level controllers, `Route::resource`, non-model type-hints, and unreadable files are
-skipped, leaving the default type — it never mis-types. Paths are resolved from the working directory
-PHPStan runs in (your project root), so project-relative paths like `routes/web.php` work; the
-extension parses the files statically — it does not boot your application.
-
-> **Adopting this is a one-time assert-removal sweep.** Once `route('x')` is typed as the bound
-> model, any existing `assert($x instanceof Model)` or `instanceof` guard after it becomes
-> "always true" — PHPStan reports it as a redundant condition. (This is an expression-type resolver,
-> so `treatPhpDocTypesAsCertain: false` does not soften it.) Removing those now-redundant asserts is
-> the point of the feature; expect a one-off cleanup when you first enable `routeBindingProviders`.
-> Keep only the guards on routes that may legitimately lack the parameter (the non-null caveat above).
-
-## Parameter closure type extensions
+It reads `Route::<verb>('uri/{param}', Action)` for an invokable `Controller::class` or `[Controller::class, 'method']`, matches the parameter by name or `Str::snake()` as Laravel does, and unions across routes. Explicit provider bindings win. Closures, group-level controllers, `Route::resource`, non-model type-hints and unreadable files keep the default type. Paths resolve from the directory PHPStan runs in, and the files are parsed, not executed.
 
 ### Relation-existence closure builder typing
 
-`RelationExistenceClosureBuilderParameterExtension` types the closure passed to Eloquent's
-relationship-existence methods (`whereHas`, `orWhereHas`, `whereDoesntHave`, `orWhereDoesntHave`,
-`has`, `orHas`, `doesntHave`, `orDoesntHave`) as the *related* model's builder. Laravel types the
-callback as `Closure(Builder<TRelatedModel>)`, but when the relation is passed as a string PHPStan
-cannot bind `TRelatedModel`, so it falls back to `Builder<Model>`. Under `checkModelProperties` that
-makes every `->where(RelatedModel::SOME_COLUMN)` inside the closure fail on valid columns.
+`RelationExistenceClosureBuilderParameterExtension` types the closure passed to `whereHas`, `orWhereHas`, `whereDoesntHave`, `orWhereDoesntHave`, `has`, `orHas`, `doesntHave` and `orDoesntHave` as the *related* model's builder. Without it, a string relation name falls back to `Builder<Model>`, and under `checkModelProperties` every valid related column fails. It is registered automatically.
 
 ```php
 /** @param Builder<User> $query */
 public function scopeWithPublishedPosts(Builder $query): void
 {
-    // $q is Builder<Post> — Post::PUBLISHED resolves instead of erroring against base Model.
-    $query->whereHas('posts', fn (Builder $q) => $q->where(Post::STATUS, Post::PUBLISHED));
+    $query->whereHas('posts', function (Builder $q): void {
+        $q->where(Post::STATUS, Post::PUBLISHED); // $q is Builder<Post>
+    });
 }
 ```
 
-It is registered automatically — no configuration. The closure parameter needs no annotation (a bare
-`Builder` hint is narrowed in place), arrow functions are preserved, dotted nested relations
-(`'posts.comments'`) resolve to the last related model, and a related model with a custom builder
-(`HasBuilder`/`newEloquentBuilder()`) keeps that builder type. It fails safe: when the model or
-relation can't be proven (dynamic relation name, unknown relation), the default typing stands, so a
-genuinely wrong column on the correct related model still fails.
+Nested relations (`'posts.comments'`) resolve to the last model, and a custom builder is kept. A relation it cannot prove keeps the default type.
 
-> **Use `void` closures, not closures that return the builder.** Eloquent's `Builder<TModel>` is
-> invariant, and Laravel types the callback's return as `mixed` (it's ignored at runtime — the
-> closure constrains the query in place). Once the parameter is narrowed to the related model, a
-> closure that *returns* the builder — e.g. `fn ($q) => $q->where(...)` or `return $q->where(...)` —
-> reports `return.type: should return Builder<Model> but returns Builder<RelatedModel>`. Write the
-> callback as a `void` block instead; the return value serves no purpose:
->
-> ```php
-> // Triggers a return.type error (returns the narrowed builder):
-> $query->whereHas('posts', fn (Builder $q) => $q->where(Post::STATUS, Post::PUBLISHED));
->
-> // Clean — the closure constrains in place and returns nothing:
-> $query->whereHas('posts', function (Builder $q): void {
->     $q->where(Post::STATUS, Post::PUBLISHED);
-> });
-> ```
+> **Use `void` closures.** `Builder<TModel>` is invariant, so a closure that *returns* the narrowed builder (`fn ($q) => $q->where(...)`) reports `return.type: should return Builder<Model> but returns Builder<RelatedModel>`. The return value is ignored at runtime anyway.
 
 ## Testing
 
