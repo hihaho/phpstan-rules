@@ -24,6 +24,8 @@ class StaticFlagBase
 {
     public static function toggle(string $key, bool $on): void {}
 
+    public function apply(string $key, bool $on): void {}
+
     /** @param array<int, mixed> $arguments */
     public static function __callStatic(string $name, array $arguments): void {}
 
@@ -38,6 +40,14 @@ class StaticFlagBase
     }
 }
 
+final class StaticFlagChild extends StaticFlagBase
+{
+    public function viaAncestor(): void
+    {
+        StaticFlagBase::apply('name', true);
+    }
+}
+
 final class MagicStaticFlagCallStub
 {
     public function run(): void
@@ -45,5 +55,6 @@ final class MagicStaticFlagCallStub
         FlagFacade::toggle('name', true);
         FlagFacade::enable('name', true);
         StaticFlagBase::forward('name', true);
+        StaticFlagBase::apply('name', true);
     }
 }

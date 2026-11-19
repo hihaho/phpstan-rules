@@ -15,6 +15,8 @@ final class MagicFlagTarget
 {
     /** @param array<int, mixed> $arguments */
     public function __call(string $name, array $arguments): void {}
+
+    protected function setGuarded(string $key, bool $guarded): void {}
 }
 
 final class LegacyFlagTarget
@@ -23,14 +25,26 @@ final class LegacyFlagTarget
     public function setLocked(string $key, bool $locked): void {}
 }
 
+class NativeFlagBase
+{
+    public function setShown(string $key, bool $shown): void {}
+}
+
+/**
+ * @method void setShown(string $key, bool $renamed)
+ */
+final class AnnotatedFlagChild extends NativeFlagBase {}
+
 final class MagicFlagCallStub
 {
-    public function run(MagicFlagTarget $magic, LegacyFlagTarget $legacy, FlagHelper $helper): void
+    public function run(MagicFlagTarget $magic, LegacyFlagTarget $legacy, FlagHelper $helper, AnnotatedFlagChild $child): void
     {
         $magic->setHidden('name', true);
         $magic->setVisible('name', true);
+        $magic->setGuarded('name', true);
         $legacy->setLocked('name', true);
 
         $helper->setVisible('name', true);
+        $child->setShown('name', true);
     }
 }

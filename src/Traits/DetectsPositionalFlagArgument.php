@@ -2,7 +2,6 @@
 
 namespace Hihaho\PhpstanRules\Traits;
 
-use Illuminate\Support\Facades\Facade;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\ConstFetch;
@@ -178,9 +177,9 @@ trait DetectsPositionalFlagArgument
 
         $method = $this->nativeMethod($reflectionProvider->getClass($className), $node->name->name, $scope);
 
-        // A non-static method reached by class name, other than through
-        // `self::` / `parent::`, is not a plain static call.
-        if ($method === null || (! $method->isStatic() && ! in_array($node->class->toLowerString(), ['self', 'parent'], true))) {
+        // A non-static method reached by class name is only a plain call from
+        // inside that class or a subclass (`self::`, `parent::`, `Ancestor::`).
+        if ($method === null || (! $method->isStatic() && $scope->getClassReflection()?->is($className) !== true)) {
             return null;
         }
 
@@ -308,27 +307,19 @@ trait DetectsPositionalFlagArgument
      * annotations, larastan's forwarded builder and model-static calls, and
      * macros, which all run through `__call` / `__callStatic` and receive their
      * arguments positionally. A protected or private native method called from
-     * outside is reached the same way, and so is every static call on a facade.
+     * outside is reached the same way. An accessible native method always wins
+     * at runtime, even when an annotation redeclares it, so its own parameter
+     * names are the ones a named argument must use.
      */
     private function nativeMethod(ClassReflection $classReflection, string $methodName, Scope $scope): ?ExtendedMethodReflection
     {
-        if (in_array(Facade::class, $classReflection->getParentClassesNames(), true)
-            || ! $classReflection->hasNativeMethod($methodName)
-        ) {
+        if (! $classReflection->hasNativeMethod($methodName)) {
             return null;
         }
 
         $nativeMethod = $classReflection->getNativeMethod($methodName);
 
-        if (! $scope->canCallMethod($nativeMethod)) {
-            return null;
-        }
-
-        $resolvedMethod = $classReflection->getMethod($methodName, $scope);
-
-        return $resolvedMethod->getDeclaringClass()->getName() === $nativeMethod->getDeclaringClass()->getName()
-            ? $nativeMethod
-            : null;
+        return $scope->canCallMethod($nativeMethod) ? $nativeMethod : null;
     }
 
     private function flagError(string $paramName): IdentifierRuleError
