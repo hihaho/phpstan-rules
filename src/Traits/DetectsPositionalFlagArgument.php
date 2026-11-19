@@ -2,6 +2,7 @@
 
 namespace Hihaho\PhpstanRules\Traits;
 
+use Illuminate\Support\Facades\Facade;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\ConstFetch;
@@ -99,7 +100,16 @@ trait DetectsPositionalFlagArgument
             return null;
         }
 
-        $classReflections = TypeCombinator::removeNull($scope->getType($receiver))->getObjectClassReflections();
+        $receiverType = TypeCombinator::removeNull($scope->getType($receiver));
+
+        // A union member that lacks the method may forward it through `__call`,
+        // which would receive a named flag under a string key. `hasMethod()` is
+        // only `yes` when every union member has it; an intersection needs one.
+        if (! $receiverType->hasMethod($methodName)->yes()) {
+            return null;
+        }
+
+        $classReflections = $receiverType->getObjectClassReflections();
 
         return $this->agreedFlagSite($classReflections, $methodName, $args, $flagIndex, $scope, $firstPartyNamespaces);
     }
@@ -108,7 +118,8 @@ trait DetectsPositionalFlagArgument
      * Resolves the flag record across every receiver member that declares the
      * method — an intersection (or union) receiver yields one reflection per
      * member. Declines when no member declares it, when any declarer would
-     * decline on its own (vendor declaring class, variadic parameter), or when
+     * decline on its own (vendor declaring class, variadic parameter, magic
+     * method), or when
      * two declarers disagree on the flag parameter's name — only that
      * disagreement makes the suggested name ambiguous. This is deliberately
      * broader than the sister rector rule, which still declines on any
@@ -128,7 +139,8 @@ trait DetectsPositionalFlagArgument
                 continue;
             }
 
-            $record = $this->flagRecord($classReflection->getMethod($methodName, $scope), $methodName, $args, $flagIndex, $scope, $firstPartyNamespaces);
+            $method = $this->nativeMethod($classReflection, $methodName, $scope);
+            $record = $method === null ? null : $this->flagRecord($method, $methodName, $args, $flagIndex, $scope, $firstPartyNamespaces);
 
             if ($record === null || ($site !== null && $record['paramName'] !== $site['paramName'])) {
                 return null;
@@ -146,7 +158,8 @@ trait DetectsPositionalFlagArgument
      */
     private function flagSiteForStaticCall(StaticCall $node, Scope $scope, ReflectionProvider $reflectionProvider, array $firstPartyNamespaces): ?array
     {
-        if (! $node->class instanceof Name || ! $node->name instanceof Identifier) {
+        // `static::` is late bound: a subclass may rename the parameter.
+        if (! $node->class instanceof Name || ! $node->name instanceof Identifier || $node->class->toLowerString() === 'static') {
             return null;
         }
 
@@ -163,13 +176,15 @@ trait DetectsPositionalFlagArgument
             return null;
         }
 
-        $classReflection = $reflectionProvider->getClass($className);
+        $method = $this->nativeMethod($reflectionProvider->getClass($className), $node->name->name, $scope);
 
-        if (! $classReflection->hasMethod($node->name->name)) {
+        // A non-static method reached by class name, other than through
+        // `self::` / `parent::`, is not a plain static call.
+        if ($method === null || (! $method->isStatic() && ! in_array($node->class->toLowerString(), ['self', 'parent'], true))) {
             return null;
         }
 
-        return $this->flagRecord($classReflection->getMethod($node->name->name, $scope), $node->name->name, $args, $flagIndex, $scope, $firstPartyNamespaces);
+        return $this->flagRecord($method, $node->name->name, $args, $flagIndex, $scope, $firstPartyNamespaces);
     }
 
     /**
@@ -257,7 +272,9 @@ trait DetectsPositionalFlagArgument
      */
     private function flagRecord(ExtendedMethodReflection $method, string $methodLabel, array $args, int $flagIndex, Scope $scope, array $firstPartyNamespaces): ?array
     {
-        if (! $this->isFirstPartyClass($method->getDeclaringClass()->getName(), $firstPartyNamespaces)) {
+        if (! $this->isFirstPartyClass($method->getDeclaringClass()->getName(), $firstPartyNamespaces)
+            || ! $method->acceptsNamedArguments()->yes()
+        ) {
             return null;
         }
 
@@ -283,6 +300,35 @@ trait DetectsPositionalFlagArgument
             'paramName' => $parameter->getName(),
             'value' => $this->flagLiteral($args[$flagIndex]),
         ];
+    }
+
+    /**
+     * The native method a call on this class reaches, or null when the call is
+     * magic. `hasMethod()` / `getMethod()` also resolve `@method` and `@mixin`
+     * annotations, larastan's forwarded builder and model-static calls, and
+     * macros, which all run through `__call` / `__callStatic` and receive their
+     * arguments positionally. A protected or private native method called from
+     * outside is reached the same way, and so is every static call on a facade.
+     */
+    private function nativeMethod(ClassReflection $classReflection, string $methodName, Scope $scope): ?ExtendedMethodReflection
+    {
+        if (in_array(Facade::class, $classReflection->getParentClassesNames(), true)
+            || ! $classReflection->hasNativeMethod($methodName)
+        ) {
+            return null;
+        }
+
+        $nativeMethod = $classReflection->getNativeMethod($methodName);
+
+        if (! $scope->canCallMethod($nativeMethod)) {
+            return null;
+        }
+
+        $resolvedMethod = $classReflection->getMethod($methodName, $scope);
+
+        return $resolvedMethod->getDeclaringClass()->getName() === $nativeMethod->getDeclaringClass()->getName()
+            ? $nativeMethod
+            : null;
     }
 
     private function flagError(string $paramName): IdentifierRuleError

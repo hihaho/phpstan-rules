@@ -59,12 +59,14 @@ final readonly class FlagArgumentManifestCollector implements Collector
             return null;
         }
 
-        // `pos` is the node's start byte offset — a stable per-call-site id used
-        // only to dedup the writer's records. PHPStan visits a nullsafe call in
-        // two scopes (same node → same pos → one record), while two distinct
-        // same-line calls have different positions and are both kept.
+        // `pos` is the flag argument's start byte offset — a stable per-site id
+        // used only to dedup the writer's records. PHPStan visits a nullsafe call
+        // in two scopes (same argument → same pos → one record), while two
+        // distinct calls have different arguments and are both kept. The call's
+        // own start offset is not unique: every call in `$a->b(true)->c(false)`
+        // starts at `$a`.
         return [
-            'pos' => $node->getStartFilePos(),
+            'pos' => $node->getArgs()[$site['argIndex']]->getStartFilePos(),
             'line' => $node->getStartLine(),
             'method' => $site['method'],
             'argIndex' => $site['argIndex'],
