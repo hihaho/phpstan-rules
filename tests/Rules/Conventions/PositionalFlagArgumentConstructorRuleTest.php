@@ -33,4 +33,21 @@ final class PositionalFlagArgumentConstructorRuleTest extends RuleTestCase
             ],
         ]);
     }
+
+    /**
+     * `new static` is late bound: a subclass constructor may rename the
+     * parameter, and constructors are exempt from signature checks. `new self`
+     * is reported.
+     */
+    #[Test]
+    public function does_not_flag_a_late_bound_new_static(): void
+    {
+        $this->analyse([__DIR__ . '/stubs/LateBoundConstructorFlagStub.php'], [
+            [
+                'Pass a named argument (shown: ...) for the bool/null flag — it is opaque positionally.',
+                16,
+                'Name the flag at the call site so its meaning is visible: instead of foo(true), write foo(enabled: true).',
+            ],
+        ]);
+    }
 }

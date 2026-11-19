@@ -192,7 +192,9 @@ trait DetectsPositionalFlagArgument
      */
     private function flagSiteForNew(New_ $node, Scope $scope, ReflectionProvider $reflectionProvider, array $firstPartyNamespaces): ?array
     {
-        if (! $node->class instanceof Name) {
+        // `new static` is late bound, and a subclass constructor is free to
+        // rename its parameters: constructors are exempt from signature checks.
+        if (! $node->class instanceof Name || $node->class->toLowerString() === 'static') {
             return null;
         }
 
